@@ -3,28 +3,60 @@ import { C, F, fmtK, fmtNum } from '../theme';
 import { Icon } from '../components/Icons';
 import { Card } from '../components';
 
+/**
+ * Animates a numeric value to a target over `duration` ms with ease-out cubic.
+ *
+ * Two behaviours rolled into one:
+ *   - First render with target X: animates 0 -> X (dramatic intro count-up,
+ *     used by the hero when the report first appears).
+ *   - Subsequent target changes (e.g. user taps a different timescale on
+ *     the toggle): animates from the CURRENT displayed value to the new
+ *     target. Going Year 1 ($2M) -> 5-yr total ($15M) rolls smoothly up;
+ *     going Annual ($5M) -> Year 1 ($2M) rolls smoothly down. Previously
+ *     this hook always animated 0 -> target, which on timescale switch
+ *     made the number visually drop to 0 for one frame before counting
+ *     up to the new value - not what you want.
+ *
+ * The valRef tracks the latest animated value across renders so we know
+ * where to start the next animation from.
+ */
 function useCountUp(target, duration = 1200) {
   const [val, setVal] = useState(0);
-  const [done, setDone] = useState(false);
+  const valRef = useRef(0);
+
   useEffect(() => {
-    if (!target) return;
-    setDone(false);
-    const start = performance.now();
+    if (target == null) return;
+    const from = valRef.current;
+    const startTime = performance.now();
     const tick = (now) => {
-      const t = Math.min(1, (now - start) / duration);
+      const t = Math.min(1, (now - startTime) / duration);
       const ease = 1 - Math.pow(1 - t, 3);
-      setVal(Math.round(target * ease));
+      const next = Math.round(from + (target - from) * ease);
+      setVal(next);
+      valRef.current = next;
       if (t < 1) requestAnimationFrame(tick);
-      else { setVal(target); setDone(true); }
+      else { setVal(target); valRef.current = target; }
     };
     requestAnimationFrame(tick);
   }, [target, duration]);
-  return { val, done };
+
+  return { val };
 }
 
 function AnimK({ value }) {
-  const { val, done } = useCountUp(value, 1400);
-  return <span style={{ display: "inline-block", transition: "transform .2s", transform: done ? "scale(1)" : "scale(1)", animation: done ? "numPulse .4s ease-out" : "none" }}>{fmtK(val)}</span>;
+  const { val } = useCountUp(value, 1200);
+  return <span style={{ display: "inline-block" }}>{fmtK(val)}</span>;
+}
+
+/**
+ * Generic animated value renderer. Useful when the number is wrapped in
+ * surrounding text (e.g. 'X FTE freed' or 'X patients protected') and the
+ * raw fmtK formatter doesn't fit. Pass any format function: receives the
+ * animated value, returns the displayed string.
+ */
+function AnimVal({ value, format }) {
+  const { val } = useCountUp(value, 1200);
+  return <span style={{ display: "inline-block" }}>{format ? format(val) : val}</span>;
 }
 
 function Methodology({ children, formula, plug, source }) {
@@ -155,23 +187,23 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         {seg.network > 0 && <div style={{ flex: seg.network, background: "#8e44ad" }} />}
       </div>
       <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-        <CompositionItem color={C.accent} label="Decommission" value={fmtKts(seg.decom)} pct={Math.round(seg.decom / Math.max(1, totalAnnual) * 100)} />
-        <CompositionItem color={C.amber} label="Capacity" value={fmtKts(seg.capacity)} pct={Math.round(seg.capacity / Math.max(1, totalAnnual) * 100)} />
-        {seg.reimb > 0 && <CompositionItem color={C.blue} label="Reimbursement" value={fmtKts(seg.reimb)} pct={Math.round(seg.reimb / Math.max(1, totalAnnual) * 100)} />}
-        {seg.safety > 0 && <CompositionItem color={C.purple} label="Patient safety" value={fmtKts(seg.safety)} pct={Math.round(seg.safety / Math.max(1, totalAnnual) * 100)} />}
-        {seg.academic > 0 && <CompositionItem color="#e67e22" label="Academic" value={fmtKts(seg.academic)} pct={Math.round(seg.academic / Math.max(1, totalAnnual) * 100)} />}
-        {seg.network > 0 && <CompositionItem color="#8e44ad" label="Network" value={fmtKts(seg.network)} pct={Math.round(seg.network / Math.max(1, totalAnnual) * 100)} />}
+        <CompositionItem color={C.accent} label="Decommission" value={<AnimK value={Math.round(seg.decom * ts.mult)} />} pct={Math.round(seg.decom / Math.max(1, totalAnnual) * 100)} />
+        <CompositionItem color={C.amber} label="Capacity" value={<AnimK value={Math.round(seg.capacity * ts.mult)} />} pct={Math.round(seg.capacity / Math.max(1, totalAnnual) * 100)} />
+        {seg.reimb > 0 && <CompositionItem color={C.blue} label="Reimbursement" value={<AnimK value={Math.round(seg.reimb * ts.mult)} />} pct={Math.round(seg.reimb / Math.max(1, totalAnnual) * 100)} />}
+        {seg.safety > 0 && <CompositionItem color={C.purple} label="Patient safety" value={<AnimK value={Math.round(seg.safety * ts.mult)} />} pct={Math.round(seg.safety / Math.max(1, totalAnnual) * 100)} />}
+        {seg.academic > 0 && <CompositionItem color="#e67e22" label="Academic" value={<AnimK value={Math.round(seg.academic * ts.mult)} />} pct={Math.round(seg.academic / Math.max(1, totalAnnual) * 100)} />}
+        {seg.network > 0 && <CompositionItem color="#8e44ad" label="Network" value={<AnimK value={Math.round(seg.network * ts.mult)} />} pct={Math.round(seg.network / Math.max(1, totalAnnual) * 100)} />}
       </div>
     </div>
 
     {/* KPI grid - each card maps to a segment above, tappable to jump to detail */}
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
-      <KpiCard label="Legacy decommission" value={fmtKs(seg.decom)} sub={`${r.decom} of ${r.legacy} systems retired`} color={C.accent} iconKey="unlock" onClick={() => scrollTo(decomRef)} />
-      <KpiCard label="Clinical capacity" value={`${fmtFte(fte)} FTE freed`} sub={`${fmtKs(seg.capacity)} value`} color={C.amber} iconKey="clock" onClick={() => scrollTo(capacityRef)} />
-      {seg.reimb > 0 && <KpiCard label="Reimbursement impact" value={fmtKs(seg.reimb)} sub="CMS penalties + denial recovery" color={C.blue} iconKey="dollar" onClick={() => scrollTo(reimbRef)} />}
-      {seg.safety > 0 && <KpiCard label="Patient safety" value={fmtKs(seg.safety)} sub={`${fmtNum(Math.round(r.safetyPatientsProtected * ts.mult))} patients protected${r.readmissionsAvoided > 0 ? ", " + Math.round(r.readmissionsAvoided * ts.mult) + " readmissions avoided" : ""}`} color={C.purple} iconKey="shield" onClick={() => scrollTo(safetyRef)} />}
-      {seg.network > 0 && <KpiCard label="Network consolidation" value={fmtKs(seg.network)} sub={`${r.duplicateSystems} duplicate systems across ${r.org_count || ""} facilities`} color="#8e44ad" iconKey="network" onClick={() => scrollTo(networkRef)} />}
-      {seg.academic > 0 && <KpiCard label="Academic program" value={fmtKs(seg.academic)} sub="Research + GME + teaching" color="#e67e22" iconKey="graduation" onClick={() => scrollTo(academicRef)} />}
+      <KpiCard label="Legacy decommission" value={<AnimK value={Math.round(seg.decom * ts.mult)} />} sub={`${r.decom} of ${r.legacy} systems retired`} color={C.accent} iconKey="unlock" onClick={() => scrollTo(decomRef)} />
+      <KpiCard label="Clinical capacity" value={<AnimVal value={Math.round(fte * 10)} format={(v) => fmtFte(v / 10) + " FTE freed"} />} sub={<><AnimK value={Math.round(seg.capacity * ts.mult)} /> value</>} color={C.amber} iconKey="clock" onClick={() => scrollTo(capacityRef)} />
+      {seg.reimb > 0 && <KpiCard label="Reimbursement impact" value={<AnimK value={Math.round(seg.reimb * ts.mult)} />} sub="CMS penalties + denial recovery" color={C.blue} iconKey="dollar" onClick={() => scrollTo(reimbRef)} />}
+      {seg.safety > 0 && <KpiCard label="Patient safety" value={<AnimK value={Math.round(seg.safety * ts.mult)} />} sub={<><AnimVal value={Math.round(r.safetyPatientsProtected * ts.mult)} format={fmtNum} /> patients protected{r.readmissionsAvoided > 0 ? <>, <AnimVal value={Math.round(r.readmissionsAvoided * ts.mult)} format={(v) => v.toString()} /> readmissions avoided</> : ""}</>} color={C.purple} iconKey="shield" onClick={() => scrollTo(safetyRef)} />}
+      {seg.network > 0 && <KpiCard label="Network consolidation" value={<AnimK value={Math.round(seg.network * ts.mult)} />} sub={`${r.duplicateSystems} duplicate systems across ${r.org_count || ""} facilities`} color="#8e44ad" iconKey="network" onClick={() => scrollTo(networkRef)} />}
+      {seg.academic > 0 && <KpiCard label="Academic program" value={<AnimK value={Math.round(seg.academic * ts.mult)} />} sub="Research + GME + teaching" color="#e67e22" iconKey="graduation" onClick={() => scrollTo(academicRef)} />}
     </div>
 
 
