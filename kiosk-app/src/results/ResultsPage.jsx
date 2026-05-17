@@ -187,23 +187,23 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         {seg.network > 0 && <div style={{ flex: seg.network, background: "#8e44ad" }} />}
       </div>
       <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-        <CompositionItem color={C.accent} label="Decommission" value={<AnimK value={Math.round(seg.decom * ts.mult)} />} pct={Math.round(seg.decom / Math.max(1, totalAnnual) * 100)} />
-        <CompositionItem color={C.amber} label="Capacity" value={<AnimK value={Math.round(seg.capacity * ts.mult)} />} pct={Math.round(seg.capacity / Math.max(1, totalAnnual) * 100)} />
-        {seg.reimb > 0 && <CompositionItem color={C.blue} label="Reimbursement" value={<AnimK value={Math.round(seg.reimb * ts.mult)} />} pct={Math.round(seg.reimb / Math.max(1, totalAnnual) * 100)} />}
-        {seg.safety > 0 && <CompositionItem color={C.purple} label="Patient safety" value={<AnimK value={Math.round(seg.safety * ts.mult)} />} pct={Math.round(seg.safety / Math.max(1, totalAnnual) * 100)} />}
-        {seg.academic > 0 && <CompositionItem color="#e67e22" label="Academic" value={<AnimK value={Math.round(seg.academic * ts.mult)} />} pct={Math.round(seg.academic / Math.max(1, totalAnnual) * 100)} />}
-        {seg.network > 0 && <CompositionItem color="#8e44ad" label="Network" value={<AnimK value={Math.round(seg.network * ts.mult)} />} pct={Math.round(seg.network / Math.max(1, totalAnnual) * 100)} />}
+        <CompositionItem color={C.accent} label="Decommission" amount={Math.round(seg.decom * ts.mult)} pct={Math.round(seg.decom / Math.max(1, totalAnnual) * 100)} />
+        <CompositionItem color={C.amber} label="Capacity" amount={Math.round(seg.capacity * ts.mult)} pct={Math.round(seg.capacity / Math.max(1, totalAnnual) * 100)} />
+        {seg.reimb > 0 && <CompositionItem color={C.blue} label="Reimbursement" amount={Math.round(seg.reimb * ts.mult)} pct={Math.round(seg.reimb / Math.max(1, totalAnnual) * 100)} />}
+        {seg.safety > 0 && <CompositionItem color={C.purple} label="Patient safety" amount={Math.round(seg.safety * ts.mult)} pct={Math.round(seg.safety / Math.max(1, totalAnnual) * 100)} />}
+        {seg.academic > 0 && <CompositionItem color="#e67e22" label="Academic" amount={Math.round(seg.academic * ts.mult)} pct={Math.round(seg.academic / Math.max(1, totalAnnual) * 100)} />}
+        {seg.network > 0 && <CompositionItem color="#8e44ad" label="Network" amount={Math.round(seg.network * ts.mult)} pct={Math.round(seg.network / Math.max(1, totalAnnual) * 100)} />}
       </div>
     </div>
 
     {/* KPI grid - each card maps to a segment above, tappable to jump to detail */}
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
-      <KpiCard label="Legacy decommission" value={<AnimK value={Math.round(seg.decom * ts.mult)} />} sub={`${r.decom} of ${r.legacy} systems retired`} color={C.accent} iconKey="unlock" onClick={() => scrollTo(decomRef)} />
+      <KpiCard label="Legacy decommission" amount={Math.round(seg.decom * ts.mult)} sub={`${r.decom} of ${r.legacy} systems retired`} color={C.accent} iconKey="unlock" onClick={() => scrollTo(decomRef)} />
       <KpiCard label="Clinical capacity" value={<AnimVal value={Math.round(fte * 10)} format={(v) => fmtFte(v / 10) + " FTE freed"} />} sub={<><AnimK value={Math.round(seg.capacity * ts.mult)} /> value</>} color={C.amber} iconKey="clock" onClick={() => scrollTo(capacityRef)} />
-      {seg.reimb > 0 && <KpiCard label="Reimbursement impact" value={<AnimK value={Math.round(seg.reimb * ts.mult)} />} sub="CMS penalties + denial recovery" color={C.blue} iconKey="dollar" onClick={() => scrollTo(reimbRef)} />}
-      {seg.safety > 0 && <KpiCard label="Patient safety" value={<AnimK value={Math.round(seg.safety * ts.mult)} />} sub={<><AnimVal value={Math.round(r.safetyPatientsProtected * ts.mult)} format={fmtNum} /> patients protected{r.readmissionsAvoided > 0 ? <>, <AnimVal value={Math.round(r.readmissionsAvoided * ts.mult)} format={(v) => v.toString()} /> readmissions avoided</> : ""}</>} color={C.purple} iconKey="shield" onClick={() => scrollTo(safetyRef)} />}
-      {seg.network > 0 && <KpiCard label="Network consolidation" value={<AnimK value={Math.round(seg.network * ts.mult)} />} sub={`${r.duplicateSystems} duplicate systems across ${r.org_count || ""} facilities`} color="#8e44ad" iconKey="network" onClick={() => scrollTo(networkRef)} />}
-      {seg.academic > 0 && <KpiCard label="Academic program" value={<AnimK value={Math.round(seg.academic * ts.mult)} />} sub="Research + GME + teaching" color="#e67e22" iconKey="graduation" onClick={() => scrollTo(academicRef)} />}
+      {seg.reimb > 0 && <KpiCard label="Reimbursement impact" amount={Math.round(seg.reimb * ts.mult)} sub="CMS penalties + denial recovery" color={C.blue} iconKey="dollar" onClick={() => scrollTo(reimbRef)} />}
+      {seg.safety > 0 && <KpiCard label="Patient safety" amount={Math.round(seg.safety * ts.mult)} sub={<><AnimVal value={Math.round(r.safetyPatientsProtected * ts.mult)} format={fmtNum} /> patients protected{r.readmissionsAvoided > 0 ? <>, <AnimVal value={Math.round(r.readmissionsAvoided * ts.mult)} format={(v) => v.toString()} /> readmissions avoided</> : ""}</>} color={C.purple} iconKey="shield" onClick={() => scrollTo(safetyRef)} />}
+      {seg.network > 0 && <KpiCard label="Network consolidation" amount={Math.round(seg.network * ts.mult)} sub={`${r.duplicateSystems} duplicate systems across ${r.org_count || ""} facilities`} color="#8e44ad" iconKey="network" onClick={() => scrollTo(networkRef)} />}
+      {seg.academic > 0 && <KpiCard label="Academic program" amount={Math.round(seg.academic * ts.mult)} sub="Research + GME + teaching" color="#e67e22" iconKey="graduation" onClick={() => scrollTo(academicRef)} />}
     </div>
 
 
@@ -567,22 +567,41 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
   </div>;
 }
 
-function KpiCard({ label, value, sub, color, iconKey, onClick }) {
+/**
+ * KpiCard - displays one large numeric KPI with label and sub-text.
+ *
+ * Accepts EITHER:
+ *   - amount (numeric): rendered as <AnimK> so it animates on timescale change
+ *   - value (any JSX/string): rendered as-is (for non-numeric KPIs like "X FTE freed")
+ *
+ * Why two props instead of just one? Passing <AnimK> as a value prop from the
+ * call site looked clean but didn't reliably preserve AnimK's component state
+ * across re-renders when ts.mult changed, because React reconciles JSX-via-prop
+ * children differently from direct JSX children. Rendering AnimK INSIDE
+ * KpiCard from a plain numeric prop guarantees the same component instance
+ * persists across renders, so useState/useRef in useCountUp keep the previous
+ * value and animate to the new target instead of always resetting to 0.
+ *
+ * Same fix applied to CompositionItem below.
+ */
+function KpiCard({ label, amount, value, sub, color, iconKey, onClick }) {
   return <div onClick={onClick} style={{ padding: "24px 22px", background: C.surface, borderRadius: 18, border: `1px solid ${color}25`, cursor: "pointer", transition: "border-color .2s" }}>
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
       <Icon name={iconKey} size={26} stroke={color} />
       <span style={{ fontSize: F.tiny, fontWeight: 600, color: C.textMuted }}>{label}</span>
     </div>
-    <div style={{ fontSize: F.h1, fontWeight: 800, color, marginBottom: 4 }}>{value}</div>
+    <div style={{ fontSize: F.h1, fontWeight: 800, color, marginBottom: 4 }}>
+      {amount != null ? <AnimK value={amount} /> : value}
+    </div>
     <div style={{ fontSize: F.tiny, color: C.textMid }}>{sub}</div>
     <div style={{ fontSize: 11, color: C.accent, fontWeight: 600, marginTop: 8 }}>View details ↓</div>
   </div>;
 }
 
-function CompositionItem({ color, label, value, pct }) {
+function CompositionItem({ color, label, amount, pct }) {
   return <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
     <div style={{ width: 10, height: 10, borderRadius: 3, background: color }} />
-    <span style={{ fontSize: F.tiny, color: C.textMid }}>{label}: <strong style={{ color }}>{value}</strong> ({pct}%)</span>
+    <span style={{ fontSize: F.tiny, color: C.textMid }}>{label}: <strong style={{ color }}><AnimK value={amount} /></strong> ({pct}%)</span>
   </div>;
 }
 
