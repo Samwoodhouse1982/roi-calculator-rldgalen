@@ -308,7 +308,7 @@ export function SplashScreen({ onStart, onAdminReveal }) {
         fontSize: 14, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, zIndex: 3, whiteSpace: 'nowrap',
         transition: 'opacity 600ms ease-out',
         opacity: launching ? 0.2 : 1,
-      }}>v2.1 · Updated May 2026</div>
+      }}>v3.0 · Updated May 17, 2026</div>
 
       {/* Radial wipe overlay — expands from the button position to cover the screen.
           Becomes visible after WIPE_DELAY_MS (overlapping the tail of particle convergence),
