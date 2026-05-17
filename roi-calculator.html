@@ -1660,7 +1660,7 @@ function ROICalculator() {
   // ── Data layer: exposes all values for external PDF engines / integrations ──
   const roiData = useMemo(() => ({
     // Meta
-    _version: "2.0",
+    _version: "3.0",
     _generated: new Date().toISOString(),
     _scenario: am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Stretch":"Expected",
 
@@ -2105,7 +2105,7 @@ function ROICalculator() {
       "reduction from EHR consolidation), Sinsky et al 2016 (clinician EHR time burden).",
       "Government / regulatory: CMS HRRP/HAC/VBP programs, AHRQ Patient Safety Indicators.",
       "Industry data: KLAS Arch Collaborative (500,000+ clinicians), CRICO 2016, IBM/Ponemon 2023.",
-      "All assumptions documented in Full Report. Methodology v3.0 — last reviewed May 2026.",
+      "All assumptions documented in Full Report. Methodology v3.0 — last reviewed May 17, 2026.",
     ];
     methLines.forEach(line => { doc.text(line, ml, y); y += 4; });
     y += 6;
@@ -4386,7 +4386,7 @@ function ROICalculator() {
 
     {/* Methodology version */}
     <div style={{maxWidth:900,margin:"24px auto 0",padding:"0 24px",fontSize:11,color:C.textMuted,textAlign:"center"}}>
-      Methodology v3.0, last reviewed May 2026 (next review November 2026)
+      Methodology v3.0, last reviewed May 17, 2026 (next review November 2026)
     </div>
 
     {/* Disclaimer */}
