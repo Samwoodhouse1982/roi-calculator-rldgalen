@@ -1917,7 +1917,7 @@ function ROICalculator() {
   // ── Data layer: exposes all values for external PDF engines / integrations ──
   const roiData = useMemo(() => ({
     // Meta
-    _version: "2.0",
+    _version: "3.0",
     _generated: new Date().toISOString(),
     _scenario: am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Stretch":"Expected",
 
@@ -2354,7 +2354,7 @@ function ROICalculator() {
       "reduction from EHR consolidation), Sinsky et al 2016 (clinician EHR time burden).",
       "Government / regulatory: IHACPA NEP 2025-26 (A$7,258/NWAU), ACSQHC Standards 1 and 6.",
       "State indemnity schemes: VMIA 2025-26 (VIC), icare (NSW). KLAS Arch Collaborative.",
-      "All assumptions documented in Full Report. Methodology v3.0 - last reviewed May 2026.",
+      "All assumptions documented in Full Report. Methodology v3.0 - last reviewed 17 May 2026.",
     ];
     methLines.forEach(line => { doc.text(line, ml, y); y += 4; });
     y += 6;
@@ -4812,7 +4812,7 @@ function ROICalculator() {
 
     {/* Methodology version */}
     <div style={{maxWidth:900,margin:"24px auto 0",padding:"0 24px",fontSize:11,color:C.textMuted,textAlign:"center"}}>
-      Methodology v3.0 · last reviewed May 2026 · next review November 2026
+      Methodology v3.0 · last reviewed 17 May 2026 · next review November 2026
     </div>
 
     {/* Disclaimer */}
