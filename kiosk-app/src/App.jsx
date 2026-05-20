@@ -352,6 +352,69 @@ function TimescaleBar({ viewTimescale, setViewTimescale }) {
   </div>;
 }
 
+/**
+ * Global responsive overrides for the embed/iframe build.
+ *
+ * The kiosk version was a fixed 1080×1920 design - paddings, gaps,
+ * grid columns and minimum widths were all sized for that surface.
+ * For the embed build we keep those values as the desktop max, but
+ * dial them down on smaller viewports via media queries.
+ *
+ * Why a CSS-in-style-tag instead of a real stylesheet? React inline
+ * styles can't express media queries (no @-rules), and adding a
+ * Vite-managed .css file is heavier than this one-shot block. The
+ * `<style>` tag is rendered once at App-level and inherits the
+ * Vite build's normal CSS bundling.
+ *
+ * Breakpoints:
+ *   <= 640px  : phone portrait. Single-column grids, tightened padding,
+ *               smaller bar buttons, stacked composition strip.
+ *   <= 900px  : phone landscape / small tablet. Slightly relaxed but
+ *               still single-column for KPI grid.
+ *   <= 1200px : tablet / small laptop. 2-column grids still work, but
+ *               horizontal padding shrinks so it doesn't waste edge space.
+ *   > 1200px  : desktop / kiosk - the original look.
+ *
+ * Selectors target classes added in App.jsx (.embed-header-pad,
+ * .embed-scroll-area) so the responsive behaviour can't accidentally
+ * bleed into pages that don't opt in.
+ */
+function EmbedStyles() {
+  return <style>{`
+    /* Tablet / laptop: trim outer padding so content has more room */
+    @media (max-width: 1200px) {
+      .embed-header-pad { padding: 32px 32px 0 !important; }
+      .embed-scroll-area { padding: 0 32px 24px !important; }
+    }
+
+    /* Phone landscape / small tablet: tighter still, single column KPI */
+    @media (max-width: 900px) {
+      .embed-header-pad { padding: 24px 20px 0 !important; }
+      .embed-scroll-area { padding: 0 20px 20px !important; }
+      /* Collapse 2-col grids to single column. The kiosk's KpiCard
+         grid uses inline gridTemplateColumns: "1fr 1fr" - overriding
+         the inline style requires the more specific selector + !important. */
+      .embed-scroll-area [style*="gridTemplateColumns: \\"1fr 1fr\\""],
+      .embed-scroll-area [style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    /* Phone portrait: tightest layout, smallest paddings */
+    @media (max-width: 640px) {
+      .embed-header-pad { padding: 16px 14px 0 !important; }
+      .embed-scroll-area { padding: 0 14px 16px !important; }
+    }
+
+    /* Always: prevent body/iframe scrollbars from doubling up.
+       The embed should scroll INSIDE itself (.embed-scroll-area), not
+       force the parent page to scroll. */
+    html, body { margin: 0; padding: 0; }
+    body { overflow: hidden; }
+    #root { width: 100%; min-height: 100vh; }
+  `}</style>;
+}
+
 function CalibratingScreen({ onDone }) {
   const [step, setStep] = useState(0);
   const [barW, setBarW] = useState(0);
@@ -608,7 +671,8 @@ export default function App() {
 
   if (calibrating) {
 
-  return <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, width: W, minHeight: H, height: '100vh', color: C.text, position: "relative", zIndex: 0 }}>
+  return <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, width: "100%", maxWidth: W, margin: "0 auto", minHeight: "100vh", color: C.text, position: "relative", zIndex: 0 }}>
+      <EmbedStyles />
       <BackgroundParticles />
       <CalibratingScreen onDone={handleCalibrationDone} />
       {adminVisible && <AdminOverlay onClose={() => setAdminVisible(false)} />}
@@ -616,9 +680,10 @@ export default function App() {
   }
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, width: W, minHeight: H, color: C.text, lineHeight: 1.55, display: "flex", flexDirection: "column", position: "relative", zIndex: 0 }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, width: "100%", maxWidth: W, margin: "0 auto", minHeight: "100vh", color: C.text, lineHeight: 1.55, display: "flex", flexDirection: "column", position: "relative", zIndex: 0 }}>
+      <EmbedStyles />
       <BackgroundParticles />
-      <div style={{ padding: "48px 56px 0" }}>
+      <div className="embed-header-pad" style={{ padding: "48px 56px 0" }}>
         <StepIndicator steps={KIOSK_STEPS} current={kioskStep} onJump={setKioskStep} />
       </div>
       {/* Timescale bar — rendered here (above the scroll container) instead
@@ -629,7 +694,7 @@ export default function App() {
           scrollable content area. Only renders on the report screen
           (kioskStep === 5). */}
       {kioskStep === 5 && <TimescaleBar viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} />}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 56px 32px" }}>
+      <div className="embed-scroll-area" style={{ flex: 1, overflowY: "auto", padding: "0 56px 32px" }}>
         <PageTransition step={kioskStep}>{renderStep()}</PageTransition>
       </div>
       <NavButtons step={kioskStep} totalSteps={KIOSK_STEPS.length} onBack={() => setKioskStep(p => p - 1)} onNext={() => setKioskStep(p => p + 1)} onCalculate={handleCalculate} onStartOver={handleStartOver} />

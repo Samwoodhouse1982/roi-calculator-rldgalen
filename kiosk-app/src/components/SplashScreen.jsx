@@ -41,8 +41,13 @@ export function SplashScreen({ onStart, onAdminReveal }) {
     if (launchingRef.current) return; // prevent double-trigger
 
     // Capture button position in two coordinate systems:
-    // (1) Canvas-internal coords (1080×1920 space) — for particle target
-    // (2) CSS pixel coords relative to the container — for the radial wipe overlay
+    // (1) Canvas-internal coords - for particle target
+    // (2) CSS pixel coords relative to the container - for the radial wipe overlay
+    //
+    // In the embed/responsive build the canvas matches its rendered CSS
+    // size (with devicePixelRatio applied internally via ctx.setTransform),
+    // so converting from page coordinates to canvas coordinates just
+    // subtracts the canvas's CSS offset - no width ratio scaling.
     if (buttonRef.current && canvasRef.current && containerRef.current) {
       const bRect = buttonRef.current.getBoundingClientRect();
       const cRect = canvasRef.current.getBoundingClientRect();
@@ -52,12 +57,9 @@ export function SplashScreen({ onStart, onAdminReveal }) {
       const btnCssX = bRect.left + bRect.width / 2;
       const btnCssY = bRect.top + bRect.height / 2;
 
-      // Convert to canvas-internal coords (canvas is 1080×1920 stretched to its display size)
-      const xRatio = 1080 / cRect.width;
-      const yRatio = 1920 / cRect.height;
       buttonTargetRef.current = {
-        x: (btnCssX - cRect.left) * xRatio,
-        y: (btnCssY - cRect.top) * yRatio,
+        x: btnCssX - cRect.left,
+        y: btnCssY - cRect.top,
       };
 
       // For the overlay: position relative to the container in CSS pixels
@@ -86,10 +88,19 @@ export function SplashScreen({ onStart, onAdminReveal }) {
     let w, h;
 
     const resize = () => {
-      w = canvas.width = 1080;
-      h = canvas.height = 1920;
+      // For the embed/responsive build the canvas matches its actual
+      // rendered CSS size rather than a hardcoded 1080×1920. Use
+      // devicePixelRatio so animations stay crisp on hi-DPI displays.
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      w = rect.width || 1080;
+      h = rect.height || 1920;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
+    window.addEventListener('resize', resize);
 
     const particles = [];
     const PARTICLE_COUNT = 140;
@@ -201,12 +212,13 @@ export function SplashScreen({ onStart, onAdminReveal }) {
 
     return () => {
       cancelAnimationFrame(raf);
+      window.removeEventListener('resize', resize);
     };
   }, []);
 
   return (
     <div ref={containerRef} style={{
-      position: 'relative', zIndex: 100, width: 1080, minHeight: 1920, height: '100vh',
+      position: 'relative', zIndex: 100, width: '100%', minHeight: '100vh',
       background: 'linear-gradient(160deg, #060b14 0%, #0a1020 25%, #0c1825 50%, #091520 75%, #060b14 100%)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
       overflow: 'hidden', cursor: launching ? 'default' : 'pointer',
@@ -274,8 +286,13 @@ export function SplashScreen({ onStart, onAdminReveal }) {
             50%      { transform: translateX(-50%) translateY(-6px); }
           }
           @keyframes radialWipe {
-            0%   { width: 0;      height: 0;      opacity: 1; }
-            100% { width: 4400px; height: 4400px; opacity: 1; }
+            0%   { width: 0;       height: 0;       opacity: 1; }
+            /* vmax is the larger of viewport width/height, so the wipe always
+               reaches the corner regardless of orientation or device size.
+               300vmax covers any rectangle since the origin can be anywhere
+               from corner to corner (max diagonal ~141vmax, doubled for
+               safety on irregular aspect ratios). */
+            100% { width: 300vmax; height: 300vmax; opacity: 1; }
           }
           @keyframes radialSettle {
             0%   { opacity: 0; }
