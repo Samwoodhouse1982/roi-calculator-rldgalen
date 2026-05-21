@@ -220,8 +220,15 @@ export function SplashScreen({ onStart, onAdminReveal }) {
     <div ref={containerRef} style={{
       position: 'relative', zIndex: 100, width: '100%', minHeight: '100vh',
       background: 'linear-gradient(160deg, #060b14 0%, #0a1020 25%, #0c1825 50%, #091520 75%, #060b14 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+      // Flex column with space-between so the three content regions
+      // (title block, KLAS badge, logo+version footer) distribute naturally
+      // down the viewport regardless of height. The kiosk used absolute
+      // positioning with hardcoded bottom: 270/50/18px which worked at
+      // 1920px tall but collided on normal browser heights.
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
+      padding: 'clamp(20px, 4vh, 60px) 20px clamp(16px, 3vh, 40px)',
       overflow: 'hidden', cursor: launching ? 'default' : 'pointer',
+      gap: 'clamp(16px, 3vh, 40px)',
     }} onClick={launching ? undefined : handleStart}>
 
       <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }} />
@@ -230,20 +237,22 @@ export function SplashScreen({ onStart, onAdminReveal }) {
         background: 'radial-gradient(ellipse at 30% 50%, rgba(0,212,170,0.06) 0%, transparent 60%), radial-gradient(ellipse at 70% 30%, rgba(0,180,255,0.04) 0%, transparent 50%)',
       }} />
 
-      <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: 1000, padding: '75px 80px', marginTop: '14vh',
-        // Subtle fade-out of content while the wipe expands, so the title doesn't bleed through
+      {/* TOP REGION - eyebrow, headline, description, CTA button.
+          All fontSize values use clamp() to scale fluidly with viewport. */}
+      <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: 1000, width: '100%',
+        padding: '0 clamp(16px, 4vw, 80px)',
         opacity: launching ? 0.3 : 1,
         transition: 'opacity 600ms ease-out',
       }}>
 
         <div style={{
-          fontSize: 20, fontWeight: 600, letterSpacing: 10, textTransform: 'uppercase',
-          color: '#00d4aa', marginBottom: 50, opacity: 0.95,
+          fontSize: 'clamp(12px, 1.8vw, 20px)', fontWeight: 600, letterSpacing: 'clamp(4px, 0.8vw, 10px)', textTransform: 'uppercase',
+          color: '#00d4aa', marginBottom: 'clamp(18px, 3vh, 50px)', opacity: 0.95,
         }}>RLDatix Galen Clinical Archive</div>
 
         <h1 style={{
-          fontSize: 80, fontWeight: 800, lineHeight: 1.15, color: '#fff',
-          margin: '0 0 30px', letterSpacing: '-1.25px',
+          fontSize: 'clamp(36px, 6.5vw, 80px)', fontWeight: 800, lineHeight: 1.15, color: '#fff',
+          margin: '0 0 clamp(14px, 2.5vh, 30px)', letterSpacing: '-1.25px',
         }}>
           Decommission legacy systems.
           <br />
@@ -251,21 +260,19 @@ export function SplashScreen({ onStart, onAdminReveal }) {
         </h1>
 
         <p style={{
-          fontSize: 28, fontWeight: 400, color: 'rgba(255,255,255,0.78)',
-          lineHeight: 1.6, margin: '0 auto 75px', maxWidth: 750,
+          fontSize: 'clamp(15px, 2.2vw, 28px)', fontWeight: 400, color: 'rgba(255,255,255,0.78)',
+          lineHeight: 1.6, margin: '0 auto clamp(20px, 4vh, 75px)', maxWidth: 750,
         }}>
           See exactly how much your health system could save by retiring legacy applications and consolidating clinical data into a single archive.
         </p>
 
         <button ref={buttonRef} onClick={handleStart} style={{
           display: 'block', margin: '0 auto',
-          padding: '30px 90px', borderRadius: 80, border: '3px solid #00d4aa',
+          padding: 'clamp(14px, 2.5vh, 30px) clamp(40px, 7vw, 90px)', borderRadius: 80, border: '3px solid #00d4aa',
           background: 'rgba(0,212,170,0.18)', color: '#fff',
-          fontSize: 30, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+          fontSize: 'clamp(15px, 2.4vw, 30px)', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
           letterSpacing: 4,
           textTransform: 'uppercase',
-          // During launch, freeze the pulse and brighten/scale to look like the button is
-          // absorbing the converging particles.
           boxShadow: launching
             ? '0 0 200px rgba(0,212,170,0.95), inset 0 0 80px rgba(0,212,170,0.4)'
             : '0 0 80px rgba(0,212,170,0.35), inset 0 0 60px rgba(0,212,170,0.08)',
@@ -282,8 +289,8 @@ export function SplashScreen({ onStart, onAdminReveal }) {
             50% { box-shadow: 0 0 120px rgba(0,212,170,0.55), inset 0 0 80px rgba(0,212,170,0.15); transform: scale(1.02); }
           }
           @keyframes klasBadgeFloat {
-            0%, 100% { transform: translateX(-50%) translateY(0); }
-            50%      { transform: translateX(-50%) translateY(-6px); }
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-6px); }
           }
           @keyframes radialWipe {
             0%   { width: 0;       height: 0;       opacity: 1; }
@@ -302,30 +309,31 @@ export function SplashScreen({ onStart, onAdminReveal }) {
 
       </div>
 
-      {/* Best in KLAS 2025 badge — positioned in the lower third of the splash,
-          above the RLDatix logo. Now uses the transparent-corner PNG so the
-          circular badge sits cleanly on the dark gradient. Gentle floating
-          animation to draw the eye without being noisy. */}
+      {/* MIDDLE REGION - KLAS badge. Now a flex item with relative positioning,
+          so it slots naturally between the title block and the footer rather
+          than overlapping them at narrow viewports. */}
       <img src={klasBadge} alt="Best in KLAS 2025 - Data Archiving" style={{
-        position: 'absolute', bottom: 270, left: '50%', transform: 'translateX(-50%)',
-        width: 200, height: 'auto', zIndex: 3,
+        position: 'relative', zIndex: 3,
+        width: 'clamp(110px, 14vw, 200px)', height: 'auto',
         filter: 'drop-shadow(0 4px 24px rgba(0,212,170,0.25))',
         animation: 'klasBadgeFloat 4s ease-in-out infinite',
         transition: 'opacity 600ms ease-out',
         opacity: launching ? 0.2 : 1,
       }} />
 
-      <img src={rldatixLogo} alt="RLDatix" onClick={handleLogoTap} style={{
-        position: 'absolute', bottom: 50, left: '50%', transform: 'translateX(-50%)',
-        width: 450, opacity: launching ? 0.15 : 0.5, zIndex: 3, cursor: 'pointer',
-        transition: 'opacity 600ms ease-out',
-      }} />
-      <div style={{
-        position: 'absolute', bottom: 18, left: '50%', transform: 'translateX(-50%)',
-        fontSize: 14, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, zIndex: 3, whiteSpace: 'nowrap',
+      {/* BOTTOM REGION - logo and version line. Stacked together as one
+          flex item so they always sit together at the bottom. */}
+      <div style={{ position: 'relative', zIndex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(6px, 1vh, 14px)',
         transition: 'opacity 600ms ease-out',
         opacity: launching ? 0.2 : 1,
-      }}>v3.0 · Updated May 17, 2026</div>
+      }}>
+        <img src={rldatixLogo} alt="RLDatix" onClick={(e) => { e.stopPropagation(); handleLogoTap(e); }} style={{
+          width: 'clamp(180px, 28vw, 450px)', opacity: 0.5, cursor: 'pointer',
+        }} />
+        <div style={{
+          fontSize: 'clamp(11px, 1.1vw, 14px)', color: 'rgba(255,255,255,0.4)', letterSpacing: 1, whiteSpace: 'nowrap',
+        }}>v3.0 · Updated May 17, 2026</div>
+      </div>
 
       {/* Radial wipe overlay — expands from the button position to cover the screen.
           Becomes visible after WIPE_DELAY_MS (overlapping the tail of particle convergence),
