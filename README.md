@@ -1,58 +1,46 @@
-# EPR Migration & Archiving — ROI Calculator
+# US Responsive / Embed Kiosk — `us-embed`
 
-## Quick start
+The **responsive, iframe-friendly** variant of the US kiosk calculator. Same
+engine, flow, and results as `us-touchscreen`, but the layout is fluid
+(clamp-based fonts, breakpoints, flex splash) so it works on normal screens,
+mobile devices, and inside an iframe -- not just the fixed 1080x1920 kiosk.
+
+> This repository uses **one branch per market/surface**. See the table below.
+
+## What's the calculator?
+
+Everything lives in **`kiosk-app/`** -- a Vite + React application. This branch
+has **no root calculator file**; leftover web-calc files have been removed.
 
 ```bash
+cd kiosk-app
 npm install
-npm run dev     # dev server on localhost:3000
-npm run build   # production build → dist/
+npm run dev      # local dev server
+npm run build    # production build -> kiosk-app/dist/
 ```
 
-## Architecture
+## How this differs from `us-touchscreen`
 
-Single-component React app. All logic lives in `src/ROICalculator.jsx`.
+Same `kiosk-app/` structure and the same calc engine. The differences are
+layout-only and documented in **`kiosk-app/README-EMBED.md`**:
+- `theme.js` font sizes are `clamp()` values (fluid, capped at the kiosk sizes)
+- `App.jsx` outer container is `width:100%` up to `maxWidth:1080`, with an
+  `EmbedStyles` block adding responsive breakpoints (1200 / 900 / 640px)
+- `SplashScreen.jsx` is fluid (100vh, canvas reads actual size, `vmax` wipe)
+- `index.html` uses `width=device-width` (not the kiosk's fixed viewport)
 
-### Key sections
+## How it deploys
 
-| Section | Description |
-|---------|-------------|
-| **Model constants** (top) | `STAFF_PER_BED`, `BLENDED_HOURLY_RATE`, etc. All tuneable assumptions extracted as named constants. |
-| **SCENARIO / CX / DQ** | Scenario multipliers (Conservative/Expected/Stretch), complexity and data quality scaling factors. |
-| **PRESETS** | Quick-start templates (Small/Typical/Large/Regional) with pre-filled inputs. |
-| **`calc()`** | Pure function. Takes inputs + overrides + flagships, returns all derived values. No side effects. |
-| **Helper components** | `Card`, `AnimatedSlider`, `TogglePill`, `ResultCard`, `OverridableStat`, etc. |
-| **`ROICalculator`** | Main component. Manages state, renders input wizard → calculating animation → results page. |
-| **`generatePDF()`** | Builds a styled A4 HTML document and opens it in a new tab for print-to-PDF. |
+From `kiosk-app/` via Vite (`kiosk-app/vercel.json`, `kiosk-app/netlify.toml`,
+build `npm run build`, publish `dist/`). For iframe embedding, set the iframe's
+width/height; the app fills 100% of both and scrolls internally.
 
-### Fonts
+## The other branches
 
-The component references **National 2 Condensed Bold** (header) and **FK Grotesk Neue** (body). These are proprietary fonts — you'll need to host them and add `@font-face` declarations to `styles.css` or `index.html`. System fallbacks are included (`Arial Narrow`, `Inter`, `Helvetica Neue`).
-
-### Colours
-
-Corporate palette defined in the `C` constant object:
-
-- Dark Teal: `#0F4146` (primary)
-- Pale Green: `#EEF7F1` (card backgrounds)
-- Light Seafoam: `#BEFAF0` (accents)
-- Seafoam: `#80F8E4` (header highlight)
-- Blue: `#73D2E1` (secondary, with 75%/50%/25% opacity variants)
-
-### Styles
-
-- `src/styles.css` — All animations, hover effects, touch/mobile overrides.
-- Hover interactions use `.roi-*` class names applied to components.
-- `@media (hover: none)` disables transform-based hovers on touch devices.
-- `@media (max-width: 480px)` handles narrow-screen layout adjustments.
-
-### Overrides & flagships
-
-Users can override any calculated value (tier costs, staff count, minutes wasted, etc.) on both the input and results pages. "Named high-cost systems" (flagships) sit outside the tier model for outlier systems like a legacy PAS at £500k/yr.
-
-### PDF output
-
-The "Download PDF report" button generates a self-contained HTML document with inline styles, opened in a new tab. The browser's print dialog handles PDF conversion. No server-side dependencies.
-
-## Evidence base
-
-All model assumptions are documented in the methodology report (`roi-methodology-report.docx`), classifying each as evidence-based, industry benchmark, or modelled estimate. Every figure is user-overridable.
+| Branch | Market / surface | Deploys |
+|--------|------------------|---------|
+| `main` | UK / Ireland web | `roi-calculator.html` |
+| `us` | US web | `roi-calculator.html` |
+| `au` | Australia web | `roi-calculator.html` |
+| `us-touchscreen` | US kiosk, fixed 1080x1920 | `kiosk-app/` |
+| **`us-embed`** | US kiosk, responsive / iframe (this branch) | `kiosk-app/` |
