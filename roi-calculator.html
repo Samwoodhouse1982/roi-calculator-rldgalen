@@ -42,6 +42,32 @@
   to { transform: rotate(360deg); }
 }
 
+/* ── Chart drill-down flash highlight ── */
+@keyframes roi-flash {
+  0%   { background-color: transparent; box-shadow: none; }
+  20%  { background-color: rgba(15, 65, 70, 0.07); box-shadow: 0 0 0 4px rgba(15, 65, 70, 0.18); }
+  100% { background-color: transparent; box-shadow: none; }
+}
+.roi-flash-highlight {
+  animation: roi-flash 1.6s ease-out;
+}
+
+/* ── Chart segment hover (clickable drill-down) ── */
+.roi-chart-seg {
+  cursor: pointer;
+  transition: filter .15s ease, opacity .15s ease;
+}
+.roi-chart-seg:hover {
+  filter: brightness(1.12);
+}
+.roi-chart-legend-item {
+  cursor: pointer;
+  transition: opacity .15s ease;
+}
+.roi-chart-legend-item:hover {
+  opacity: 0.7;
+}
+
 /* ── Card hover ── */
 .roi-card {
   transition: border-color .2s ease, box-shadow .2s ease, transform .15s ease;
@@ -755,6 +781,19 @@ const fmt = n => "£" + Math.round(n).toLocaleString("en-GB");
 const fmtK = n => n >= 1e6 ? `£${(n/1e6).toFixed(1)}m` : n >= 1000 ? `£${Math.round(n/1000).toLocaleString("en-GB")}k` : fmt(n);
 const fmtNum = n => Math.round(n).toLocaleString("en-GB");
 
+// Chart drill-down: smooth-scroll to a detail card and flash-highlight it.
+// Used by the savings-projection chart's clickable segments and legend.
+const drillToSegment = (anchorId) => {
+  if (!anchorId) return;
+  const el = document.getElementById(anchorId);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  el.classList.remove("roi-flash-highlight"); // restart animation if re-clicked quickly
+  void el.offsetWidth;                          // force reflow
+  el.classList.add("roi-flash-highlight");
+  setTimeout(() => el.classList.remove("roi-flash-highlight"), 1700);
+};
+
 /* ═══════════════════════════════════════════════════════════════════════
    THEME & SMALL COMPONENTS
    ═══════════════════════════════════════════════════════════════════════ */
@@ -773,7 +812,7 @@ const C = {
   override:"#1a6b5a",overridePale:"#f0faf6"
 };
 
-function Card({children,style,dimmed,className}){return <div className={className||"roi-card"} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"24px 28px 20px",marginBottom:0,opacity:dimmed?0.3:1,pointerEvents:dimmed?"none":"auto",filter:dimmed?"grayscale(.5)":"none",transition:"opacity .4s,filter .4s",...style}}>{children}</div>;}
+function Card({children,style,dimmed,className,id}){return <div id={id} className={className||"roi-card"} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"24px 28px 20px",marginBottom:0,opacity:dimmed?0.3:1,pointerEvents:dimmed?"none":"auto",filter:dimmed?"grayscale(.5)":"none",transition:"opacity .4s,filter .4s",...style}}>{children}</div>;}
 
 function InfoTip({text}){
   const [show, setShow] = useState(false);
@@ -2917,7 +2956,7 @@ function ROICalculator() {
       </div>
       {!dim && <div style={{padding:"24px 18px 18px",background:`linear-gradient(180deg, ${C.tealPale} 0%, #fff 100%)`,border:`1px solid ${C.accent}33`,borderTop:`3px solid ${C.accent}`,borderRadius:12,textAlign:"center",boxShadow:`0 6px 24px ${C.accent}1a, 0 1px 3px ${C.accent}10`}}>
         <div style={{fontSize:11,fontWeight:700,color:C.textMid,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>{ts.heroLabel}</div>
-        <div style={{fontSize:56,fontWeight:900,letterSpacing:"-2.5px",lineHeight:1,fontVariantNumeric:"tabular-nums",background:`linear-gradient(135deg, ${C.accent} 0%, ${C.amber} 55%, ${C.seafoam} 100%)`,WebkitBackgroundClip:"text",backgroundClip:"text",WebkitTextFillColor:"transparent",display:"inline-block",filter:`drop-shadow(0 2px 8px ${C.accent}30)`,paddingBottom:4}}>{fmtK(Math.round(r.annual * ts.mult))}<span style={{fontSize:18,fontWeight:600,color:C.textMid,WebkitTextFillColor:C.textMid,background:"none",marginLeft:4}}>{ts.suffix || "/yr"}</span></div>
+        <div style={{fontSize:56,fontWeight:900,letterSpacing:"-2.5px",lineHeight:1,fontVariantNumeric:"tabular-nums",background:`linear-gradient(135deg, ${C.accent} 0%, ${C.amber} 55%, ${C.seafoam} 100%)`,WebkitBackgroundClip:"text",backgroundClip:"text",WebkitTextFillColor:"transparent",display:"inline-block",filter:`drop-shadow(0 2px 8px ${C.accent}30)`,paddingBottom:4}}>{an?<AnimatedK value={Math.round(r.annual * ts.mult)} active={an}/>:fmtK(Math.round(r.annual * ts.mult))}<span style={{fontSize:18,fontWeight:600,color:C.textMid,WebkitTextFillColor:C.textMid,background:"none",marginLeft:4}}>{ts.suffix || "/yr"}</span></div>
         <div style={{fontSize:12,color:C.textMid,marginTop:12}}>
           {viewTimescale === "annual"
             ? <>per year · {r.rampYears}-year total: <strong style={{color:C.accent}}>{fmtK(r.totalRamp)}</strong></>
@@ -2957,8 +2996,8 @@ function ROICalculator() {
       </div>
     )}
 
-    {/* Timescale selector */}
-    {!dim && <div style={{display:"flex",justifyContent:"center",marginBottom:14}}>
+    {/* Timescale selector — sticky so it stays reachable while scrolling the report */}
+    {!dim && <div style={{position:"sticky",top:0,zIndex:50,display:"flex",justifyContent:"center",marginBottom:14,marginLeft:-20,marginRight:-20,paddingLeft:20,paddingRight:20,paddingTop:10,paddingBottom:10,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderBottom:`1px solid ${C.border}`}}>
       <div className="roi-timescale" style={{display:"inline-flex",gap:0,padding:3,background:"#fff",border:`1px solid ${C.border}`,borderRadius:999,flexWrap:"wrap"}}>
         {[
           {k:"year1",l:"Year 1"},
@@ -2984,7 +3023,7 @@ function ROICalculator() {
         <div style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
           {segs.map((s,i) => <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
             <div style={{width:10,height:10,borderRadius:3,background:s.color}} />
-            <span style={{fontSize:12,color:C.textMid}}>{s.label}: <strong style={{color:s.color}}>{fmtK(s.value)}</strong> ({Math.round(s.value/total*100)}%)</span>
+            <span style={{fontSize:12,color:C.textMid}}>{s.label}: <strong style={{color:s.color}}><AnimatedK value={s.value} active={an}/></strong> ({Math.round(s.value/total*100)}%)</span>
           </div>)}
         </div>
         <div style={{display:"flex",justifyContent:"center",marginTop:8}}>
@@ -2995,9 +3034,9 @@ function ROICalculator() {
 
     {/* KPI cards (2x2 grid, AU-style colour scheme) */}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-      <ResultCard dimmed={dim} info={`Direct annual cost savings from switching off legacy systems. Calculated from per-system licensing, hosting, and support costs by tier (Enterprise / Departmental / Standalone), modelled on NHS contract benchmarks and supplier pricing data.`} label={"Legacy decommission" + (viewTimescale==="annual"?"":" ("+ts.heroLabel.replace("Estimated ","").replace(" savings","")+")")} value={an?fmtK(Math.round(r.decomSave * ts.mult)):"–"} sub={an?r.decom+" of "+r.legacy+" systems retired":""} bg={C.greenPale} border="#c3ddd3" valueColor="#0F4146" />
+      <ResultCard dimmed={dim} info={`Direct annual cost savings from switching off legacy systems. Calculated from per-system licensing, hosting, and support costs by tier (Enterprise / Departmental / Standalone), modelled on NHS contract benchmarks and supplier pricing data.`} label={"Legacy decommission" + (viewTimescale==="annual"?"":" ("+ts.heroLabel.replace("Estimated ","").replace(" savings","")+")")} value={an?<AnimatedK value={Math.round(r.decomSave * ts.mult)} active={an}/>:"–"} sub={an?r.decom+" of "+r.legacy+" systems retired":""} bg={C.greenPale} border="#c3ddd3" valueColor="#0F4146" />
       <ResultCard dimmed={dim} info={`Clinician time freed when legacy system switching is eliminated. Based on Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events; switch penalty 0.04/system) corroborated by Westbrook et al JAMIA 2010 and Sinsky et al 2016. Valued at £55/hr blended NHS Agenda for Change mid-band rate including on-costs. Only ${Math.round(r.realisation*100)}% counted as realisable capacity. This represents capacity redirected to patient care, not headcount reduction.`} label="Clinical capacity" value={an?(r.fteEquivalent >= 1 ? Math.round(r.fteEquivalent)+" FTE freed" : r.fteEquivalent.toFixed(1)+" FTE freed"):"–"} sub={an?fmtK(Math.round(r.timeSave * ts.mult))+(ts.suffix||" total"):""} bg="#e8faf6" border="#b0e8dc" valueColor="#1a8a7a" />
-      {r.qualitySavings > 0 && <ResultCard dimmed={dim} info={`Cashable cost avoidance from reduced clinical risk: indemnity exposure reduction (5% of attributable NHS Resolution exposure at £7,500/bed), excess bed-day savings (NHS Reference Costs at £400/day, harm estimates per Camacho et al BMJ Quality & Safety 2024), and duplicate testing avoidance (18% of pathology / imaging waste eliminated when records are fragmented, per Bates et al).`} label="Quality / cost avoidance" value={an?fmtK(Math.round(r.qualitySavings * ts.mult)):"–"} sub={an?"Indemnity + bed days + duplicate testing":""} bg="#fdf0f4" border="#f0c4d4" valueColor="#d4507a" />}
+      {r.qualitySavings > 0 && <ResultCard dimmed={dim} info={`Cashable cost avoidance from reduced clinical risk: indemnity exposure reduction (5% of attributable NHS Resolution exposure at £7,500/bed), excess bed-day savings (NHS Reference Costs at £400/day, harm estimates per Camacho et al BMJ Quality & Safety 2024), and duplicate testing avoidance (18% of pathology / imaging waste eliminated when records are fragmented, per Bates et al).`} label="Quality / cost avoidance" value={an?<AnimatedK value={Math.round(r.qualitySavings * ts.mult)} active={an}/>:"–"} sub={an?"Indemnity + bed days + duplicate testing":""} bg="#fdf0f4" border="#f0c4d4" valueColor="#d4507a" />}
       <ResultCard dimmed={dim} info={`Cumulative savings across ${r.rampYears} years, applying the realistic phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join(" / ")}. Year 1 reflects partial realisation as legacy systems are decommissioned and clinical workflows transition. By year ${r.rampYears}, full steady-state savings of ${fmtK(r.annual)}/yr are achieved.`} label={`Total savings (${r.rampYears}-year)`} value={an?fmtK(r.totalRamp):"–"} sub={an?`Phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join("/")}`:""} bg={C.blue25} border={C.blue50} valueColor="#0f4146" />
     </div>
 
@@ -3008,9 +3047,9 @@ function ROICalculator() {
     {/* Year-by-year stacked bar chart */}
     {!dim && (() => {
       const segs = [
-        {label:"Decommission",val:r.decomSave,color:"#0F4146"},
-        {label:"Clinical capacity",val:r.timeSave,color:"#1a8a7a"},
-        ...(r.qualitySavings > 0 ? [{label:"Quality / cost avoidance",val:r.qualitySavings,color:"#d4507a"}] : []),
+        {label:"Decommission",val:r.decomSave,color:"#0F4146",anchorId:"card-decommission"},
+        {label:"Clinical capacity",val:r.timeSave,color:"#1a8a7a",anchorId:"card-capacity"},
+        ...(r.qualitySavings > 0 ? [{label:"Quality / cost avoidance",val:r.qualitySavings,color:"#d4507a",anchorId:"card-quality"}] : []),
       ].filter(s=>s.val>0);
       const total = segs.reduce((a,s)=>a+s.val,0);
       if (total <= 0) return null;
@@ -3035,7 +3074,7 @@ function ROICalculator() {
               <div style={{width:"100%",height:h,borderRadius:"6px 6px 0 0",overflow:"hidden",display:"flex",flexDirection:"column-reverse"}}>
                 {segs.map((s,si)=>{
                   const segPct = (s.val * yr.pct) / yrTot;
-                  return <div key={si} style={{height:`${segPct*100}%`,background:s.color,borderTop:si>0?"1px solid rgba(255,255,255,0.3)":"none"}} title={`${yr.label} · ${s.label}: ${fmtK(Math.round(s.val*yr.pct))} (${Math.round(yr.pct*100)}% of ${fmtK(s.val)} steady state)`}/>;
+                  return <div key={si} className="roi-chart-seg" onClick={()=>drillToSegment(s.anchorId)} style={{height:`${segPct*100}%`,background:s.color,borderTop:si>0?"1px solid rgba(255,255,255,0.3)":"none"}} title={`${yr.label} · ${s.label}: ${fmtK(Math.round(s.val*yr.pct))} (${Math.round(yr.pct*100)}% of ${fmtK(s.val)} steady state) — tap for detail`}/>;
                 })}
               </div>
               <div className="roi-chart-bar-label" style={{fontSize:12,fontWeight:600,color:C.textMid,marginTop:8}}>{yr.label}</div>
@@ -3044,18 +3083,19 @@ function ROICalculator() {
           })}
         </div>
         <div style={{display:"flex",gap:12,flexWrap:"wrap",justifyContent:"center"}}>
-          {segs.map((s,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.textMid}}>
+          {segs.map((s,i)=><div key={i} className="roi-chart-legend-item" onClick={()=>drillToSegment(s.anchorId)} style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.textMid}}>
             <div style={{width:10,height:10,borderRadius:2,background:s.color}}/>
             {s.label}: <strong>{fmtK(s.val)}</strong>/yr at steady state
           </div>)}
         </div>
+        <div style={{textAlign:"center",fontSize:11,color:C.textMuted,marginTop:10,fontStyle:"italic"}}>Tap any bar segment or legend item to jump to its detail</div>
         <div style={{textAlign:"center",fontSize:11,color:C.textMuted,marginTop:8,fontStyle:"italic"}}>Hover any bar segment for year-by-year detail</div>
       </Card>;
     })()}
 
     {viewMode === "detailed" && <>
     {/* Decom – tiered breakdown */}
-    <Card dimmed={dim} style={{borderLeft:"4px solid #0F4146"}}>
+    <Card dimmed={dim} id="card-decommission" style={{borderLeft:"4px solid #0F4146"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
         <div style={{width:40,height:40,borderRadius:10,background:"#0F414615",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <SIcon name="unlock" size={22} color="#0F4146"/>
@@ -3087,7 +3127,7 @@ function ROICalculator() {
     </Card><LockedConnector/>
 
     {/* Clinician time */}
-    <Card dimmed={dim} style={{borderLeft:"4px solid #1a8a7a"}}>
+    <Card dimmed={dim} id="card-capacity" style={{borderLeft:"4px solid #1a8a7a"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
         <div style={{width:40,height:40,borderRadius:10,background:"#1a8a7a15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <SIcon name="clock" size={22} color="#1a8a7a"/>
@@ -3111,7 +3151,7 @@ function ROICalculator() {
 
     {/* Clinical safety */}
     {r.hasClinicalScope && <div>
-    <Card dimmed={dim} style={{border:"1px solid #e0c4cf",background:"#faf5f7"}}>
+    <Card dimmed={dim} id="card-quality" style={{border:"1px solid #e0c4cf",background:"#faf5f7"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
         <div style={{width:40,height:40,borderRadius:10,background:"#d4507a15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <SIcon name="shield" size={22} color="#d4507a"/>
@@ -3487,6 +3527,21 @@ function ROICalculator() {
           <p style={{margin:"0 0 8px"}}><strong>Included:</strong> Decommission savings (licence, hosting, support costs eliminated), clinician time capacity value (hours freed, valued at blended rate with realisation discount), and quality & safety savings (excess bed days avoided at £400/day, indemnity premium reduction, duplicate testing savings).</p>
           <p style={{margin:"4px 0"}}><strong>Excluded:</strong> Implementation costs (covered in main business case), parallel-run costs (too variable to model), data migration costs (one-off programme budget), Clinical Negligence Scheme for Trusts (CNST) premium reductions at trust level (the institutional indemnity figure used in the model is a national average; per-trust CNST reductions are real but not quantifiable here).</p>
           <p style={{margin:"4px 0"}}>The 3-year total assumes flat annual savings. In practice, savings may increase in years 2-3 as more systems are retired, or decrease as easy wins are captured first.</p>
+        </S>
+
+        <S title="11. How the timescale view works">
+          <p style={{margin:"0 0 8px"}}><strong>What this is:</strong> the toggle at the top of the report that lets you switch between four views of the same underlying numbers.</p>
+          <p style={{margin:"4px 0",fontSize:13,color:C.textMid,lineHeight:1.6}}><strong style={{color:C.accent}}>In plain English:</strong> the financial model produces a steady-state annual figure (what your savings look like once everything has bedded in). The toggle just re-shapes how that figure is presented for a given audience: a finance team often wants annual recurring; a board often wants the 3-year total; a Year 1 cashflow conversation needs the Year 1 figure with the ramp applied.</p>
+          <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12,margin:"8px 0"}}>
+            <thead><tr style={{background:C.accent,color:"#fff"}}><th style={{padding:"6px 10px",textAlign:"left"}}>View</th><th style={{padding:"6px 10px",textAlign:"left"}}>What it shows</th><th style={{padding:"6px 10px",textAlign:"left"}}>When to use it</th></tr></thead>
+            <tbody>
+              <tr style={{borderBottom:`1px solid ${C.border}`}}><td style={{padding:"6px 10px",fontWeight:600}}>Year 1</td><td style={{padding:"6px 10px"}}>The first-year portion of the ramp (typically ~40% of steady state)</td><td style={{padding:"6px 10px"}}>Cashflow and Year 1 budget conversations</td></tr>
+              <tr style={{borderBottom:`1px solid ${C.border}`}}><td style={{padding:"6px 10px",fontWeight:600}}>3-yr total</td><td style={{padding:"6px 10px"}}>Cumulative savings across three years (Years 1+2+3 with their ramp percentages)</td><td style={{padding:"6px 10px"}}>Most board cases; standard business-case window</td></tr>
+              <tr style={{borderBottom:`1px solid ${C.border}`}}><td style={{padding:"6px 10px",fontWeight:600}}>5-yr total</td><td style={{padding:"6px 10px"}}>Cumulative savings across five years</td><td style={{padding:"6px 10px"}}>Long-tail value, total cost of ownership comparisons</td></tr>
+              <tr><td style={{padding:"6px 10px",fontWeight:600}}>Annual avg</td><td style={{padding:"6px 10px"}}>The steady-state annual rate (what you would expect to see ongoing once fully ramped)</td><td style={{padding:"6px 10px"}}>Recurring run-rate, year-on-year comparisons</td></tr>
+            </tbody>
+          </table></div>
+          <p style={{margin:"8px 0 4px"}}>The toggle stays pinned to the top of the page as you scroll, so you can change view at any point and watch every figure on the report (headline, KPI tiles, detail-section cards, and the savings projection) update together. None of the underlying calculations change; only the time window applied to them does.</p>
         </S>
 
         <div style={{marginTop:12,padding:"10px 14px",background:C.bg,borderRadius:8,fontSize:11,color:C.textMuted,lineHeight:1.6}}>
