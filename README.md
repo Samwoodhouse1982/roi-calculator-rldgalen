@@ -1,58 +1,54 @@
-# EPR Migration & Archiving — ROI Calculator
+# US EHR ROI Calculator — `us`
 
-## Quick start
+The **United States** version of the RLDatix Galen Clinical Archive ROI
+calculator. US terminology (EHR, hospital, CMS), US dollars, US evidence base
+(CMS, AHRQ, AHA, KFF, HFMA, CRICO, Mello, Bates, HCUP, Joint Commission).
 
-```bash
-npm install
-npm run dev     # dev server on localhost:3000
-npm run build   # production build → dist/
-```
+> This repository uses **one branch per market**. See the table at the bottom.
 
-## Architecture
+## What's the calculator?
 
-Single-component React app. All logic lives in `src/ROICalculator.jsx`.
+**`roi-calculator.html`** is the entire application -- a self-contained single
+file (React + Babel loaded from CDN, all styles inline, no build step). Open it
+in a browser and it runs. This is the only file you edit to change the
+calculator.
 
-### Key sections
+## How it deploys (Vercel)
 
-| Section | Description |
-|---------|-------------|
-| **Model constants** (top) | `STAFF_PER_BED`, `BLENDED_HOURLY_RATE`, etc. All tuneable assumptions extracted as named constants. |
-| **SCENARIO / CX / DQ** | Scenario multipliers (Conservative/Expected/Stretch), complexity and data quality scaling factors. |
-| **PRESETS** | Quick-start templates (Small/Typical/Large/Regional) with pre-filled inputs. |
-| **`calc()`** | Pure function. Takes inputs + overrides + flagships, returns all derived values. No side effects. |
-| **Helper components** | `Card`, `AnimatedSlider`, `TogglePill`, `ResultCard`, `OverridableStat`, etc. |
-| **`ROICalculator`** | Main component. Manages state, renders input wizard → calculating animation → results page. |
-| **`generatePDF()`** | Builds a styled A4 HTML document and opens it in a new tab for print-to-PDF. |
+| URL | Serves |
+|-----|--------|
+| `/` | `index.html` -> redirects to `roi-calculator.html` |
+| other paths | rewritten to `roi-calculator.html` |
+| `/roi-calculator.html` | served directly |
 
-### Fonts
+`index.html` is a 2-line redirect, **not** a second calculator. `vercel.json`
+holds the routing.
 
-The component references **National 2 Condensed Bold** (header) and **FK Grotesk Neue** (body). These are proprietary fonts — you'll need to host them and add `@font-face` declarations to `styles.css` or `index.html`. System fallbacks are included (`Arial Narrow`, `Inter`, `Helvetica Neue`).
+## Files
 
-### Colours
+| File | Purpose |
+|------|---------|
+| `roi-calculator.html` | **The calculator.** Self-contained; edit this. |
+| `index.html` | 2-line redirect to `roi-calculator.html`. |
+| `vercel.json` | Deploy routing. |
+| `embed-snippet.html` | Reference snippet for embedding via iframe (auto-resizes via `postMessage`). |
+| `README.md` | This file. |
 
-Corporate palette defined in the `C` constant object:
+## Editing notes
 
-- Dark Teal: `#0F4146` (primary)
-- Pale Green: `#EEF7F1` (card backgrounds)
-- Light Seafoam: `#BEFAF0` (accents)
-- Seafoam: `#80F8E4` (header highlight)
-- Blue: `#73D2E1` (secondary, with 75%/50%/25% opacity variants)
+- Tuneable assumptions are named constants near the top of the
+  `<script type="text/babel">` block.
+- The pure `calc()` function takes inputs + overrides and returns derived values.
+- Sanity-check the JSX parses before pushing.
+- US work uses **US English and US evidence sources only** (CMS, AHRQ, AHA, KFF,
+  HFMA, CRICO, Mello, Bates, HCUP, Joint Commission). No UK/AU contamination.
 
-### Styles
+## The other branches
 
-- `src/styles.css` — All animations, hover effects, touch/mobile overrides.
-- Hover interactions use `.roi-*` class names applied to components.
-- `@media (hover: none)` disables transform-based hovers on touch devices.
-- `@media (max-width: 480px)` handles narrow-screen layout adjustments.
-
-### Overrides & flagships
-
-Users can override any calculated value (tier costs, staff count, minutes wasted, etc.) on both the input and results pages. "Named high-cost systems" (flagships) sit outside the tier model for outlier systems like a legacy PAS at £500k/yr.
-
-### PDF output
-
-The "Download PDF report" button generates a self-contained HTML document with inline styles, opened in a new tab. The browser's print dialog handles PDF conversion. No server-side dependencies.
-
-## Evidence base
-
-All model assumptions are documented in the methodology report (`roi-methodology-report.docx`), classifying each as evidence-based, industry benchmark, or modelled estimate. Every figure is user-overridable.
+| Branch | Market | Deploys |
+|--------|--------|---------|
+| `main` | UK / Ireland (EPR, NHS, GBP) | `roi-calculator.html` |
+| **`us`** | United States (this branch) | `roi-calculator.html` |
+| `au` | Australia (EMR, ACSQHC, AUD) | `roi-calculator.html` |
+| `us-touchscreen` | US conference kiosk (fixed 1080x1920) | `kiosk-app/` (Vite/React) |
+| `us-embed` | US responsive / iframe kiosk | `kiosk-app/` (Vite/React) |
