@@ -60,12 +60,21 @@
 .roi-chart-seg:hover {
   filter: brightness(1.12);
 }
+.roi-chart-seg:focus-visible {
+  outline: 2px solid #1b2433;
+  outline-offset: 2px;
+}
 .roi-chart-legend-item {
   cursor: pointer;
   transition: opacity .15s ease;
 }
 .roi-chart-legend-item:hover {
   opacity: 0.7;
+}
+.roi-chart-legend-item:focus-visible {
+  outline: 2px solid #1b2433;
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 /* ── Card hover ── */
@@ -599,15 +608,15 @@ function calc(inp, mode, ov = {}, flagships = []) {
   const sarDaysAfter = Math.min(Math.round((SAR_BASE_DAYS + (legacy - decom) * SAR_DAYS_PER_SYSTEM_AFTER) * 10) / 10, sarDaysBefore);
   const sarReductionPct = Math.round((sarDaysBefore - sarDaysAfter) / Math.max(1, sarDaysBefore) * 100);
   const hasClinicalScope = legacy >= 3 && inp.bed_count > 0;
-  let safetyMedErrorsAvoided=0, safetyPatientsProtected=0, safetyBedDaysAvoided=0, safetyMedErrorsBaseline=0;
+  let safetyMedErrorsAvoided=0, safetyPatientsProtected=0, safetyBedDaysAvoided=0, safetyMedErrorsBaseline=0, safetyPatientsHarmedBaseline=0, safetyBedDaysBaseline=0;
   if (hasClinicalScope) {
     const frag = 0.6 + Math.min(legacy, 20) / 20 * 0.6;
     safetyMedErrorsBaseline = Math.round(inp.bed_count * MED_ERRORS_PER_BED * frag * dq);
-    const harmedBl = Math.round(inp.bed_count * PATIENTS_HARMED_PER_BED * frag * dq);
-    const bedDaysBl = Math.round(inp.bed_count * EXCESS_BED_DAYS_PER_BED * frag * dq);
+    safetyPatientsHarmedBaseline = Math.round(inp.bed_count * PATIENTS_HARMED_PER_BED * frag * dq);
+    safetyBedDaysBaseline = Math.round(inp.bed_count * EXCESS_BED_DAYS_PER_BED * frag * dq);
     safetyMedErrorsAvoided = Math.round(safetyMedErrorsBaseline * safetyPct);
-    safetyPatientsProtected = Math.round(harmedBl * safetyPct);
-    safetyBedDaysAvoided = Math.round(bedDaysBl * safetyPct);
+    safetyPatientsProtected = Math.round(safetyPatientsHarmedBaseline * safetyPct);
+    safetyBedDaysAvoided = Math.round(safetyBedDaysBaseline * safetyPct);
   }
   // Quality / safety financial value (only when clinical scope present)
   let excessDayCostAvoided = 0, malpracticeReduction = 0, duplicateTestSaving = 0;
@@ -635,7 +644,7 @@ function calc(inp, mode, ov = {}, flagships = []) {
     ticketsBaselineMonthly, ticketsAfter, ticketsReductionPct,
     sarDaysBefore, sarDaysAfter, sarReductionPct,
     hasClinicalScope, safetyMedErrorsAvoided, safetyPatientsProtected,
-    safetyBedDaysAvoided, safetyMedErrorsBaseline,
+    safetyBedDaysAvoided, safetyMedErrorsBaseline, safetyPatientsHarmedBaseline, safetyBedDaysBaseline,
     excessDayCostAvoided, malpracticeReduction, duplicateTestSaving, qualitySavings,
     annual, total3, totalRamp, rampYears, rampPcts, yrValues, yr1, yr2, yr3, y1Pct, y2Pct, y3Pct, realisation, scenarioDefaultRealisation: sc.realisation, decomFactor: decomPct, safetyFactor: safetyPct, isArchiveOnly,
     fteEquivalent: Math.round(hrsSaved * realisation / 1820 * 10) / 10,  // NHS FTE = 1820 hrs (8.4 hrs/day x 5 days x 52 weeks - leave)
@@ -3037,7 +3046,7 @@ function ROICalculator() {
       <ResultCard dimmed={dim} info={`Direct annual cost savings from switching off legacy systems. Calculated from per-system licensing, hosting, and support costs by tier (Enterprise / Departmental / Standalone), modelled on NHS contract benchmarks and supplier pricing data.`} label={"Legacy decommission" + (viewTimescale==="annual"?"":" ("+ts.heroLabel.replace("Estimated ","").replace(" savings","")+")")} value={an?<AnimatedK value={Math.round(r.decomSave * ts.mult)} active={an}/>:"–"} sub={an?r.decom+" of "+r.legacy+" systems retired":""} bg={C.greenPale} border="#c3ddd3" valueColor="#0F4146" />
       <ResultCard dimmed={dim} info={`Clinician time freed when legacy system switching is eliminated. Based on Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events; switch penalty 0.04/system) corroborated by Westbrook et al JAMIA 2010 and Sinsky et al 2016. Valued at £55/hr blended NHS Agenda for Change mid-band rate including on-costs. Only ${Math.round(r.realisation*100)}% counted as realisable capacity. Scales with the selected timeframe (Year 1 / 3-yr / 5-yr cumulative). This represents capacity redirected to patient care, not headcount reduction.`} label="Clinical capacity" value={an?((r.fteEquivalent*ts.mult) >= 1 ? Math.round(r.fteEquivalent*ts.mult)+" FTE freed" : (r.fteEquivalent*ts.mult).toFixed(1)+" FTE freed"):"–"} sub={an?fmtK(Math.round(r.timeSave * ts.mult))+(ts.suffix||" total"):""} bg="#e8faf6" border="#b0e8dc" valueColor="#1a8a7a" />
       {r.qualitySavings > 0 && <ResultCard dimmed={dim} info={`Cashable cost avoidance from reduced clinical risk: indemnity exposure reduction (5% of attributable NHS Resolution exposure at £7,500/bed), excess bed-day savings (NHS Reference Costs at £400/day, harm estimates per Camacho et al BMJ Quality & Safety 2024), and duplicate testing avoidance (18% of pathology / imaging waste eliminated when records are fragmented, per Bates et al).`} label="Quality / cost avoidance" value={an?<AnimatedK value={Math.round(r.qualitySavings * ts.mult)} active={an}/>:"–"} sub={an?"Indemnity + bed days + duplicate testing":""} bg="#fdf0f4" border="#f0c4d4" valueColor="#d4507a" />}
-      <ResultCard dimmed={dim} info={`The total for the selected timeframe — the sum of decommission, clinical capacity, and quality / cost avoidance. Switch the timeframe toggle to see Year 1 (partial ramp), the 3-year or 5-year cumulative total, or the steady-state annual rate. The phased ramp applied is ${r.rampPcts.map(p=>Math.round(p*100)+"%").join(" / ")}; full steady-state savings of ${fmtK(r.annual)}/yr are reached by year ${r.rampYears}.`} label="Total savings" value={an?<AnimatedK value={Math.round(r.annual * ts.mult)} active={an}/>:"–"} sub={an?(ts.subContext||`phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join("/")}`):""} bg={C.blue25} border={C.blue50} valueColor="#0f4146" />
+      <ResultCard dimmed={dim} info={`The total for the selected timeframe — the sum of decommission, clinical capacity, and quality / cost avoidance. Switch the timeframe toggle to see Year 1 (partial ramp), the 3-year or 5-year cumulative total, or the steady-state annual rate. The phased ramp applied is ${r.rampPcts.map(p=>Math.round(p*100)+"%").join(" / ")}; full steady-state savings of ${fmtK(r.annual)}/yr are reached by year ${r.rampYears}.`} label="Total savings" value={an?<AnimatedK value={Math.round(r.annual * ts.mult)} active={an}/>:"–"} sub={an?(viewTimescale==="annual" ? `${r.rampYears}-yr total ${fmtK(r.totalRamp)}` : (ts.subContext||`phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join("/")}`)):""} bg={C.blue25} border={C.blue50} valueColor="#0f4146" />
     </div>
 
     {viewMode === "executive" && <><div style={{textAlign:"center",fontSize:12,color:C.textMid,marginBottom:24,padding:"14px 16px",background:"#f8fafb",border:`1px dashed ${C.border}`,borderRadius:8}}>
@@ -3074,7 +3083,7 @@ function ROICalculator() {
               <div style={{width:"100%",height:h,borderRadius:"6px 6px 0 0",overflow:"hidden",display:"flex",flexDirection:"column-reverse"}}>
                 {segs.map((s,si)=>{
                   const segPct = (s.val * yr.pct) / yrTot;
-                  return <div key={si} className="roi-chart-seg" onClick={()=>drillToSegment(s.anchorId)} style={{height:`${segPct*100}%`,background:s.color,borderTop:si>0?"1px solid rgba(255,255,255,0.3)":"none"}} title={`${yr.label} · ${s.label}: ${fmtK(Math.round(s.val*yr.pct))} (${Math.round(yr.pct*100)}% of ${fmtK(s.val)} steady state) — tap for detail`}/>;
+                  return <div key={si} className="roi-chart-seg" role="button" tabIndex={0} aria-label={`${yr.label} ${s.label}: ${fmtK(Math.round(s.val*yr.pct))} — jump to detail`} onClick={()=>drillToSegment(s.anchorId)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();drillToSegment(s.anchorId);}}} style={{height:`${segPct*100}%`,background:s.color,borderTop:si>0?"1px solid rgba(255,255,255,0.3)":"none"}} title={`${yr.label} · ${s.label}: ${fmtK(Math.round(s.val*yr.pct))} (${Math.round(yr.pct*100)}% of ${fmtK(s.val)} steady state) — tap for detail`}/>;
                 })}
               </div>
               <div className="roi-chart-bar-label" style={{fontSize:12,fontWeight:600,color:C.textMid,marginTop:8}}>{yr.label}</div>
@@ -3083,7 +3092,7 @@ function ROICalculator() {
           })}
         </div>
         <div style={{display:"flex",gap:12,flexWrap:"wrap",justifyContent:"center"}}>
-          {segs.map((s,i)=><div key={i} className="roi-chart-legend-item" onClick={()=>drillToSegment(s.anchorId)} style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.textMid}}>
+          {segs.map((s,i)=><div key={i} className="roi-chart-legend-item" role="button" tabIndex={0} aria-label={`${s.label}: ${fmtK(s.val)} per year at steady state — jump to detail`} onClick={()=>drillToSegment(s.anchorId)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();drillToSegment(s.anchorId);}}} style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.textMid}}>
             <div style={{width:10,height:10,borderRadius:2,background:s.color}}/>
             {s.label}: <strong>{fmtK(s.val)}</strong>/yr at steady state
           </div>)}
@@ -3094,6 +3103,9 @@ function ROICalculator() {
     })()}
 
     {viewMode === "detailed" && <>
+    {an && viewTimescale !== "annual" && <div style={{padding:"12px 16px",marginBottom:16,background:C.blue25,border:`1px solid ${C.blue50}`,borderRadius:10,fontSize:12.5,color:C.textMid,lineHeight:1.55}}>
+      Topline figures above reflect the <strong style={{color:C.accent}}>{ts.heroLabel.replace("Estimated ","")}</strong> view. The detailed breakdowns below are shown <strong>per year at steady state</strong> — switch the toggle to <strong>Annual avg</strong> to line them up directly.
+    </div>}
     {/* Decom – tiered breakdown */}
     <Card dimmed={dim} id="card-decommission" style={{borderLeft:"4px solid #0F4146"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
@@ -3163,8 +3175,8 @@ function ROICalculator() {
       <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16}}>
         {[
           {label:"Medication errors",bl:r.safetyMedErrorsBaseline,av:r.safetyMedErrorsAvoided,avl:"potentially avoidable",sub:"at admission, transfer, or discharge"},
-          {label:"Patients harmed",bl:Math.round(r.safetyPatientsProtected/(r.safetyFactor||0.25)),av:r.safetyPatientsProtected,avl:"potentially protected",sub:"by medication errors during handoffs"},
-          {label:"Excess bed days",bl:Math.round(r.safetyBedDaysAvoided/(r.safetyFactor||0.25)),av:r.safetyBedDaysAvoided,avl:"potentially avoidable",sub:"from adverse medication events"},
+          {label:"Patients harmed",bl:r.safetyPatientsHarmedBaseline,av:r.safetyPatientsProtected,avl:"potentially protected",sub:"by medication errors during handoffs"},
+          {label:"Excess bed days",bl:r.safetyBedDaysBaseline,av:r.safetyBedDaysAvoided,avl:"potentially avoidable",sub:"from adverse medication events"},
         ].map((m,i)=>{
           const rampSum = r.rampPcts.reduce((a,b)=>a+b,0);
           const cumulative = Math.round(m.av * rampSum);
@@ -3541,7 +3553,7 @@ function ROICalculator() {
               <tr><td style={{padding:"6px 10px",fontWeight:600}}>Annual avg</td><td style={{padding:"6px 10px"}}>The steady-state annual rate (what you would expect to see ongoing once fully ramped)</td><td style={{padding:"6px 10px"}}>Recurring run-rate, year-on-year comparisons</td></tr>
             </tbody>
           </table></div>
-          <p style={{margin:"8px 0 4px"}}>The toggle stays pinned to the top of the page as you scroll, so you can change view at any point and watch every figure on the report (headline, KPI tiles, detail-section cards, and the savings projection) update together. None of the underlying calculations change; only the time window applied to them does.</p>
+          <p style={{margin:"8px 0 4px"}}>The toggle stays pinned to the top of the page as you scroll, so you can change view at any point. It re-shapes the <strong>topline</strong> figures — the headline total, the four KPI tiles, and the savings-projection chart — to the window you select. The <strong>detail sections below</strong> (the per-tier decommission table, the clinician-time breakdown, the avoidable-harm panel, and the operational KPIs) always show the underlying <strong>annual / steady-state</strong> figures, since that is where the recurring per-year mechanics are easiest to read; each is marked accordingly. None of the underlying calculations change; only the time window applied to the topline does.</p>
         </S>
 
         <div style={{marginTop:12,padding:"10px 14px",background:C.bg,borderRadius:8,fontSize:11,color:C.textMuted,lineHeight:1.6}}>
