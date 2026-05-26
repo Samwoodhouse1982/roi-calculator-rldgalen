@@ -1359,7 +1359,7 @@ function ROICalculator() {
     setOrgBedsList(Array.from({length:n}, (_,i) => i===0 ? bedRem : bedEach));
     const splitT = (total) => { const each = Math.floor(total / n); return Array.from({length:n}, (_,i) => i===0 ? total - each*(n-1) : each); };
     setOrgTiersList(Array.from({length:n}, (_,i) => ({enterprise:splitT(d.tiers.enterprise)[i], departmental:splitT(d.tiers.departmental)[i], niche:splitT(d.tiers.niche)[i]})));
-    setTimeout(()=>{setThinking(false);setStep(4);},1800);
+    setTimeout(()=>{setThinking(false);setStep(1);scrollTo(ref1);},1800);
   },[resetOv]);
   const goTo=useCallback((s,ref)=>{setStep(p=>Math.max(p,s));scrollTo(ref);},[]);
 
@@ -2851,7 +2851,7 @@ function ROICalculator() {
           </div>
         )}
     </Card></div>
-    {step<4?<ContinuePrompt onClick={()=>goTo(4,ref3)} label="Next: fine-tune"/>:<LockedConnector/>}
+    {step<2?<LockedConnector/>:step<4?<ContinuePrompt onClick={()=>goTo(4,ref3)} label="Next: fine-tune"/>:<LockedConnector/>}
 
     {/* STEP 3 - Fine-tune */}
     <div ref={ref3} style={{animation:step>=4?"fade-in .4s ease":"none"}}><Card dimmed={step<4}>
