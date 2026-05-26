@@ -1,4 +1,4 @@
-# UK / Ireland EPR ROI Calculator — `main`
+# UK / Ireland EPR ROI Calculator — `uki`
 
 The **UK / Ireland** version of the RLDatix Galen Clinical Archive ROI calculator.
 NHS terminology (EPR, Trust, NHS Reference Costs), pounds sterling, `en-GB`
@@ -51,7 +51,7 @@ one calculator file. `vercel.json` holds the routing.
 
 | Branch | Market | Deploys |
 |--------|--------|---------|
-| **`main`** | UK / Ireland (this branch) | `roi-calculator.html` |
+| **`uki`** | UK / Ireland (this branch) | `roi-calculator.html` |
 | `us` | United States (EHR, CMS, USD) | `roi-calculator.html` |
 | `au` | Australia (EMR, ACSQHC, AUD) | `roi-calculator.html` |
 | `us-touchscreen` | US conference kiosk (fixed 1080x1920) | `kiosk-app/` (Vite/React) |
