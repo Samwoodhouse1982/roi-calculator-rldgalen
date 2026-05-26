@@ -3874,8 +3874,8 @@ function ROICalculator() {
           <SIcon name="shield" size={22} color="#d4507a"/>
         </div>
         <h3 style={{fontSize:16,fontWeight:700,margin:0}}>{isArchiveOnly?"Avoidable harm reduction":"Avoidable harm reduction (clinical case for migration)"}</h3>
-        <span style={{fontSize:9,fontWeight:600,padding:"2px 8px",borderRadius:20,background:"#f0f2f5",color:"#666",marginLeft:"auto",whiteSpace:"nowrap"}}>Additional value · not in financial total</span>
-        <InfoTip text={`Source: AHRQ Patient Safety Indicators; Joint Commission Sentinel Event data. Per-bed rates from ~100K acute beds nationally, scaled by fragmentation (${(0.6+Math.min(r.legacy,20)/20*0.6).toFixed(2)}x). NOT included in financial totals.`}/>
+        <span style={{fontSize:9,fontWeight:600,padding:"2px 8px",borderRadius:20,background:"#f0f2f5",color:"#666",marginLeft:"auto",whiteSpace:"nowrap"}}>Counts for context · value in total</span>
+        <InfoTip text={`Source: AHRQ Patient Safety Indicators; Joint Commission Sentinel Event data. Per-bed rates from ~100K acute beds nationally, scaled by fragmentation (${(0.6+Math.min(r.legacy,20)/20*0.6).toFixed(2)}x). The error and patient counts shown here are for context; their financial value (excess bed days, malpractice, readmissions) is captured in the Quality / cost avoidance line of the annual total.`}/>
       </div>
       <p style={{fontSize:13,color:C.textMid,margin:"0 0 16px"}}>{isArchiveOnly?"Fewer fragmented systems means fewer information gaps during care transitions.":"Consolidating onto a single EHR directly reduces information gaps at care transitions, which is the primary patient safety justification for migration."}</p>
       <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16}}>
