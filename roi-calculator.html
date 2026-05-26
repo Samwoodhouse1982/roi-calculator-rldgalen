@@ -1688,7 +1688,7 @@ function ROICalculator() {
     y += 6;
     setC(GRAY); doc.setFontSize(9); doc.setFont("helvetica","normal");
     const orgLines = [
-      [`Journey: ${inputs.journey === "EVALUATING" ? "Evaluating enterprise EPR (FDP)" : "Have enterprise EPR"}`, `Beds in scope: ${(inputs.bed_count||0).toLocaleString("en-GB")}`],
+      [`Journey: ${inputs.journey === "EVALUATING" ? "Evaluating enterprise EPR" : "Have enterprise EPR"}`, `Beds in scope: ${(inputs.bed_count||0).toLocaleString("en-GB")}`],
       [`Legacy systems: ${r.legacy} (${r.decom} retired)`, `Clinical staff: ${(r.clinicians||0).toLocaleString("en-GB")}`],
       [`Hours freed/yr: ${(r.hrsSaved||0).toLocaleString("en-GB")}`, `FTE equivalent: ${r.fteEquivalent || 0}`],
     ];
@@ -1816,7 +1816,7 @@ function ROICalculator() {
     doc.text("Next step", ml + 6, y + 9);
     doc.setFontSize(9); doc.setFont("helvetica","normal");
     doc.text("Schedule a 30-minute walkthrough with a Galen specialist to validate these figures", ml + 6, y + 16);
-    doc.text("against your specific legacy estate and FDP programme structure.", ml + 6, y + 21);
+    doc.text("against your specific legacy estate and EPR programme structure.", ml + 6, y + 21);
     y += 34;
     
     setC(MID); doc.setFontSize(7); doc.setFont("helvetica","italic");
@@ -2436,7 +2436,7 @@ function ROICalculator() {
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {[
               {k:"HAVE_EPR",l:"Have an EPR",d:"Archiving focus"},
-              {k:"EVALUATING",l:"Evaluating EPRs",d:"FDP + migration"},
+              {k:"EVALUATING",l:"Evaluating EPRs",d:"Migration + archiving"},
             ].map(j=><button type="button" key={j.k} onClick={()=>update("journey",j.k)} style={{flex:"1 1 200px",padding:"12px 14px",textAlign:"left",border:inputs.journey===j.k?`2px solid ${C.accent}`:`1px solid ${C.border}`,borderRadius:10,background:inputs.journey===j.k?C.accentPale:"#fff",cursor:"pointer",fontFamily:"inherit"}}>
               <div style={{fontSize:13,fontWeight:700,color:inputs.journey===j.k?C.accent:C.text}}>{j.l}</div>
               <div style={{fontSize:11,color:C.textMuted,marginTop:2}}>{j.d}</div>
@@ -2560,7 +2560,7 @@ function ROICalculator() {
       <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
         {[
           {k:"HAVE_EPR",svgIcon:"shield",title:"We want to decommission systems",desc:"Retiring legacy applications and consolidating clinical records into a single archive.",focus:"Archive + decommission savings"},
-          {k:"EVALUATING",svgIcon:"search",title:"We’re evaluating enterprise EPRs",desc:"Assessing migration to a single platform. Need the full case for migration and archiving.",focus:"FDP migration + archiving savings"},
+          {k:"EVALUATING",svgIcon:"search",title:"We’re evaluating enterprise EPRs",desc:"Assessing migration to a single platform. Need the full case for migration and archiving.",focus:"EPR migration + archiving savings"},
         ].map(j=><button type="button" key={j.k} onClick={()=>{update("journey",j.k);touch(0);setTimeout(()=>scrollTo(ref1),200);}} className="roi-btn" style={{
           flex:"1 1 240px",minWidth:0,padding:"18px 20px",textAlign:"left",cursor:"pointer",
           border:inputs.journey===j.k?`2px solid ${C.accent}`:`1px solid ${C.border}`,borderRadius:12,
@@ -2574,8 +2574,8 @@ function ROICalculator() {
       </div>
       {inputs.journey && <div style={{padding:"12px 16px",background:"#f0faf8",borderRadius:8,border:"1px solid #c3ddd3",fontSize:12,color:C.teal,lineHeight:1.5,marginTop:14}}>
         <strong>Why this matters:</strong> {inputs.journey === "EVALUATING"
-          ? "EPR migrations focus on the new platform, but legacy data management is rarely funded. Building the case for archiving and decommissioning early protects programme savings, supports DCB0129/DCB0160 safety case, and meets NHS Records Management Code of Practice retention requirements."
-          : "As NHS England's focus pivots from EPR deployment to optimisation from 2026 onwards, the persistent legacy estate is the single biggest barrier to benefits realisation. Retiring legacy systems releases recurring revenue for optimisation programmes, while clinical archiving keeps historical records accessible at the point of care — a precondition for the digital maturity uplift, embedded clinical decision support, and productivity gains your EPR business case set out to deliver."}
+          ? "Your migration business case funds the new EPR — but rarely the cost of retiring the legacy estate behind it. This calculator sizes that missing piece: the recurring licensing, hosting and support you recover by decommissioning legacy systems, the clinician time freed once staff stop switching between them, and the avoidable harm reduced when records are no longer fragmented across old systems — plus the clinical archive needed to switch them off safely (and keep DCB0129/DCB0160 and Records Management Code retention covered)."
+          : "Every legacy system still running carries recurring licensing, hosting and support cost, consumes clinician time through system-switching, and keeps historical records fragmented across old platforms. This calculator sizes what that estate is costing you now — the recurring spend you recover by decommissioning, the clinician capacity freed, and the avoidable harm reduced — once a clinical archive lets you retire those systems without losing access to the records."}
       </div>}
     </Card>
     <LockedConnector/>
