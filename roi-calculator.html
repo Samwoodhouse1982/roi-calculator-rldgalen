@@ -3035,9 +3035,9 @@ function ROICalculator() {
     {/* KPI cards (2x2 grid, AU-style colour scheme) */}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
       <ResultCard dimmed={dim} info={`Direct annual cost savings from switching off legacy systems. Calculated from per-system licensing, hosting, and support costs by tier (Enterprise / Departmental / Standalone), modelled on NHS contract benchmarks and supplier pricing data.`} label={"Legacy decommission" + (viewTimescale==="annual"?"":" ("+ts.heroLabel.replace("Estimated ","").replace(" savings","")+")")} value={an?<AnimatedK value={Math.round(r.decomSave * ts.mult)} active={an}/>:"–"} sub={an?r.decom+" of "+r.legacy+" systems retired":""} bg={C.greenPale} border="#c3ddd3" valueColor="#0F4146" />
-      <ResultCard dimmed={dim} info={`Clinician time freed when legacy system switching is eliminated. Based on Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events; switch penalty 0.04/system) corroborated by Westbrook et al JAMIA 2010 and Sinsky et al 2016. Valued at £55/hr blended NHS Agenda for Change mid-band rate including on-costs. Only ${Math.round(r.realisation*100)}% counted as realisable capacity. This represents capacity redirected to patient care, not headcount reduction.`} label="Clinical capacity" value={an?(r.fteEquivalent >= 1 ? Math.round(r.fteEquivalent)+" FTE freed" : r.fteEquivalent.toFixed(1)+" FTE freed"):"–"} sub={an?fmtK(Math.round(r.timeSave * ts.mult))+(ts.suffix||" total"):""} bg="#e8faf6" border="#b0e8dc" valueColor="#1a8a7a" />
+      <ResultCard dimmed={dim} info={`Clinician time freed when legacy system switching is eliminated. Based on Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events; switch penalty 0.04/system) corroborated by Westbrook et al JAMIA 2010 and Sinsky et al 2016. Valued at £55/hr blended NHS Agenda for Change mid-band rate including on-costs. Only ${Math.round(r.realisation*100)}% counted as realisable capacity. Scales with the selected timeframe (Year 1 / 3-yr / 5-yr cumulative). This represents capacity redirected to patient care, not headcount reduction.`} label="Clinical capacity" value={an?((r.fteEquivalent*ts.mult) >= 1 ? Math.round(r.fteEquivalent*ts.mult)+" FTE freed" : (r.fteEquivalent*ts.mult).toFixed(1)+" FTE freed"):"–"} sub={an?fmtK(Math.round(r.timeSave * ts.mult))+(ts.suffix||" total"):""} bg="#e8faf6" border="#b0e8dc" valueColor="#1a8a7a" />
       {r.qualitySavings > 0 && <ResultCard dimmed={dim} info={`Cashable cost avoidance from reduced clinical risk: indemnity exposure reduction (5% of attributable NHS Resolution exposure at £7,500/bed), excess bed-day savings (NHS Reference Costs at £400/day, harm estimates per Camacho et al BMJ Quality & Safety 2024), and duplicate testing avoidance (18% of pathology / imaging waste eliminated when records are fragmented, per Bates et al).`} label="Quality / cost avoidance" value={an?<AnimatedK value={Math.round(r.qualitySavings * ts.mult)} active={an}/>:"–"} sub={an?"Indemnity + bed days + duplicate testing":""} bg="#fdf0f4" border="#f0c4d4" valueColor="#d4507a" />}
-      <ResultCard dimmed={dim} info={`Cumulative savings across ${r.rampYears} years, applying the realistic phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join(" / ")}. Year 1 reflects partial realisation as legacy systems are decommissioned and clinical workflows transition. By year ${r.rampYears}, full steady-state savings of ${fmtK(r.annual)}/yr are achieved.`} label={`Total savings (${r.rampYears}-year)`} value={an?fmtK(r.totalRamp):"–"} sub={an?`Phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join("/")}`:""} bg={C.blue25} border={C.blue50} valueColor="#0f4146" />
+      <ResultCard dimmed={dim} info={`The total for the selected timeframe — the sum of decommission, clinical capacity, and quality / cost avoidance. Switch the timeframe toggle to see Year 1 (partial ramp), the 3-year or 5-year cumulative total, or the steady-state annual rate. The phased ramp applied is ${r.rampPcts.map(p=>Math.round(p*100)+"%").join(" / ")}; full steady-state savings of ${fmtK(r.annual)}/yr are reached by year ${r.rampYears}.`} label="Total savings" value={an?<AnimatedK value={Math.round(r.annual * ts.mult)} active={an}/>:"–"} sub={an?(ts.subContext||`phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join("/")}`):""} bg={C.blue25} border={C.blue50} valueColor="#0f4146" />
     </div>
 
     {viewMode === "executive" && <><div style={{textAlign:"center",fontSize:12,color:C.textMid,marginBottom:24,padding:"14px 16px",background:"#f8fafb",border:`1px dashed ${C.border}`,borderRadius:8}}>
@@ -3065,7 +3065,7 @@ function ROICalculator() {
           </div>
         </div>
         <div style={{fontSize:12,color:C.textMuted,marginBottom:16}}>Builds from {fmtK(Math.round(total*r.rampPcts[0]))} in Year 1 to {fmtK(total)}/yr at steady state</div>
-        <div className="roi-chart-bars" style={{display:"flex",alignItems:"flex-end",gap:12,height:240,padding:"20px 8px",background:"#f8fafb",borderRadius:8,marginBottom:12,justifyContent:"space-evenly",overflowX:"hidden"}}>
+        <div className="roi-chart-bars" style={{display:"flex",alignItems:"flex-end",gap:12,minHeight:240,padding:"20px 8px",background:"#f8fafb",borderRadius:8,marginBottom:12,justifyContent:"space-evenly"}}>
           {years.map((yr,yi)=>{
             const yrTot = total * yr.pct;
             const h = (yrTot / maxYr) * 200;
@@ -3736,8 +3736,8 @@ function ROICalculator() {
   const fontHead = "'FK Grotesk Neue','FK Grotesk','Inter','Helvetica Neue',Helvetica,sans-serif";
   const fontBody = "'FK Grotesk Neue','FK Grotesk','Inter','Helvetica Neue',Helvetica,sans-serif";
 
-  return <div style={{fontFamily:fontBody,background:C.bg,minHeight:"100vh",color:C.text,lineHeight:1.55,fontWeight:400,border:"1px solid #f7faf9",borderRadius:20,overflow:"hidden"}}>
-    <div style={{background:C.teal,marginBottom:20}}>
+  return <div style={{fontFamily:fontBody,background:C.bg,minHeight:"100vh",color:C.text,lineHeight:1.55,fontWeight:400,border:"1px solid #f7faf9",borderRadius:20}}>
+    <div style={{background:C.teal,marginBottom:20,borderRadius:"20px 20px 0 0"}}>
     <div style={{maxWidth:900,margin:"0 auto",padding:"0 24px"}}><div style={{display:"flex",gap:0}}>
       {[
         { k: "inputs", l: "Your programme", n: "1" },
