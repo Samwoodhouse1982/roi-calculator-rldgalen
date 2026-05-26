@@ -1,18 +1,24 @@
-<!-- ═══════════════════════════════════════════════════════════════
-     ROI Calculator – Iframe Embed Snippet
-     ═══════════════════════════════════════════════════════════════
-     
-     Drop this wherever you want the calculator to appear.
-     Host roi-calculator.html on the same domain or a CDN.
-     
-     The calculator posts its height to the parent via postMessage
-     so the iframe auto-sizes with no scrollbars.
-     ═══════════════════════════════════════════════════════════════ -->
+<!-- ===================================================================
+     RLDatix Galen Clinical Archive — UK EPR ROI Calculator
+     Iframe embed snippet (hand-off reference for the host site's web team)
+     ===================================================================
 
-<!-- Option A: Auto-resizing (recommended) -->
+     The calculator is a single self-contained HTML file
+     (roi-calculator.html) deployed on the `uki` branch. It loads React
+     and Babel at runtime from a CDN (cdnjs, with jsdelivr / unpkg
+     fallback). There is NO build step.
+
+     It posts three messages to the parent window via postMessage:
+       • roi-calculator-resize     { height }  → auto-size the iframe
+       • roi-calculator-scroll-top {}          → re-scroll iframe into view
+       • roi-calculator-data       { data }    → full calculation payload
+     =================================================================== -->
+
+
+<!-- ── Option A: auto-resizing (recommended) ───────────────────────── -->
 <iframe
   id="roi-calculator"
-  src="/path/to/roi-calculator.html"
+  src="https://YOUR-PRODUCTION-DOMAIN/roi-calculator.html"
   style="width: 100%; border: none; overflow: hidden; min-height: 800px;"
   scrolling="no"
   title="EPR Migration ROI Calculator"
@@ -20,72 +26,73 @@
 ></iframe>
 
 <script>
-  window.addEventListener("message", function(e) {
-    if (e.data && e.data.type === "roi-calculator-resize") {
+  window.addEventListener("message", function (e) {
+    if (!e.data || typeof e.data !== "object") return;
+    if (e.data.type === "roi-calculator-resize") {
       document.getElementById("roi-calculator").style.height = e.data.height + "px";
     }
-    if (e.data && e.data.type === "roi-calculator-scroll-top") {
+    if (e.data.type === "roi-calculator-scroll-top") {
       document.getElementById("roi-calculator").scrollIntoView({ behavior: "smooth", block: "start" });
     }
+    // Optional: capture the calculation payload on the host side
+    // if (e.data.type === "roi-calculator-data") { console.log(e.data.data); }
   });
 </script>
 
 
-<!-- Option B: Fixed height (simpler, uses iframe scrollbar) -->
-<!--
+<!-- ── Option B: fixed height (simpler; uses the iframe's own scrollbar) ──
 <iframe
-  src="/path/to/roi-calculator.html"
-  style="width: 100%; height: 900px; border: none;"
+  src="https://YOUR-PRODUCTION-DOMAIN/roi-calculator.html"
+  style="width: 100%; height: 1100px; border: none;"
   title="EPR Migration ROI Calculator"
   loading="lazy"
 ></iframe>
 -->
 
 
-<!-- ═══════════════════════════════════════════════════════════════
-     NOTES FOR DEVELOPER
-     ═══════════════════════════════════════════════════════════════
+<!-- ===================================================================
+     NOTES FOR THE HOST SITE'S WEB TEAM
+     ===================================================================
 
-     File:     roi-calculator.html (103 KB, single self-contained file)
-     Requires: Internet access for CDN scripts (React 18, Babel 7)
-     Fonts:    Falls back to system fonts; for brand fonts, host
-               National 2 Condensed Bold + FK Grotesk Neue and
-               add @font-face rules to the <style> block.
+     SRC URL
+       Point `src` directly at /roi-calculator.html, NOT the site root.
+       The root path redirects (index.html -> roi-calculator.html) which
+       causes a brief flash inside the iframe. Use the deployed HTTPS
+       production URL of the `uki` branch.
 
-     What changed for iframe embedding:
-     
-     1. PDF generation: Uses jsPDF + autoTable to generate a
-        branded vector PDF with teal header bar, styled tables,
-        summary cards, and page footers. Downloads directly as
-        a .pdf file — no popup or print dialog needed.
+     HTTPS
+       Serve over HTTPS. A secure host page cannot embed an http:// iframe.
 
-     2. Auto-resize: A ResizeObserver posts the document height
-        to the parent window via postMessage. The parent listener
-        (Option A above) sets the iframe height dynamically.
-        Falls back to setInterval polling if ResizeObserver is
-        unavailable.
+     CONTENT SECURITY POLICY (host page)
+       If the host page sets a CSP, it must allow framing the calculator's
+       domain:
+         frame-src https://YOUR-PRODUCTION-DOMAIN;   (or child-src)
+       The React/Babel CDN scripts load INSIDE the iframe, from the
+       calculator's own origin — they are governed by the calculator
+       host's CSP, not the parent page's. The host page does not need to
+       allow those CDNs.
 
-     3. Body styles: background set to transparent so the iframe
-        inherits the host page background. overflow-x hidden to
-        prevent horizontal scroll bleed.
-     
-     4. No other changes to content, calculations, or functionality.
-        Everything works identically to the standalone version.
+     BACKGROUND / APPEARANCE
+       The calculator renders on its own pale mint background (#EEF6F4)
+       inside a rounded, bordered "card". It does NOT render transparent,
+       so it will not blend invisibly into the host page — it looks like a
+       self-contained panel. If a seamless/transparent look is wanted, the
+       body background and the outer container's border/background can be
+       made transparent — ask the calculator owner.
 
-     Cross-origin note:
-     If hosted on a different domain to the parent page, the
-     postMessage resize still works (uses "*" origin). The Blob
-     URL PDF will open in the iframe's origin context, which is
-     fine.
+     LEAD CAPTURE / HUBSPOT
+       The "download report" step shows a lead form (name, work email,
+       organisation, role). On submit it posts the lead directly to
+       HubSpot (EU1, portal 27174408) via the public Forms API. This works
+       cross-origin from inside the iframe — no host-side setup needed.
+       The full calculation payload is also posted to the parent window
+       (roi-calculator-data) if the host wants to capture it too.
 
-     Content Security Policy:
-     The file loads scripts from up to three CDN providers (with
-     automatic fallback if one is blocked):
-       - cdnjs.cloudflare.com (primary)
-       - cdn.jsdelivr.net (fallback)
-       - unpkg.com (fallback)
-     Ensure your CSP allows script-src from at least ONE of these.
-     If all three are blocked, the calculator still works but PDF
-     download will show an error asking the user to contact IT.
+     PDF
+       "Download report" generates a branded PDF client-side (jsPDF) and
+       downloads it directly — no popup or print dialog.
 
-     ═══════════════════════════════════════════════════════════════ -->
+     FILE
+       roi-calculator.html — single self-contained file
+     ~3807 lines, ~284 KB. Requires internet access for the CDN scripts.
+     =================================================================== -->
