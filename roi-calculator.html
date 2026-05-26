@@ -646,9 +646,9 @@ const SAR_DAYS_PER_SYSTEM_AFTER = 0.15;
 // Clinical engagement factors
 const ACTIVE_USER_PCT = 0.65;           // Sinsky et al 2016; KLAS Arch Collaborative (500k+ clinicians). 65% conservative
 const SYSTEM_EXPOSURE_PCT = 0.35;       // Modeled assumption: role-based access patterns
-const MED_ERRORS_PER_BED = 18;
-const PATIENTS_HARMED_PER_BED = 0.315;
-const EXCESS_BED_DAYS_PER_BED = 0.365;
+const MED_ERRORS_PER_BED = 18;          // Camacho et al, BMJ Qual Saf 2024 (10.1136/bmjqs-2023-016675): transition medication errors per 100k admissions, scaled to per-bed
+const PATIENTS_HARMED_PER_BED = 0.315;  // Camacho et al 2024: patient episodes experiencing >=1 medication error at a transition, per-bed equivalent
+const EXCESS_BED_DAYS_PER_BED = 0.365;  // Camacho et al 2024: excess bed days from harm due to transition errors, per-bed equivalent
 // ── Quality / safety financial constants ──
 const COST_PER_EXCESS_BED_DAY = 400;          // £400/day NHS Reference Costs (general acute, conservative blended)
 const INDEMNITY_COST_PER_BED = 7500;          // £7,500/bed clinical negligence exposure attributable to fragmented information
@@ -1093,7 +1093,7 @@ function AdminPanel() {
             <td style={{padding:"10px 12px",color:"#444"}}>{(r.lead && r.lead.email) || "-"}</td>
             <td style={{padding:"10px 12px",color:"#444"}}>{(r.lead && r.lead.org) || "-"}</td>
             <td style={{padding:"10px 12px",color:"#666"}}>{(r.lead && r.lead.role) || "-"}</td>
-            <td style={{padding:"10px 12px",color:"#444",textAlign:"right"}}>{(r.inputs && r.inputs.bed_count) ? r.inputs.bed_count.toLocaleString() : "-"}</td>
+            <td style={{padding:"10px 12px",color:"#444",textAlign:"right"}}>{(r.inputs && r.inputs.bed_count) ? r.inputs.bed_count.toLocaleString("en-GB") : "-"}</td>
             <td style={{padding:"10px 12px",color:"#0F4146",textAlign:"right",fontWeight:700}}>{fmtMoney(r.results && r.results.annual_savings)}</td>
             <td style={{padding:"10px 12px",color:"#0F4146",textAlign:"right",fontWeight:700}}>{fmtMoney(r.results && r.results.total_ramp_savings)}</td>
           </tr>)}
@@ -1640,9 +1640,9 @@ function ROICalculator() {
     y += 6;
     setC(GRAY); doc.setFontSize(9); doc.setFont("helvetica","normal");
     const orgLines = [
-      [`Journey: ${inputs.journey === "EVALUATING" ? "Evaluating enterprise EPR (FDP)" : "Have enterprise EPR"}`, `Beds in scope: ${(inputs.bed_count||0).toLocaleString()}`],
-      [`Legacy systems: ${r.legacy} (${r.decom} retired)`, `Clinical staff: ${(r.clinicians||0).toLocaleString()}`],
-      [`Hours freed/yr: ${(r.hrsSaved||0).toLocaleString()}`, `FTE equivalent: ${r.fteEquivalent || 0}`],
+      [`Journey: ${inputs.journey === "EVALUATING" ? "Evaluating enterprise EPR (FDP)" : "Have enterprise EPR"}`, `Beds in scope: ${(inputs.bed_count||0).toLocaleString("en-GB")}`],
+      [`Legacy systems: ${r.legacy} (${r.decom} retired)`, `Clinical staff: ${(r.clinicians||0).toLocaleString("en-GB")}`],
+      [`Hours freed/yr: ${(r.hrsSaved||0).toLocaleString("en-GB")}`, `FTE equivalent: ${r.fteEquivalent || 0}`],
     ];
     orgLines.forEach(line => {
       doc.text(line[0], ml, y);
@@ -1696,7 +1696,7 @@ function ROICalculator() {
     
     const components = [
       { l: "Legacy decommission", v: r.decomSave, sub: r.decom + " of " + r.legacy + " systems retired" },
-      { l: "Clinician capacity", v: r.timeSave, sub: (r.hrsSaved||0).toLocaleString() + " hrs/yr \u00b7 " + (r.fteEquivalent||0) + " FTE equivalent" },
+      { l: "Clinician capacity", v: r.timeSave, sub: (r.hrsSaved||0).toLocaleString("en-GB") + " hrs/yr \u00b7 " + (r.fteEquivalent||0) + " FTE equivalent" },
     ];
     if (r.qualitySavings > 0) components.push({ l: "Quality / cost avoidance", v: r.qualitySavings, sub: "Indemnity exposure + excess bed days + duplicate testing" });
     components.forEach(comp => {
@@ -2997,7 +2997,7 @@ function ROICalculator() {
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
       <ResultCard dimmed={dim} info={`Direct annual cost savings from switching off legacy systems. Calculated from per-system licensing, hosting, and support costs by tier (Enterprise / Departmental / Standalone), modelled on NHS contract benchmarks and supplier pricing data.`} label={"Legacy decommission" + (viewTimescale==="annual"?"":" ("+ts.heroLabel.replace("Estimated ","").replace(" savings","")+")")} value={an?fmtK(Math.round(r.decomSave * ts.mult)):"–"} sub={an?r.decom+" of "+r.legacy+" systems retired":""} bg={C.greenPale} border="#c3ddd3" valueColor="#0F4146" />
       <ResultCard dimmed={dim} info={`Clinician time freed when legacy system switching is eliminated. Based on Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events; switch penalty 0.04/system) corroborated by Westbrook et al JAMIA 2010 and Sinsky et al 2016. Valued at £55/hr blended NHS Agenda for Change mid-band rate including on-costs. Only ${Math.round(r.realisation*100)}% counted as realisable capacity. This represents capacity redirected to patient care, not headcount reduction.`} label="Clinical capacity" value={an?(r.fteEquivalent >= 1 ? Math.round(r.fteEquivalent)+" FTE freed" : r.fteEquivalent.toFixed(1)+" FTE freed"):"–"} sub={an?fmtK(Math.round(r.timeSave * ts.mult))+(ts.suffix||" total"):""} bg="#e8faf6" border="#b0e8dc" valueColor="#1a8a7a" />
-      {r.qualitySavings > 0 && <ResultCard dimmed={dim} info={`Cashable cost avoidance from reduced clinical risk: indemnity exposure reduction (5% of attributable NHS Resolution exposure at £7,500/bed), excess bed-day savings (NHS Reference Costs at £400/day), and duplicate testing avoidance (18% of pathology / imaging waste eliminated, per Camacho et al BMJ Quality & Safety 2024).`} label="Quality / cost avoidance" value={an?fmtK(Math.round(r.qualitySavings * ts.mult)):"–"} sub={an?"Indemnity + bed days + duplicate testing":""} bg="#fdf0f4" border="#f0c4d4" valueColor="#d4507a" />}
+      {r.qualitySavings > 0 && <ResultCard dimmed={dim} info={`Cashable cost avoidance from reduced clinical risk: indemnity exposure reduction (5% of attributable NHS Resolution exposure at £7,500/bed), excess bed-day savings (NHS Reference Costs at £400/day, harm estimates per Camacho et al BMJ Quality & Safety 2024), and duplicate testing avoidance (18% of pathology / imaging waste eliminated when records are fragmented, per Bates et al).`} label="Quality / cost avoidance" value={an?fmtK(Math.round(r.qualitySavings * ts.mult)):"–"} sub={an?"Indemnity + bed days + duplicate testing":""} bg="#fdf0f4" border="#f0c4d4" valueColor="#d4507a" />}
       <ResultCard dimmed={dim} info={`Cumulative savings across ${r.rampYears} years, applying the realistic phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join(" / ")}. Year 1 reflects partial realisation as legacy systems are decommissioned and clinical workflows transition. By year ${r.rampYears}, full steady-state savings of ${fmtK(r.annual)}/yr are achieved.`} label={`Total savings (${r.rampYears}-year)`} value={an?fmtK(r.totalRamp):"–"} sub={an?`Phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join("/")}`:""} bg={C.blue25} border={C.blue50} valueColor="#0f4146" />
     </div>
 
@@ -3117,7 +3117,7 @@ function ROICalculator() {
           <SIcon name="shield" size={22} color="#d4507a"/>
         </div>
         <h3 style={{fontSize:16,fontWeight:700,margin:0}}>{isArchiveOnly?"Avoidable harm reduction":"Avoidable harm reduction (clinical case for migration)"}</h3><span style={{fontSize:9,fontWeight:600,padding:"2px 8px",borderRadius:20,background:"#f0f2f5",color:"#666",marginLeft:"auto",whiteSpace:"nowrap"}}>Supporting evidence</span>
-        <InfoTip text={`Source: Camacho et al 2024 (BMJ Quality & Safety). Per-bed rates from ~100K acute beds nationally, scaled by fragmentation (${(0.6+Math.min(r.legacy,20)/20*0.6).toFixed(2)}x). NOT included in financial totals.`}/>
+        <InfoTip text={`Source: Camacho et al 2024 (BMJ Quality & Safety). Per-bed rates from ~100K acute beds nationally, scaled by fragmentation (${(0.6+Math.min(r.legacy,20)/20*0.6).toFixed(2)}x). The error and patient counts shown here are for context; their financial value (excess bed days, indemnity, duplicate testing) is captured in the Quality / cost avoidance line of the annual total.`}/>
       </div>
       <p style={{fontSize:13,color:C.textMid,margin:"0 0 16px"}}>{isArchiveOnly?"Fewer fragmented systems means fewer information gaps during care transitions.":"Consolidating onto a single EPR directly reduces information gaps at care transitions, which is the primary patient safety justification for migration."}</p>
       <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16}}>
@@ -3440,7 +3440,7 @@ function ROICalculator() {
         </S>
 
         <S title="6. Patient safety metrics">
-          <p style={{margin:"0 0 8px"}}>The <strong>counts</strong> shown (medication errors, patients harmed) are not directly converted to a dollar line in the ROI total; they provide qualitative context for the patient safety case. The <strong>financial impact</strong> of safety improvements (excess bed days valued at £400/day, indemnity premium reduction, and duplicate testing savings) IS captured in the {"\u201c"}Quality & safety{"\u201d"} line of the annual savings total.</p>
+          <p style={{margin:"0 0 8px"}}>The <strong>counts</strong> shown (medication errors, patients harmed) are not directly converted to a monetary line in the ROI total; they provide qualitative context for the patient safety case. The <strong>financial impact</strong> of safety improvements (excess bed days valued at £400/day, indemnity premium reduction, and duplicate testing savings) IS captured in the {"\u201c"}Quality / cost avoidance{"\u201d"} line of the annual savings total.</p>
           <F>medErrors = beds {"\u00d7"} 18 {"\u00d7"} fragmentation {"\u00d7"} DQ<br/>patientsHarmed = beds {"\u00d7"} 0.315 {"\u00d7"} fragmentation {"\u00d7"} DQ<br/>excessBedDays = beds {"\u00d7"} 0.365 {"\u00d7"} fragmentation {"\u00d7"} DQ</F>
           <p style={{margin:"8px 0 4px"}}><strong>18 medication errors per bed/yr</strong> {" - "} Camacho et al 2024 reported ~1.8M medication errors at care transitions across NHS England (~100k acute beds). <Ev s="Camacho et al 2024 (BMJ Quality & Safety), 1.8M errors / ~100K beds."/></p>
           <p style={{margin:"4px 0"}}><strong>0.315 patients harmed per bed/yr</strong> and <strong>0.365 excess bed days per bed/yr</strong> {" - "} both from Camacho et al 2024. <Ev s="Camacho et al 2024: 31,500 patients harmed and 36,500 excess bed days annually."/></p>
