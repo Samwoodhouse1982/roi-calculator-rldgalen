@@ -47,7 +47,7 @@ holds the routing.
 
 | Branch | Market | Deploys |
 |--------|--------|---------|
-| `main` | UK / Ireland (EPR, NHS, GBP) | `roi-calculator.html` |
+| `uki` | UK / Ireland (EPR, NHS, GBP) | `roi-calculator.html` |
 | **`us`** | United States (this branch) | `roi-calculator.html` |
 | `au` | Australia (EMR, ACSQHC, AUD) | `roi-calculator.html` |
 | `us-touchscreen` | US conference kiosk (fixed 1080x1920) | `kiosk-app/` (Vite/React) |
