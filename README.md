@@ -17,7 +17,7 @@ browser and it runs. This is the only file you edit.
 
 `vercel.json` rewrites `/` directly to `/roi-calculator.html`. (There is no
 `index.html` on this branch -- the rewrite handles the root path. This differs
-slightly from `main`/`us`, which use an `index.html` redirect; functionally
+slightly from `uki`/`us`, which use an `index.html` redirect; functionally
 equivalent.)
 
 ## Files
@@ -43,7 +43,7 @@ equivalent.)
 
 | Branch | Market | Deploys |
 |--------|--------|---------|
-| `main` | UK / Ireland (EPR, NHS, GBP) | `roi-calculator.html` |
+| `uki` | UK / Ireland (EPR, NHS, GBP) | `roi-calculator.html` |
 | `us` | United States (EHR, CMS, USD) | `roi-calculator.html` |
 | **`au`** | Australia (this branch) | `roi-calculator.html` |
 | `us-touchscreen` | US conference kiosk (fixed 1080x1920) | `kiosk-app/` (Vite/React) |
