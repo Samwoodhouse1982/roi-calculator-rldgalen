@@ -42,7 +42,7 @@ fully offline-capable.
 
 | Branch | Market / surface | Deploys |
 |--------|------------------|---------|
-| `main` | UK / Ireland web | `roi-calculator.html` |
+| `uki` | UK / Ireland web | `roi-calculator.html` |
 | `us` | US web | `roi-calculator.html` |
 | `au` | Australia web | `roi-calculator.html` |
 | **`us-touchscreen`** | US kiosk, fixed 1080x1920 (this branch) | `kiosk-app/` |
