@@ -4061,7 +4061,7 @@ function ROICalculator() {
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
       <ResultCard dimmed={dim} info={`Direct annual cost savings from switching off legacy systems. Calculated from per-system licensing, hosting, and support costs by tier (Enterprise / Departmental / Standalone), modelled on Australian public-sector contract benchmarks.`} label={"Legacy decommission" + (viewTimescale==="annual"?"":" ("+ts.heroLabel.replace("Estimated ","").replace(" savings","")+")")} value={an?fmtK(Math.round(r.decomSave * ts.mult)):"\u2013"} sub={an?r.decom+" of "+r.legacy+" systems retired":""} bg={C.greenPale} border="#c3ddd3" valueColor="#0F4146" />
       <ResultCard dimmed={dim} info={`Clinician time freed when legacy system switching is eliminated. Based on Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events; switch penalty 0.04/system) corroborated by Westbrook et al JAMIA 2010. Valued at A$65/hr blended rate (AIHW workforce data). Only ${Math.round(r.realisation*100)}% counted as realisable capacity. This represents capacity redirected to patient care, not headcount reduction.`} label={r.isAgedCare?"Places capacity":r.isNDIS?"Staff capacity":"Clinical capacity"} value={an?(r.fteEquivalent >= 1 ? Math.round(r.fteEquivalent)+" FTE freed" : r.fteEquivalent.toFixed(1)+" FTE freed"):"\u2013"} sub={an?fmtK(Math.round(r.timeSave * ts.mult))+(ts.suffix||" total"):""} bg="#e8faf6" border="#b0e8dc" valueColor="#1a8a7a" />
-      <ResultCard dimmed={dim} info={r.isAgedCare?"AN-ACC: Australian National Aged Care Classification - the funding model for residential aged care.":r.isNDIS?"NDIS: National Disability Insurance Scheme":"ABF: Activity-Based Funding. NWAU: National Weighted Activity Unit. NEP: National Efficient Price per NWAU (A$7,258 for 2025-26 per IHACPA Determination)."} label={r.isAgedCare?"Funding & efficiency":r.isNDIS?"Revenue & efficiency":(r.privateRevRecovery>0?"Reimbursement & revenue":"ABF efficiency")} value={an?fmtK(Math.round(r.reimbursementImpact * ts.mult)):"\u2013"} sub={an?(r.isAgedCare?"AN-ACC accuracy + agency reduction":r.isNDIS?"Claims + utilisation + retention":(r.privateRevRecovery>0?"NWAU recovery + private patient revenue":"NWAU recovery + denial reduction")):"\u2013"} bg={C.blue25} border={C.blue50} valueColor="#0f4146" />
+      <ResultCard dimmed={dim} info={r.isAgedCare?"AN-ACC (Australian National Aged Care Classification) is the funding model for residential aged care since Oct 2022 \u2014 each resident's Class 1\u201313 sets the daily Commonwealth subsidy. This figure combines three EMR-enabled mechanisms: more accurate AN-ACC classification through better documentation (~3% uplift on the AN-ACC component), reduced agency spend through integrated rostering (~15% on the agency portion of staff cost), and lower compliance overhead from automated quality reporting. See the 'Aged care funding & efficiency' card below for the full breakdown.":r.isNDIS?"This figure combines four EMR-enabled NDIS mechanisms: fewer claim rejections (an ~8% baseline reduced through better documentation), higher billable-hour utilisation (lifted from a ~65% baseline), lower compliance overhead, and reduced staff turnover. See the 'NDIS revenue & efficiency' card below for the full breakdown.":"ABF: Activity-Based Funding. NWAU: National Weighted Activity Unit. NEP: National Efficient Price per NWAU (A$7,258 for 2025-26 per IHACPA Determination)."} label={r.isAgedCare?"Funding & efficiency":r.isNDIS?"Revenue & efficiency":(r.privateRevRecovery>0?"Reimbursement & revenue":"ABF efficiency")} value={an?fmtK(Math.round(r.reimbursementImpact * ts.mult)):"\u2013"} sub={an?(r.isAgedCare?"AN-ACC + agency + compliance":r.isNDIS?"Claims + utilisation + retention":(r.privateRevRecovery>0?"NWAU recovery + private patient revenue":"NWAU recovery + denial reduction")):"\u2013"} bg={C.blue25} border={C.blue50} valueColor="#0f4146" />
       {r.qualitySavings > 0 && <ResultCard dimmed={dim} info={`Cashable cost avoidance from reduced clinical risk: medical indemnity reduction (3% of A$20,000/bed VMIA exposure), excess bed-day savings (QAHCS/AIHW at A$3,100/day), duplicate testing reduction (22% rate per Banker et al 2024), e-Discovery savings, and prevented unplanned readmissions (12% rate, AIHW; 0.6pp reduction per Vest et al JAMIA 2019).`} label="Quality / cost avoidance" value={an?fmtK(Math.round(r.qualitySavings * ts.mult)):"\u2013"} sub={an?(r.isAgedCare?"Avoidable harm reduction":r.isNDIS?"Compliance + incident reduction":"Indemnity + bed days + testing + legal + readmission"):"\u2013"} bg="#fdf0f4" border="#f0c4d4" valueColor="#d4507a" />}
       {r.academicSavings > 0 && <ResultCard dimmed={dim} info={`Research and teaching efficiency from system consolidation: research system decommission (3.5 systems per 100 beds), 25% reduction in teaching compliance reporting overhead, and reduced workflow complexity for medical students and registrars.`} label="Academic programme" value={an?fmtK(Math.round(r.academicSavings * ts.mult)):"\u2013"} sub={an?"Research + teaching + compliance":""} bg="#eef0f8" border="#c4cce0" valueColor="#2c3e6b" />}
       {r.mergeSavings > 0 && <ResultCard dimmed={dim} info={`Savings from eliminating duplicate systems and infrastructure across {r.duplicateSystems}+ duplicate systems post-network consolidation. Assumes 35% of legacy systems duplicated across facilities and A$350k per district for duplicate data centre, network, and service desk costs.`} label="Network consolidation" value={an?fmtK(Math.round(r.mergeSavings * ts.mult)):"\u2013"} sub={an?r.duplicateSystems+" duplicate systems":""} bg="#f0eefa" border="#c4c0e8" valueColor="#6c5ce7" />}
@@ -4202,35 +4202,104 @@ function ROICalculator() {
         <h3 style={{fontSize:16,fontWeight:700,margin:0}}>{r.isAgedCare ? "Aged care funding & efficiency" : r.isNDIS ? "NDIS revenue & efficiency" : (r.privateRevRecovery > 0 ? "Activity-Based Funding (ABF) efficiency & revenue" : "Activity-Based Funding (ABF) efficiency")}</h3>
         <span style={{fontSize:9,fontWeight:600,padding:"2px 8px",borderRadius:20,background:"#e8f5f0",color:"#0F4146",marginLeft:"auto",whiteSpace:"nowrap"}}>{viewTimescale === "annual" ? "Included in annual savings" : viewTimescale === "year1" ? "Included in Year 1 savings" : viewTimescale === "total3" ? "Included in 3-year total" : "Included in 5-year total"}</span>
       </div>
-      <p style={{fontSize:13,color:C.textMuted,margin:"0 0 16px"}}>Cashable benefits from improved ABF coding efficiency and private patient billing accuracy, attributed to EMR consolidation as a contributing factor.</p>
+      {r.isAgedCare ? (<>
+        <p style={{fontSize:13,color:C.textMuted,margin:"0 0 16px"}}>Cashable funding and operational efficiency gains specific to residential aged care: more accurate AN-ACC classification through better clinical documentation, reduced agency spend through integrated rostering, and lower compliance overhead from automated quality reporting.</p>
 
-      <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16}}>
-        <div style={{flex:"1 1 200px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
-          <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>ABF efficiency gain</div>
-          <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.abfEfficiencyGain * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
-          <div style={{fontSize:11,color:C.textMuted}}>About 15% of legacy admin costs are removed when systems are consolidated</div>
+        <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16}}>
+          <div style={{flex:"1 1 220px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>AN-ACC funding uplift</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.acAnaccUplift * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+            <div style={{fontSize:11,color:C.textMuted,lineHeight:1.5}}>About 45% of aged-care revenue is the AN-ACC subsidy, set by each resident's Class 1-13 classification at admission and reassessment. Better clinical documentation in a consolidated EMR supports more accurate, complete classification \u2014 modelled as a 3% uplift on the AN-ACC component.</div>
+          </div>
+          <div style={{flex:"1 1 220px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Agency staff cost reduction</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.acAgencyReduction * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+            <div style={{fontSize:11,color:C.textMuted,lineHeight:1.5}}>Providers typically spend around 10% of staffing budget on agency/casual cover to plug rostering gaps, sick leave and care-minute compliance peaks. Consolidated rostering, medication and clinical records remove the data gaps that drive last-minute agency calls \u2014 modelled as a 15% reduction on the agency portion of staff cost.</div>
+          </div>
+          <div style={{flex:"1 1 220px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Compliance efficiency</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.acComplianceSaving * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+            <div style={{fontSize:11,color:C.textMuted,lineHeight:1.5}}>Quality Indicator Program submissions, SIRS incident reporting, Star Ratings and audit prep typically take ~0.5 FTE per facility on collation across multiple systems. Consolidation automates much of this \u2014 modelled as 50% of that effort returned at A$65k/FTE.</div>
+          </div>
         </div>
-        {r.privateRevRecovery > 0 && <div style={{flex:"1 1 200px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
-          <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Private patient revenue uplift</div>
-          <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.privateRevRecovery * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
-          <div style={{fontSize:11,color:C.textMuted}}>Captures 30% of currently-missed private patient billings (about 15% of privately insured episodes in public hospitals go unbilled, VAGO 2019)</div>
-        </div>}
-        <div style={{flex:"1 1 200px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
-          <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Duplicate testing reduction</div>
-          <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.duplicateReduction * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
-          <div style={{fontSize:11,color:C.textMuted}}>50% of 22% duplicate rate addressable (Banker et al 2024)</div>
+
+        <Callout bg={C.greenPale} border="#c3ddd3">
+          <strong style={{color:C.green}}>Total in this section:</strong>{" "}
+          {fmtK(Math.round((r.acAnaccUplift + r.acAgencyReduction + r.acComplianceSaving) * ts.mult))}{ts.suffix}
+        </Callout>
+
+        <EvidenceDropdown title="Why these savings appear (AN-ACC, agency, compliance)">
+          <strong>1. AN-ACC funding uplift.</strong> Under the AN-ACC funding model (operative since 1 October 2022), each resident is assigned to one of 13 classes that drive their daily Commonwealth subsidy. Classification depends on documented assessment of mobility, cognition, pressure injury risk, behaviour and other clinical factors. Fragmented records and inconsistent documentation across systems typically lead to under-classification. A consolidated EMR with structured assessment supports more accurate and complete classification at admission and reassessment. Modelled as a 3% uplift applied to the AN-ACC component of revenue (45% of total revenue; the balance is resident fees and supplements).<br/><br/>
+          <strong>2. Agency staff cost reduction.</strong> Residential aged care typically runs at ~10% of total staff cost on agency / casual cover, driven by short-notice rostering gaps when leave records, care-minute requirements and clinical handover data live in disconnected systems. Integrated rostering plus clinical and medication data make gaps visible early and fillable from substantive staff. Modelled as 15% reduction on the agency portion of total staff cost (calculated from {fmtNum(inputs.bed_count)} places \u00d7 1.5 FTE/place \u00d7 A$42/hr blended \u00d7 1,824 hrs/yr).<br/><br/>
+          <strong>3. Compliance efficiency.</strong> The Strengthened Aged Care Standards (Aged Care Act 2024), Quality Indicator Program, SIRS incident reporting and Star Ratings each demand recurring data collation across multiple legacy systems. A unified record automates the reporting; ~50% of the typical 0.5 compliance FTE per facility is freed at A$65k/FTE.<br/><br/>
+          <strong>Sources:</strong> AN-ACC funding model (Australian Department of Health, since Oct 2022). Aged Care Royal Commission Final Report (2021). Aged Care Act 2024 (Strengthened Standards). ACSQHC Residential Aged Care Quality Indicators. Productivity Commission May 2024 (national EMR data-use savings benchmark). All figures are scenario-adjusted.
+        </EvidenceDropdown>
+      </>) : r.isNDIS ? (<>
+        <p style={{fontSize:13,color:C.textMuted,margin:"0 0 16px"}}>Cashable revenue and operational efficiency gains specific to NDIS providers: fewer claim rejections through better participant documentation, higher billable-hour utilisation, lower compliance overhead, and reduced staff turnover.</p>
+
+        <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16}}>
+          <div style={{flex:"1 1 220px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Claims accuracy</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.ndisClaimsRecovery * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+            <div style={{fontSize:11,color:C.textMuted,lineHeight:1.5}}>About 8% of NDIS claims are typically rejected for incomplete documentation, pricing errors or service mismatches. A consolidated participant record with integrated billing reduces rejections, recovering revenue that would otherwise be lost.</div>
+          </div>
+          <div style={{flex:"1 1 220px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Billable utilisation uplift</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.ndisUtilisationUplift * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+            <div style={{fontSize:11,color:C.textMuted,lineHeight:1.5}}>NDIS providers typically bill ~65% of available support-worker hours. Better scheduling, participant matching and reduced admin time lift billable utilisation by a few percentage points.</div>
+          </div>
+          <div style={{flex:"1 1 220px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Compliance efficiency</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.ndisComplianceSaving * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+            <div style={{fontSize:11,color:C.textMuted,lineHeight:1.5}}>NDIS Quality and Safeguards Commission worker screening, restrictive-practice reporting and audits require recurring data collation across systems. Consolidation automates much of this overhead.</div>
+          </div>
+          <div style={{flex:"1 1 220px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Staff retention</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.ndisRetentionSaving * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+            <div style={{fontSize:11,color:C.textMuted,lineHeight:1.5}}>Support-worker turnover averages 25-30% annually with replacement cost around A$8-10k per worker. Reduced administrative burden and better participant data improve retention.</div>
+          </div>
         </div>
-      </div>
 
-      <Callout bg={C.greenPale} border="#c3ddd3">
-        <strong style={{color:C.green}}>Total in this section:</strong>{" "}
-        {fmtK(Math.round((r.abfEfficiencyGain + r.privateRevRecovery) * ts.mult))}{ts.suffix}
-      </Callout>
+        <Callout bg={C.greenPale} border="#c3ddd3">
+          <strong style={{color:C.green}}>Total in this section:</strong>{" "}
+          {fmtK(Math.round((r.ndisClaimsRecovery + r.ndisUtilisationUplift + r.ndisComplianceSaving + r.ndisRetentionSaving) * ts.mult))}{ts.suffix}
+        </Callout>
 
-      <EvidenceDropdown title="Evidence & methodology">
-        <strong>Methodology:</strong> ABF efficiency modelled at 15% of legacy estate cost addressable through consolidation.{r.privateRevRecovery > 0 ? " Private patient revenue (sometimes called patient leakage): 30% of currently-missed private billings captured. Around 15% of privately insured episodes in public hospitals go unbilled due to incomplete documentation (VAGO 2019)." : ""}<br/><br/>
-        <strong>Sources:</strong> IHACPA 2025-26 (NWAU pricing). VAGO 2019 (unbilled private patient episodes in public hospitals). NSW SDPR programme data. Productivity Commission May 2024: up to A$5.4bn/yr in national savings from better EMR data use. All figures are scenario-adjusted.
-      </EvidenceDropdown>
+        <EvidenceDropdown title="Evidence & methodology">
+          <strong>Methodology:</strong> Claims accuracy applied to NDIS revenue assuming an ~8% baseline rejection rate (NDIA published trends) with documentation-driven improvement. Utilisation uplift applied to support-worker hours from a 65% billable baseline. Compliance saving at ~50% of admin effort across the Quality and Safeguards reporting regime. Retention saving applied to a turnover-cost benchmark.<br/><br/>
+          <strong>Sources:</strong> NDIA quarterly reports (claim rejection trends). NDIS Quality and Safeguards Commission (compliance regime). Productivity Commission May 2024 (national EMR data-use savings benchmark). All figures are scenario-adjusted.
+        </EvidenceDropdown>
+      </>) : (<>
+        <p style={{fontSize:13,color:C.textMuted,margin:"0 0 16px"}}>Cashable benefits from improved ABF coding efficiency and private patient billing accuracy, attributed to EMR consolidation as a contributing factor.</p>
+
+        <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16}}>
+          <div style={{flex:"1 1 200px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>ABF efficiency gain</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.abfEfficiencyGain * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+            <div style={{fontSize:11,color:C.textMuted}}>About 15% of legacy admin costs are removed when systems are consolidated</div>
+          </div>
+          {r.privateRevRecovery > 0 && <div style={{flex:"1 1 200px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Private patient revenue uplift</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.privateRevRecovery * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+            <div style={{fontSize:11,color:C.textMuted}}>Captures 30% of currently-missed private patient billings (about 15% of privately insured episodes in public hospitals go unbilled, VAGO 2019)</div>
+          </div>}
+          <div style={{flex:"1 1 200px",padding:"16px 18px",background:C.greenPale,borderRadius:10}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Duplicate testing reduction</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.green,margin:"6px 0"}}>{an?fmtK(Math.round(r.duplicateReduction * ts.mult)):"\u2013"}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+            <div style={{fontSize:11,color:C.textMuted}}>50% of 22% duplicate rate addressable (Banker et al 2024)</div>
+          </div>
+        </div>
+
+        <Callout bg={C.greenPale} border="#c3ddd3">
+          <strong style={{color:C.green}}>Total in this section:</strong>{" "}
+          {fmtK(Math.round((r.abfEfficiencyGain + r.privateRevRecovery) * ts.mult))}{ts.suffix}
+        </Callout>
+
+        <EvidenceDropdown title="Evidence & methodology">
+          <strong>Methodology:</strong> ABF efficiency modelled at 15% of legacy estate cost addressable through consolidation.{r.privateRevRecovery > 0 ? " Private patient revenue (sometimes called patient leakage): 30% of currently-missed private billings captured. Around 15% of privately insured episodes in public hospitals go unbilled due to incomplete documentation (VAGO 2019)." : ""}<br/><br/>
+          <strong>Sources:</strong> IHACPA 2025-26 (NWAU pricing). VAGO 2019 (unbilled private patient episodes in public hospitals). NSW SDPR programme data. Productivity Commission May 2024: up to A$5.4bn/yr in national savings from better EMR data use. All figures are scenario-adjusted.
+        </EvidenceDropdown>
+      </>)}
     </Card><LockedConnector/>
 
 
