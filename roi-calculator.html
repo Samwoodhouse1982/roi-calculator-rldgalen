@@ -1872,13 +1872,13 @@ function ROICalculator() {
     doc.setFillColor(TEAL[0],TEAL[1],TEAL[2]); doc.rect(0,0,pw,50,"F");
     doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]); doc.rect(0,50,pw,1.5,"F");
 
-    // Logo (top-right corner of front page) — ~20% page width with small gap from edges
+    // Logo (top-right corner of front page) — comfortable gap from edges
     if (PDF_LOGO_BASE64) {
       try {
         const logoW = PDF_LOGO_WIDTH;
         const logoH = logoW / PDF_LOGO_ASPECT;
-        const logoX = pw - logoW - 5;
-        const logoY = 5;
+        const logoX = pw - logoW - 10;
+        const logoY = 10;
         doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, logoX, logoY, logoW, logoH);
       } catch (e) { console.warn("Logo failed:", e); }
     }
@@ -2231,13 +2231,13 @@ function ROICalculator() {
     doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]);
     doc.rect(0, 42, pw, 1.5, "F");
 
-    // Logo (top-right corner of front page) — ~20% page width with small gap from edges
+    // Logo (top-right corner of front page) — comfortable gap from edges
     if (PDF_LOGO_BASE64) {
       try {
         const logoW = PDF_LOGO_WIDTH;
         const logoH = logoW / PDF_LOGO_ASPECT;
-        const logoX = pw - logoW - 5;
-        const logoY = 5;
+        const logoX = pw - logoW - 10;
+        const logoY = 10;
         doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, logoX, logoY, logoW, logoH);
       } catch (e) { console.warn("Logo failed:", e); }
     }
@@ -2396,14 +2396,26 @@ function ROICalculator() {
 
     // Patient safety
     if (r.hasClinicalScope) {
-      if (y > 210) { doc.addPage(); addPageHeader(); y = 22; }
+      if (y > 200) { doc.addPage(); addPageHeader(); y = 22; }
+
+      // Pre-compute litigation note and box height so the box can be drawn at the right size first
+      const litigNote = "Context: CRICO analysis of 23,658 malpractice claims found communication failures in 30% of cases, contributing to 1,744 deaths and $1.7bn in costs over 5 years. Mello et al (Health Affairs 2010) estimated total US malpractice system cost at $55.6bn. Safety metrics are not included in the financial ROI total.";
+      doc.setFontSize(7);
+      const litigLines = doc.splitTextToSize(litigNote, cw - 16);
+      // Box height = title gap(12) + 4 rows × ~7mm + gap(2) + litig lines × ~3mm + bottom padding(6)
+      const tableEstH = 4 * 7;
+      const textEstH = litigLines.length * 3;
+      const boxH = Math.max(52, 12 + tableEstH + 2 + textEstH + 6);
+
+      // Draw box at correct height
       doc.setFillColor(250,245,247); doc.setDrawColor(224,196,207);
-      doc.roundedRect(ml, y, cw, 52, 3, 3, "FD");
+      doc.roundedRect(ml, y, cw, boxH, 3, 3, "FD");
       doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(138,46,74);
       doc.text(isArchiveOnly ? "Patient Safety Context" : "Patient Safety Case for Migration", ml + 6, y + 8);
       doc.autoTable({
         startY: y + 12,
         margin: { left: ml + 4, right: mr + 4 },
+        pageBreak: "avoid",
         theme: "plain",
         tableWidth: cw - 8,
         styles: { fontSize: 8.5, cellPadding: { top: 1.8, bottom: 1.8, left: 3, right: 3 }, textColor: DARK, lineWidth: 0 },
@@ -2417,13 +2429,8 @@ function ROICalculator() {
       });
       const safetyEnd = doc.lastAutoTable.finalY + 2;
       doc.setFontSize(7); doc.setFont("helvetica","normal"); setC(GRAY);
-      const litigNote = "Context: CRICO analysis of 23,658 malpractice claims found communication failures in 30% of cases, contributing to 1,744 deaths and $1.7bn in costs over 5 years. Mello et al (Health Affairs 2010) estimated total US malpractice system cost at $55.6bn. Safety metrics are not included in the financial ROI total.";
-      doc.text(doc.splitTextToSize(litigNote, cw - 16), ml + 6, safetyEnd + 2);
-      // Resize safety box to fit
-      const boxH = Math.max(52, safetyEnd + 10 - y);
-      doc.setFillColor(250,245,247); doc.setDrawColor(224,196,207);
-      // Redraw box at correct size (draw over)
-      y = safetyEnd + 14;
+      doc.text(litigLines, ml + 6, safetyEnd + 2);
+      y = y + boxH + 10;
     }
 
     // Reimbursement & compliance
@@ -2653,36 +2660,29 @@ function ROICalculator() {
     y += 22;
 
     // Scenario comparison mini-table
-    if (y < 240) {
-      doc.setFontSize(10); doc.setFont("helvetica","bold"); setC(TEAL);
-      doc.text("Scenario Comparison", ml, y); y += 6;
-      doc.autoTable({
-        startY: y,
-        margin: { left: ml, right: mr },
-        pageBreak: "avoid",
-        head: [["", "Conservative", "Expected", "Stretch"]],
-        body: [
-          ["Decom savings", fmtK(rCon.decomSave) + "/yr", fmtK(r.decomSave) + "/yr", fmtK(rStr.decomSave) + "/yr"],
-          ["Time savings", fmtK(rCon.timeSave) + "/yr", fmtK(r.timeSave) + "/yr", fmtK(rStr.timeSave) + "/yr"],
-          ["Reimbursement & quality", fmtK(rCon.reimbursementImpact + rCon.qualitySavings) + "/yr", fmtK(r.reimbursementImpact + r.qualitySavings) + "/yr", fmtK(rStr.reimbursementImpact + rStr.qualitySavings) + "/yr"],
-          [{ content: "Combined annual", styles: { fontStyle: "bold" } }, { content: fmtK(rCon.annualWithReimbursement) + "/yr", styles: { fontStyle: "bold" } }, { content: fmtK(r.annualWithReimbursement) + "/yr", styles: { fontStyle: "bold", textColor: TEAL } }, { content: fmtK(rStr.annualWithReimbursement) + "/yr", styles: { fontStyle: "bold" } }],
-          [{ content: "3-year combined", styles: { fontStyle: "bold" } }, { content: fmtK(rCon.total3WithReimbursement), styles: { fontStyle: "bold" } }, { content: fmtK(r.total3WithReimbursement), styles: { fontStyle: "bold", textColor: TEAL } }, { content: fmtK(rStr.total3WithReimbursement), styles: { fontStyle: "bold" } }],
-        ],
-        headStyles: { fillColor: TEAL, textColor: WHITE, fontStyle: "bold", fontSize: 7.5, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 } },
-        styles: { fontSize: 8.5, cellPadding: { top: 2.2, bottom: 2.2, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
-        columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
-      });
-    }
-
-    // Footer on all pages
-    const totalPages = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      addFooter(i, totalPages);
-    }
+    if (y > 215) { doc.addPage(); addPageHeader(); y = 22; }
+    doc.setFontSize(12); doc.setFont("helvetica","bold"); setC(TEAL);
+    doc.text("Scenario Comparison", ml, y); y += 6;
+    doc.autoTable({
+      startY: y,
+      margin: { left: ml, right: mr },
+      pageBreak: "avoid",
+      head: [["", "Conservative", "Expected", "Stretch"]],
+      body: [
+        ["Decom savings", fmtK(rCon.decomSave) + "/yr", fmtK(r.decomSave) + "/yr", fmtK(rStr.decomSave) + "/yr"],
+        ["Time savings", fmtK(rCon.timeSave) + "/yr", fmtK(r.timeSave) + "/yr", fmtK(rStr.timeSave) + "/yr"],
+        ["Reimbursement & quality", fmtK(rCon.reimbursementImpact + rCon.qualitySavings) + "/yr", fmtK(r.reimbursementImpact + r.qualitySavings) + "/yr", fmtK(rStr.reimbursementImpact + rStr.qualitySavings) + "/yr"],
+        [{ content: "Combined annual", styles: { fontStyle: "bold" } }, { content: fmtK(rCon.annualWithReimbursement) + "/yr", styles: { fontStyle: "bold" } }, { content: fmtK(r.annualWithReimbursement) + "/yr", styles: { fontStyle: "bold", textColor: TEAL } }, { content: fmtK(rStr.annualWithReimbursement) + "/yr", styles: { fontStyle: "bold" } }],
+        [{ content: "3-year combined", styles: { fontStyle: "bold" } }, { content: fmtK(rCon.total3WithReimbursement), styles: { fontStyle: "bold" } }, { content: fmtK(r.total3WithReimbursement), styles: { fontStyle: "bold", textColor: TEAL } }, { content: fmtK(rStr.total3WithReimbursement), styles: { fontStyle: "bold" } }],
+      ],
+      headStyles: { fillColor: TEAL, textColor: WHITE, fontStyle: "bold", fontSize: 7.5, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 } },
+      styles: { fontSize: 8.5, cellPadding: { top: 2.2, bottom: 2.2, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
+      columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+    });
+    y = doc.lastAutoTable.finalY + 8;
 
     // Disclaimer
-    if (y > 240) { doc.addPage(); addPageHeader(); y = 22; }
+    if (y > 215) { doc.addPage(); addPageHeader(); y = 22; }
     doc.setFillColor(245,244,240);
     doc.roundedRect(ml, y, cw, 28, 2, 2, "F");
     doc.setFontSize(7); doc.setFont("helvetica","bold"); setC(MID);
@@ -2695,6 +2695,7 @@ function ROICalculator() {
     y += disclaimerH + 4;
 
     // CTA bar on last page
+    const totalPages = doc.internal.getNumberOfPages();
     doc.setPage(totalPages);
     const ctaY = ph - 24;
     doc.setFillColor(TEAL[0],TEAL[1],TEAL[2]);
@@ -2703,6 +2704,12 @@ function ROICalculator() {
     doc.text("To discuss your program, contact the " + PDF_COMPANY_NAME + " team.", pw / 2, ctaY + 5, { align: "center" });
     doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(190,230,220);
     doc.text("All assumptions documented in the methodology report. Every figure is adjustable.", pw / 2, ctaY + 9, { align: "center" });
+
+    // Footer on all pages (run LAST so any pages added by disclaimer/CTA get footers too)
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      addFooter(i, totalPages);
+    }
 
     // Save or return
     const orgSlug = leadForm.org ? "-" + leadForm.org.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") : "";
