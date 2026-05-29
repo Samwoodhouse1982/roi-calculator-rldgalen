@@ -2181,12 +2181,17 @@ function ROICalculator() {
       y += 4;
       const barH = 8, barY = y;
       let xCursor = ml;
+      // Draw segments as plain rects (sharp corners) so adjacent segments join cleanly
+      // without the bumpy "notch" effect that roundedRect produced at each join.
       segs.forEach(s => {
         const w = (cw * s.v) / total;
         doc.setFillColor(s.c[0], s.c[1], s.c[2]);
-        doc.roundedRect(xCursor, barY, w, barH, 1.5, 1.5, "F");
+        doc.rect(xCursor, barY, w, barH, "F");
         xCursor += w;
       });
+      // Single rounded outline over the whole bar for a polished outer edge
+      doc.setDrawColor(15, 65, 70); doc.setLineWidth(0.3);
+      doc.roundedRect(ml, barY, cw, barH, 1.5, 1.5, "S");
       y += barH + 4;
       doc.setFont("helvetica","normal"); doc.setFontSize(7);
       let legX = ml; let legY = y;
@@ -2292,6 +2297,14 @@ function ROICalculator() {
     doc.setFillColor(TEAL[0],TEAL[1],TEAL[2]); doc.rect(0,0,pw,18,"F");
     setC(WHITE); doc.setFontSize(11); doc.setFont("helvetica","bold");
     doc.text("ROI Estimate \u00b7 Components & Methodology", ml, 12);
+    // Small logo top-right of page 2 header
+    if (PDF_LOGO_BASE64) {
+      try {
+        const p2LogoW = PDF_LOGO_FOOTER_W;
+        const p2LogoH = p2LogoW / PDF_LOGO_ASPECT;
+        doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, pw - p2LogoW - 10, (18 - p2LogoH) / 2, p2LogoW, p2LogoH);
+      } catch (e) {}
+    }
     
     y = 28;
     setC(DARK); doc.setFontSize(13); doc.setFont("helvetica","bold");
@@ -2356,7 +2369,21 @@ function ROICalculator() {
     doc.text("Evidence base", ml, y);
     y += 6;
     setC(GRAY); doc.setFontSize(8); doc.setFont("helvetica","normal");
-    const methLines = [
+    const methLines = r.isAgedCare ? [
+      "Government / regulatory: AN-ACC funding model (Oct 2022), Aged Care Royal Commission",
+      "(2021) Final Report, Aged Care Quality and Safety Commission Quality Standards.",
+      "Sector benchmarks: AIHW Residential Aged Care services, ACSQHC Aged Care Quality",
+      "Indicators (medication management, falls, pressure injuries, clinical handover).",
+      "Peer-reviewed: Bartek et al JIMI 2023 (system task switching), Sinsky et al 2016 (clinician",
+      "EHR time burden). All assumptions documented in Full Report. Methodology v3.0.",
+    ] : r.isNDIS ? [
+      "Government / regulatory: NDIS Practice Standards, NDIS Quality and Safeguards Commission",
+      "incident reporting framework, NDIS Pricing Arrangements and Price Limits (current annual).",
+      "Sector benchmarks: NDIA published participant data, NDIS Quality and Safeguards Commission",
+      "annual reports on compliance and complaints handling.",
+      "Peer-reviewed: Bartek et al JIMI 2023 (system task switching), Sinsky et al 2016 (clinician",
+      "administrative time burden). All assumptions documented in Full Report. Methodology v3.0.",
+    ] : [
       "Peer-reviewed: Bartek et al JIMI 2023 (EHR task switching), Vest et al JAMIA 2019 (readmission",
       "reduction from EHR consolidation), Sinsky et al 2016 (clinician EHR time burden).",
       "Government / regulatory: IHACPA NEP 2025-26 (A$7,258/NWAU), ACSQHC Standards 1 and 6.",
@@ -2387,21 +2414,8 @@ function ROICalculator() {
     doc.text("Page 2 of 2", pw - mr, ph - 10, { align: "right" });
     doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]); doc.rect(0, ph - 4, pw, 4, "F");
     
-    // Add footer logo to all pages except the first
-    if (PDF_LOGO_BASE64) {
-      const totalPages = doc.internal.getNumberOfPages();
-      const fLogoW = PDF_LOGO_FOOTER_W;
-      const fLogoH = fLogoW / PDF_LOGO_ASPECT;
-      for (let p = 2; p <= totalPages; p++) {
-        doc.setPage(p);
-        try {
-          const bandH = 10;
-          doc.setFillColor(TEAL[0], TEAL[1], TEAL[2]);
-          doc.rect(0, ph - bandH, pw, bandH, "F");
-          doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, pw - fLogoW - 5, ph - bandH + (bandH - fLogoH) / 2, fLogoW, fLogoH);
-        } catch (e) {}
-      }
-    }
+    // Note: footer logo is now placed on page 2's TOP header band (above) rather than as a
+    // separate footer band, because the latter overlapped the existing footer text + seafoam strip.
     doc.save("Galen_ROI_Board_Summary_" + new Date().toISOString().split("T")[0] + ".pdf");
     return null;
   }, [r, am, scenarioBlend, reimbursementModel, inputs, galenMigrationCost, galenAnnualCost]);
