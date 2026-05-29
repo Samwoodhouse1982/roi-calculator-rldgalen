@@ -2511,10 +2511,10 @@ function ROICalculator() {
     y += 8;
 
     // Summary cards
-    const combinedSub = r.isAgedCare ? "All savings incl. AN-ACC funding + quality" : r.isNDIS ? "All savings incl. NDIS revenue + quality" : "All savings incl. ABF and quality";
-    const annualSub = r.isAgedCare ? "Decom + capacity + AN-ACC/agency/compliance + quality" : r.isNDIS ? "Decom + capacity + NDIS revenue + quality" : "Decom + capacity + ABF/funding + quality";
+    const combinedSub = "All savings incl. quality";
+    const annualSub = r.isAgedCare ? "Decom + AN-ACC + quality" : r.isNDIS ? "Decom + NDIS rev + quality" : "Decom + ABF + quality";
     const reimbCardLabel = r.isAgedCare ? "FUNDING & QUALITY / YR" : r.isNDIS ? "NDIS REV & QUALITY / YR" : "ABF & QUALITY / YR";
-    const reimbCardSub = r.isAgedCare ? "AN-ACC + agency + compliance + quality" : r.isNDIS ? "Claims + utilisation + retention + compliance" : (r.privateRevRecovery > 0 ? "ABF efficiency + private revenue + quality" : "ABF efficiency + quality");
+    const reimbCardSub = r.isAgedCare ? "AN-ACC + agency + quality" : r.isNDIS ? "Claims + utilisation" : (r.privateRevRecovery > 0 ? "ABF + private revenue" : "ABF efficiency");
     const cards = [
       { label: r.rampN + "-YEAR COMBINED", value: fmtK(r.total3WithReimbursement), sub: combinedSub, bg: LTBG },
       { label: "ANNUAL RECURRING", value: fmtK(r.annualWithReimbursement), sub: annualSub, bg: TEALBG },
@@ -2600,9 +2600,24 @@ function ROICalculator() {
 
     // Patient safety
     if (r.hasClinicalScope) {
-      if (y > 210) { doc.addPage(); addPageHeader(); y = 22; }
+      if (y > 200) { doc.addPage(); addPageHeader(); y = 22; }
+
+      // Pre-compute litigNote and box height so the box can be drawn at the right size first
+      const litigNote = r.isAgedCare
+        ? "Context: ACSQHC reports that communication failure is a contributing factor in approximately 35% of clinical incidents. The Aged Care Royal Commission (2021) and ACSQHC Residential Aged Care Quality Indicators highlight medication management at transitions, falls prevention, and clinical handover as recurring drivers of avoidable harm in residential aged care. Safety metrics support the quality and cost avoidance estimates in the ROI."
+        : r.isNDIS
+        ? "Context: NDIS Quality and Safeguards Commission incident-reporting data shows that documentation and handover failures across systems are a recurring contributor to participant safety incidents. Safety metrics support the quality and cost avoidance estimates in the ROI."
+        : "Context: ACSQHC reports that communication failure is a contributing factor in approximately 35% of clinical incidents. State-based medical indemnity schemes (icare NSW, VMIA VIC) show that adverse events from fragmented clinical information drive a significant proportion of claims. Safety metrics support the quality and cost avoidance estimates in the ROI.";
+      doc.setFontSize(7);
+      const litigLines = doc.splitTextToSize(litigNote, cw - 16);
+      // Box height = title(8) + tableTopOffset(4) + 4 rows × ~7mm + gap(2) + lines × ~3mm + bottom padding(6)
+      const tableEstH = 4 * 7;
+      const textEstH = litigLines.length * 3;
+      const boxH = Math.max(52, 12 + tableEstH + 2 + textEstH + 6);
+
+      // Draw box at correct height
       doc.setFillColor(250,245,247); doc.setDrawColor(224,196,207);
-      doc.roundedRect(ml, y, cw, 52, 3, 3, "FD");
+      doc.roundedRect(ml, y, cw, boxH, 3, 3, "FD");
       doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(138,46,74);
       doc.text(isArchiveOnly ? "Patient Safety Context" : "Patient Safety Case for Migration", ml + 6, y + 8);
       doc.autoTable({
@@ -2621,17 +2636,8 @@ function ROICalculator() {
       });
       const safetyEnd = doc.lastAutoTable.finalY + 2;
       doc.setFontSize(7); doc.setFont("helvetica","normal"); setC(GREY);
-      const litigNote = r.isAgedCare
-        ? "Context: ACSQHC reports that communication failure is a contributing factor in approximately 35% of clinical incidents. The Aged Care Royal Commission (2021) and ACSQHC Residential Aged Care Quality Indicators highlight medication management at transitions, falls prevention, and clinical handover as recurring drivers of avoidable harm in residential aged care. Safety metrics support the quality and cost avoidance estimates in the ROI."
-        : r.isNDIS
-        ? "Context: NDIS Quality and Safeguards Commission incident-reporting data shows that documentation and handover failures across systems are a recurring contributor to participant safety incidents. Safety metrics support the quality and cost avoidance estimates in the ROI."
-        : "Context: ACSQHC reports that communication failure is a contributing factor in approximately 35% of clinical incidents. State-based medical indemnity schemes (icare NSW, VMIA VIC) show that adverse events from fragmented clinical information drive a significant proportion of claims. Safety metrics support the quality and cost avoidance estimates in the ROI.";
-      doc.text(doc.splitTextToSize(litigNote, cw - 16), ml + 6, safetyEnd + 2);
-      // Resize safety box to fit
-      const boxH = Math.max(52, safetyEnd + 10 - y);
-      doc.setFillColor(250,245,247); doc.setDrawColor(224,196,207);
-      // Redraw box at correct size (draw over)
-      y = safetyEnd + 14;
+      doc.text(litigLines, ml + 6, safetyEnd + 2);
+      y = y + boxH + 4;
     }
 
     // Reimbursement & operational efficiency (sector-aware)
@@ -2680,7 +2686,7 @@ function ROICalculator() {
       ],
       headStyles: { fillColor: TEAL, textColor: WHITE, fontStyle: "bold", fontSize: 7.5, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 } },
       styles: { fontSize: 8.5, cellPadding: { top: 2.2, bottom: 2.2, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
-      columnStyles: { 1: { halign: "right" }, 2: { fontSize: 7, textColor: MID } },
+      columnStyles: { 0: { cellWidth: 55 }, 1: { halign: "right", cellWidth: 28 }, 2: { fontSize: 7, textColor: MID, cellWidth: "auto" } },
     });
     y = doc.lastAutoTable.finalY + 8;
 
