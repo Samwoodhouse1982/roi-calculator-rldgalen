@@ -2689,7 +2689,7 @@ function ROICalculator() {
         ["Excess bed day savings", fmtK(r.excessDayCostAvoided) + "/yr", "QAHCS/AIHW (A$3,100/day x share caused by fragmentation)"],
         ["Duplicate testing reduction", fmtK(r.duplicateReduction) + "/yr", "22% duplicate rate (Banker et al 2024; RCPA)"],
         ...(r.auReadmissionCostAvoidance > 0 ? [["Readmissions avoided", fmtK(r.auReadmissionCostAvoidance) + "/yr", "0.6pp reduction \u00d7 30% fragmentation attribution \u00d7 A$11,500 (Vest et al JAMIA 2019; IHACPA)"]] : []),
-        ...(r.ediscoverySaving > 0 ? [["e-Discovery / records access", fmtK(r.ediscoverySaving) + "/yr", "Medico-legal / coronial / complaints: legacy 24 hrs/case \u2192 unified archive 5 hrs/case at A$45/hr"]] : []),
+        ...(r.ediscoverySaving > 0 ? [["e-Discovery / records access", fmtK(r.ediscoverySaving) + "/yr", "Medico-legal / coronial / complaints: 24 hrs/case in legacy vs 5 hrs in unified archive (at A$45/hr)"]] : []),
       ];
       reimbTotalLabel = "Total ABF efficiency & quality";
     }
@@ -2719,10 +2719,10 @@ function ROICalculator() {
         riskTiles.push({ label: "READMISSIONS AVOIDED", value: fmtNum(r.auReadmissionsAvoided) + "/yr", sub: "0.6pp reduction (Vest et al JAMIA 2019) \u00d7 30% fragmentation attribution" });
       }
       if (r.litigationCases > 0) {
-        riskTiles.push({ label: "LITIGATION/COMPLAINTS CASES", value: fmtNum(r.litigationCases) + "/yr", sub: "Records assembly: legacy 24 hrs/case \u2192 archive 5 hrs/case" });
+        riskTiles.push({ label: "LITIGATION/COMPLAINTS CASES", value: fmtNum(r.litigationCases) + "/yr", sub: "Records assembly: 24 hrs/case in legacy vs 5 hrs in archive" });
       }
       if (riskTiles.length > 0) {
-        if (y > 230) { doc.addPage(); addPageHeader(); y = 22; }
+        if (y > 225) { doc.addPage(); addPageHeader(); y = 22; }
         doc.setFontSize(11); doc.setFont("helvetica","bold"); setC(TEAL);
         doc.text("Legal and operational risk reduction", ml, y); y += 5;
         const riskTileW = (cw - (riskTiles.length - 1) * 4) / riskTiles.length;
@@ -2730,16 +2730,16 @@ function ROICalculator() {
           const tx = ml + i * (riskTileW + 4);
           doc.setFillColor(240, 242, 248);
           doc.setDrawColor(196, 204, 224);
-          doc.roundedRect(tx, y, riskTileW, 26, 2, 2, "FD");
+          doc.roundedRect(tx, y, riskTileW, 30, 2, 2, "FD");
           doc.setFontSize(6.5); doc.setFont("helvetica","bold"); setC(MID);
           doc.text(t.label, tx + riskTileW/2, y + 5, { align: "center" });
           doc.setFontSize(16); doc.setFont("helvetica","bold"); doc.setTextColor(44, 62, 107);
           doc.text(t.value, tx + riskTileW/2, y + 14, { align: "center" });
           doc.setFontSize(6); doc.setFont("helvetica","normal"); setC(MID);
-          const subLines = doc.splitTextToSize(t.sub, riskTileW - 5);
-          doc.text(subLines, tx + riskTileW/2, y + 19, { align: "center" });
+          const subLines = doc.splitTextToSize(t.sub, riskTileW - 6);
+          doc.text(subLines, tx + riskTileW/2, y + 20, { align: "center" });
         });
-        y += 26 + 10;
+        y += 30 + 10;
       }
     }
 
@@ -2843,15 +2843,15 @@ function ROICalculator() {
         },
         {
           label: "SERVICE DESK TICKETS",
-          value: "\u2193 " + r.ticketsReductionPct + "%",
-          sub: r.ticketsBaselineMonthly + "/mo \u2192 " + r.ticketsAfter + "/mo",
+          value: r.ticketsReductionPct + "%",
+          sub: r.ticketsBaselineMonthly + "/mo to " + r.ticketsAfter + "/mo",
           tag: "monthly reduction",
           bg: TEALBG,
         },
         {
           label: "RECORDS TURNAROUND",
-          value: "\u2193 " + r.sarReductionPct + "%",
-          sub: r.sarDaysBefore + " days \u2192 " + r.sarDaysAfter + " days",
+          value: r.sarReductionPct + "%",
+          sub: r.sarDaysBefore + " days to " + r.sarDaysAfter + " days",
           tag: "faster fulfilment",
           bg: [232, 250, 246],
         },
@@ -2933,46 +2933,6 @@ function ROICalculator() {
     doc.setFont("helvetica","normal"); setC(GREY);
     doc.text(fmtK(rCon.total3WithReimbursement) + " (conservative)  to  " + fmtK(rStr.total3WithReimbursement) + " (stretch). Including ABF efficiency and quality impact. All figures are user-overridable.", ml + 4, y + 10);
     y += 22;
-
-    // ── Sensitivity check (stress-test of key assumptions) ──
-    {
-      if (y > 230) { doc.addPage(); addPageHeader(); y = 22; }
-      const baseAnnual = r.annualWithReimbursement;
-      const halfReal = Math.round(r.decomSave + r.timeSave * 0.5 + (r.reimbursementImpact || 0) * 0.5 + (r.qualitySavings || 0) * 0.5 + (r.mergeSavings || 0) * 0.5);
-      const halfDecom = Math.round(r.decomSave * 0.5 + r.timeSave + (r.reimbursementImpact || 0) + (r.qualitySavings || 0) + (r.mergeSavings || 0));
-      const halfBoth = Math.round((r.decomSave + r.timeSave + (r.reimbursementImpact || 0) + (r.qualitySavings || 0) + (r.mergeSavings || 0)) * 0.5);
-      const halfBothPct = Math.round(halfBoth / Math.max(1, baseAnnual) * 100);
-
-      doc.setFontSize(11); doc.setFont("helvetica","bold"); setC(TEAL);
-      doc.text("Sensitivity check", ml, y); y += 4;
-      doc.setFontSize(8); doc.setFont("helvetica","normal"); setC(GREY);
-      doc.text("If our key assumptions are off, your savings would still look like this:", ml, y); y += 5;
-
-      const stressTiles = [
-        { label: "YOUR ESTIMATE", value: fmtK(baseAnnual) + "/yr", sub: "Expected scenario", highlight: true },
-        { label: "IF REALISATION HALVES", value: fmtK(halfReal) + "/yr", sub: "Capacity + quality at 50%" },
-        { label: "IF DECOM HALVES", value: fmtK(halfDecom) + "/yr", sub: "Half the systems retired" },
-        { label: "BOTH HALVE", value: fmtK(halfBoth) + "/yr", sub: "Stress test (" + halfBothPct + "% of base)" },
-      ];
-      const stressTileW = (cw - 12) / 4;
-      stressTiles.forEach((t, i) => {
-        const tx = ml + i * (stressTileW + 4);
-        doc.setFillColor(t.highlight ? TEALBG[0] : 248, t.highlight ? TEALBG[1] : 250, t.highlight ? TEALBG[2] : 251);
-        doc.setDrawColor(t.highlight ? TEAL[0] : 224, t.highlight ? TEAL[1] : 232, t.highlight ? TEAL[2] : 228);
-        doc.roundedRect(tx, y, stressTileW, 24, 2, 2, "FD");
-        doc.setFontSize(6); doc.setFont("helvetica","bold"); setC(MID);
-        doc.text(t.label, tx + stressTileW/2, y + 5, { align: "center" });
-        doc.setFontSize(12); doc.setFont("helvetica","bold"); setC(t.highlight ? TEAL : DARK);
-        doc.text(t.value, tx + stressTileW/2, y + 13, { align: "center" });
-        doc.setFontSize(6); doc.setFont("helvetica","normal"); setC(MID);
-        const subLines = doc.splitTextToSize(t.sub, stressTileW - 5);
-        doc.text(subLines, tx + stressTileW/2, y + 18, { align: "center" });
-      });
-      y += 24 + 4;
-      doc.setFontSize(7); doc.setFont("helvetica","italic"); setC(MID);
-      doc.text("Even at the most pessimistic stress test, your savings remain meaningful \u2014 demonstrating the robustness of the business case.", ml, y);
-      y += 10;
-    }
 
     // Scenario comparison mini-table
     if (y < 240) {
