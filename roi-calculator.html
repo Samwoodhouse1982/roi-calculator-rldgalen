@@ -2415,9 +2415,11 @@ function ROICalculator() {
     
     // Note: footer logo is now placed on page 2's TOP header band (above) rather than as a
     // separate footer band, because the latter overlapped the existing footer text + seafoam strip.
-    doc.save("RLDatix_VCO_Board_Summary_" + new Date().toISOString().split("T")[0] + ".pdf");
+    const orgSlug = leadForm.org ? "-" + leadForm.org.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") : "";
+    const filenameDate = new Date().toISOString().split("T")[0];
+    doc.save("RLDatix-VCO-Board-Summary" + orgSlug + "-" + filenameDate + ".pdf");
     return null;
-  }, [r, am, scenarioBlend, reimbursementModel, inputs, galenMigrationCost, galenAnnualCost]);
+  }, [r, am, scenarioBlend, reimbursementModel, inputs, galenMigrationCost, galenAnnualCost, leadForm]);
 
   const generatePDF = useCallback(async (returnBlob) => {
     let jsPDF;
@@ -3038,7 +3040,9 @@ function ROICalculator() {
     doc.text("All assumptions documented in the methodology report. Every figure is adjustable.", pw / 2, ctaY + 9, { align: "center" });
 
     // Save or return
-    const filename = "ROI-Estimate-" + (leadForm.org || "Report").replace(/[^a-zA-Z0-9]/g, "-") + ".pdf";
+    const orgSlug = leadForm.org ? "-" + leadForm.org.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") : "";
+    const filenameDate = new Date().toISOString().split("T")[0];
+    const filename = "RLDatix-VCO-ROI-Report" + orgSlug + "-" + filenameDate + ".pdf";
     // Footer (text + logo) is drawn directly by addFooter for each page — no post-render loop needed.
 
     if (returnBlob) return { blob: doc.output("blob"), filename };
