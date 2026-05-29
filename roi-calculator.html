@@ -2129,13 +2129,13 @@ function ROICalculator() {
     doc.setFillColor(TEAL[0],TEAL[1],TEAL[2]); doc.rect(0,0,pw,50,"F");
     doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]); doc.rect(0,50,pw,1.5,"F");
 
-    // Logo (top-right corner of front page)
+    // Logo (top-right corner of front page) — comfortable gap from edges
     if (PDF_LOGO_BASE64) {
       try {
         const logoW = PDF_LOGO_WIDTH;
         const logoH = logoW / PDF_LOGO_ASPECT;
-        const logoX = pw - logoW - 5;
-        const logoY = 5;
+        const logoX = pw - logoW - 10;
+        const logoY = 10;
         doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, logoX, logoY, logoW, logoH);
       } catch (e) { console.warn("Logo failed:", e); }
     }
@@ -2467,13 +2467,13 @@ function ROICalculator() {
     doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]);
     doc.rect(0, 42, pw, 1.5, "F");
 
-    // Logo (top-right corner of front page) — ~20% page width with small gap from edges
+    // Logo (top-right corner of front page) — ~20% page width with comfortable gap from edges
     if (PDF_LOGO_BASE64) {
       try {
         const logoW = PDF_LOGO_WIDTH;
         const logoH = logoW / PDF_LOGO_ASPECT;
-        const logoX = pw - logoW - 5;
-        const logoY = 5;
+        const logoX = pw - logoW - 10;
+        const logoY = 10;
         doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, logoX, logoY, logoW, logoH);
       } catch (e) { console.warn("Logo failed:", e); }
     }
@@ -2485,7 +2485,7 @@ function ROICalculator() {
     doc.setFontSize(24); doc.setTextColor(128,248,228);
     doc.text("ROI Estimate", ml, 25);
     doc.setFontSize(9); doc.setFont("helvetica","normal"); setC([190,230,220]);
-    doc.text(isArchiveOnly ? "Archiving + decommission pathway" : "Migration + archiving pathway", ml, 34);
+    doc.text(isArchiveOnly ? "Archiving + decommission" : "Migration + archiving", ml, 34);
 
     y = 50;
 
@@ -2536,6 +2536,22 @@ function ROICalculator() {
     });
     y += 36;
 
+    // Journey context (matches the banner on the web report at the top of the results page)
+    const journeyBlurb = isArchiveOnly
+      ? "You said: \"We want to decommission systems\" \u2014 so this report estimates the potential ROI of retiring legacy applications and consolidating data into a single clinical archive. Retiring legacy systems eliminates ongoing licensing, hosting and support costs; an archive keeps historical patient records accessible at the point of care for continuity and compliance."
+      : "You said: \"We're evaluating enterprise EMRs\" \u2014 so this report estimates the potential ROI of both migration and archiving. Migrating to a single EMR improves safety at care transitions; archiving legacy systems eliminates ongoing licensing, hosting and support costs while ensuring historical information remains accessible in context to clinicians at the point of care.";
+    doc.setFontSize(7.5); doc.setFont("helvetica","normal");
+    const journeyLines = doc.splitTextToSize(journeyBlurb, cw - 10);
+    const journeyBoxH = Math.max(18, 6 + journeyLines.length * 3.2 + 4);
+    const journeyBg = isArchiveOnly ? [238, 247, 241] : [250, 245, 247];
+    const journeyBorder = isArchiveOnly ? [195, 221, 211] : [224, 196, 207];
+    doc.setFillColor(journeyBg[0], journeyBg[1], journeyBg[2]);
+    doc.setDrawColor(journeyBorder[0], journeyBorder[1], journeyBorder[2]);
+    doc.roundedRect(ml, y, cw, journeyBoxH, 2, 2, "FD");
+    doc.setTextColor(70, 80, 85);
+    doc.text(journeyLines, ml + 5, y + 5);
+    y += journeyBoxH + 8;
+
     // Programme inputs
     doc.setFontSize(12); doc.setFont("helvetica","bold"); setC(TEAL);
     doc.text("Programme Inputs", ml, y); y += 2;
@@ -2548,7 +2564,7 @@ function ROICalculator() {
       body: [
         ["Provider type", ({"rural_remote":"Rural / Remote","regional":"Regional Hospital","metropolitan":"Metropolitan Hospital","tertiary":"Tertiary Referral","state_network":"LHD / Health Service","statewide":"Statewide Programme","aged_care":"Residential Aged Care","ndis_provider":"NDIS Provider"})[providerType] || providerType],
         ["Funding model", ({"public":"Public (ABF-funded)","mixed":"Public + Private","private":"Predominantly Private"})[reimbursementModel] || reimbursementModel],
-        ["Journey", isArchiveOnly ? "Have enterprise EMR" : "Evaluating EMRs"],
+        ["Journey", isArchiveOnly ? "Archiving + decommission" : "Migration + archiving"],
         [r.isAgedCare ? "Places" : r.isNDIS ? "Active participants" : "Beds", fmtNum(inputs.bed_count)],
         ["Facilities", String(inputs.org_count)],
         ["Legacy systems", r.legacy + " (" + r.ent + " enterprise, " + r.dep + " departmental, " + r.nic + " standalone" + (flagships.length > 0 ? ", " + flagships.length + " named" : "") + ")"],
@@ -2638,7 +2654,7 @@ function ROICalculator() {
       const safetyEnd = doc.lastAutoTable.finalY + 2;
       doc.setFontSize(7); doc.setFont("helvetica","normal"); setC(GREY);
       doc.text(litigLines, ml + 6, safetyEnd + 2);
-      y = y + boxH + 4;
+      y = y + boxH + 10;
     }
 
     // Reimbursement & operational efficiency (sector-aware)
@@ -2672,6 +2688,8 @@ function ROICalculator() {
         ["Medical indemnity reduction", fmtK(r.malpracticeReduction) + "/yr", "3% of A$20,000/bed (VMIA 2025-26)"],
         ["Excess bed day savings", fmtK(r.excessDayCostAvoided) + "/yr", "QAHCS/AIHW (A$3,100/day x share caused by fragmentation)"],
         ["Duplicate testing reduction", fmtK(r.duplicateReduction) + "/yr", "22% duplicate rate (Banker et al 2024; RCPA)"],
+        ...(r.auReadmissionCostAvoidance > 0 ? [["Readmissions avoided", fmtK(r.auReadmissionCostAvoidance) + "/yr", "0.6pp reduction \u00d7 30% fragmentation attribution \u00d7 A$11,500 (Vest et al JAMIA 2019; IHACPA)"]] : []),
+        ...(r.ediscoverySaving > 0 ? [["e-Discovery / records access", fmtK(r.ediscoverySaving) + "/yr", "Medico-legal / coronial / complaints: legacy 24 hrs/case \u2192 unified archive 5 hrs/case at A$45/hr"]] : []),
       ];
       reimbTotalLabel = "Total ABF efficiency & quality";
     }
@@ -2875,7 +2893,7 @@ function ROICalculator() {
     const disclaimerLines = doc.splitTextToSize(disclaimerText, cw - 8);
     doc.text(disclaimerLines, ml + 4, y + 9);
     const disclaimerH = Math.max(28, 12 + disclaimerLines.length * 3);
-    y += disclaimerH + 4;
+    y += disclaimerH + 10;
 
     // CTA bar on last page
     doc.setPage(totalPages);
