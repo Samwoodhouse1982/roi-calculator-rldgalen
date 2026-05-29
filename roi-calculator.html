@@ -2511,6 +2511,24 @@ function ROICalculator() {
     doc.line(ml, y, pw - mr, y);
     y += 8;
 
+    // ── HERO: estimated annual savings at steady state (mirrors web report's headline hero box) ──
+    doc.setFillColor(232, 250, 246);
+    doc.setDrawColor(180, 230, 220);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(ml, y, cw, 38, 3, 3, "FD");
+    // Eyebrow label
+    doc.setFontSize(8); doc.setFont("helvetica","bold"); setC(GREY);
+    doc.text("ESTIMATED ANNUAL SAVINGS AT STEADY STATE", pw / 2, y + 7, { align: "center" });
+    // Big hero number
+    doc.setFontSize(32); doc.setFont("helvetica","bold"); setC(TEAL);
+    doc.text(fmtK(r.annualWithReimbursement) + "/yr", pw / 2, y + 22, { align: "center" });
+    // 3-year + range subtitle
+    doc.setFontSize(9); doc.setFont("helvetica","normal"); setC(GREY);
+    doc.text("per year  \u00b7  " + r.rampN + "-year total: " + fmtK(r.total3WithReimbursement), pw / 2, y + 29, { align: "center" });
+    doc.setFontSize(8); setC(MID);
+    doc.text("Range across scenarios: " + fmtK(rCon.annualWithReimbursement) + " \u2013 " + fmtK(rStr.annualWithReimbursement) + " /yr", pw / 2, y + 34, { align: "center" });
+    y += 42;
+
     // Summary cards
     const combinedSub = "All savings incl. quality";
     const annualSub = r.isAgedCare ? "Decom + AN-ACC + quality" : r.isNDIS ? "Decom + NDIS rev + quality" : "Decom + ABF + quality";
@@ -2743,16 +2761,8 @@ function ROICalculator() {
       }
     }
 
-    // Combined annual summary box
-    doc.setFillColor(LTBG[0],LTBG[1],LTBG[2]);
-    doc.roundedRect(ml, y, cw, 14, 2, 2, "F");
-    doc.setFontSize(8); doc.setFont("helvetica","bold"); setC(TEAL);
-    doc.text("Combined annual impact:", ml + 4, y + 5);
-    doc.setFontSize(12);
-    doc.text(fmtK(r.annualWithReimbursement) + "/yr", ml + 4, y + 11);
-    doc.setFontSize(7); doc.setFont("helvetica","normal"); setC(MID);
-    doc.text(fmtK(r.annual) + " (decom + time) + " + fmtK(r.reimbursementImpact + r.qualitySavings) + " (reimbursement & quality)", ml + 60, y + 8);
-    y += 22;
+    // Combined annual impact is shown as the hero box at the top of the report (matches web).
+    // Removed from mid-document position to avoid duplication and footer overlap.
 
     // Academic module (conditional)
     if (r.isAcademic && r.academicSavings > 0) {
@@ -2953,6 +2963,7 @@ function ROICalculator() {
         styles: { fontSize: 8.5, cellPadding: { top: 2.2, bottom: 2.2, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
         columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
       });
+      y = doc.lastAutoTable.finalY + 8;
     }
 
     // Footer on all pages
