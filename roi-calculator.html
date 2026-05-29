@@ -2446,19 +2446,37 @@ function ROICalculator() {
     // name). Without this, sections that don't perform their own
     // page-break check before drawing can overflow into the footer.
     const addFooter = (pageNum, totalPages) => {
-      // 1. Clear the footer region (18mm tall at bottom, white fill)
+      // 1. Clear the footer region (18mm tall at bottom, white fill — masks any content overflow)
       doc.setFillColor(255, 255, 255);
       doc.rect(0, ph - 18, pw, 18, "F");
-      // 2. Draw separator line + footer text
-      doc.setDrawColor(15,65,70); doc.setLineWidth(0.6);
-      doc.line(ml, ph - 14, pw - mr, ph - 14);
-      doc.setFontSize(7); setC(MID);
-      doc.text(PDF_COMPANY_NAME, ml, ph - 10);
-      doc.text("ROI Calculator  |  " + dateStr, pw / 2, ph - 10, { align: "center" });
-      doc.text("Page " + pageNum + " of " + totalPages, pw - mr, ph - 10, { align: "right" });
-      // 3. Seafoam accent bar at very bottom (sits below the text)
-      doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]);
-      doc.rect(0, ph - 4, pw, 4, "F");
+
+      if (pageNum === 1) {
+        // Page 1 (cover): teal separator line, grey text on white, seafoam accent strip
+        doc.setDrawColor(15,65,70); doc.setLineWidth(0.6);
+        doc.line(ml, ph - 14, pw - mr, ph - 14);
+        doc.setFontSize(7); setC(MID);
+        doc.text(PDF_COMPANY_NAME, ml, ph - 10);
+        doc.text("ROI Calculator  |  " + dateStr, pw / 2, ph - 10, { align: "center" });
+        doc.text("Page " + pageNum + " of " + totalPages, pw - mr, ph - 10, { align: "right" });
+        doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]);
+        doc.rect(0, ph - 4, pw, 4, "F");
+      } else {
+        // Pages 2+: 10mm teal band with all footer text in white, logo on right
+        doc.setFillColor(TEAL[0], TEAL[1], TEAL[2]);
+        doc.rect(0, ph - 10, pw, 10, "F");
+        doc.setFontSize(7); doc.setFont("helvetica","normal"); setC(WHITE);
+        // Single left-aligned line — leaves right side clear for the logo
+        const footerText = PDF_COMPANY_NAME + "  |  ROI Calculator  |  " + dateStr + "  |  Page " + pageNum + " of " + totalPages;
+        doc.text(footerText, ml, ph - 4);
+        // Logo on the right of the band
+        if (PDF_LOGO_BASE64) {
+          try {
+            const fLogoW = PDF_LOGO_FOOTER_W;
+            const fLogoH = fLogoW / PDF_LOGO_ASPECT;
+            doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, pw - fLogoW - 5, ph - 10 + (10 - fLogoH) / 2, fLogoW, fLogoH);
+          } catch (e) {}
+        }
+      }
     };
 
     // Repeating header for pages 2+
@@ -3011,21 +3029,7 @@ function ROICalculator() {
 
     // Save or return
     const filename = "ROI-Estimate-" + (leadForm.org || "Report").replace(/[^a-zA-Z0-9]/g, "-") + ".pdf";
-    // Add footer logo to all pages except the first
-    if (PDF_LOGO_BASE64) {
-      const totalPages = doc.internal.getNumberOfPages();
-      const fLogoW = PDF_LOGO_FOOTER_W;
-      const fLogoH = fLogoW / PDF_LOGO_ASPECT;
-      for (let p = 2; p <= totalPages; p++) {
-        doc.setPage(p);
-        try {
-          const bandH = 10;
-          doc.setFillColor(TEAL[0], TEAL[1], TEAL[2]);
-          doc.rect(0, ph - bandH, pw, bandH, "F");
-          doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, pw - fLogoW - 5, ph - bandH + (bandH - fLogoH) / 2, fLogoW, fLogoH);
-        } catch (e) {}
-      }
-    }
+    // Footer (text + logo) is drawn directly by addFooter for each page — no post-render loop needed.
 
     if (returnBlob) return { blob: doc.output("blob"), filename };
     doc.save(filename);
