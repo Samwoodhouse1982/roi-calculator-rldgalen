@@ -2600,6 +2600,7 @@ function ROICalculator() {
     y += journeyBoxH + 8;
 
     // Programme inputs
+    if (y > 220) { doc.addPage(); addPageHeader(); y = 22; }
     doc.setFontSize(12); doc.setFont("helvetica","bold"); setC(TEAL);
     doc.text("Programme Inputs", ml, y); y += 2;
     // Helper to turn UPPER_SNAKE_CASE slugs into "Upper Snake Case" for display
@@ -2607,6 +2608,7 @@ function ROICalculator() {
     doc.autoTable({
       startY: y,
       margin: { left: ml, right: mr },
+      pageBreak: "avoid",
       theme: "plain",
       styles: { fontSize: 9, cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
       columnStyles: { 0: { fontStyle: "bold", cellWidth: 55 }, 1: { halign: "right" } },
@@ -2624,6 +2626,7 @@ function ROICalculator() {
     y = doc.lastAutoTable.finalY + 10;
 
     // Decommission savings
+    if (y > 220) { doc.addPage(); addPageHeader(); y = 22; }
     doc.setFontSize(12); doc.setFont("helvetica","bold"); setC(TEAL);
     doc.text("Decommission Savings", ml, y); y += 2;
     const decomBody = [];
@@ -2635,6 +2638,7 @@ function ROICalculator() {
     doc.autoTable({
       startY: y,
       margin: { left: ml, right: mr },
+      pageBreak: "avoid",
       head: [["Tier", "Systems", "Cost/sys/yr", "Retired", "Saving"]],
       body: decomBody,
       headStyles: { fillColor: TEAL, textColor: WHITE, fontStyle: "bold", fontSize: 7.5, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 } },
@@ -2652,6 +2656,7 @@ function ROICalculator() {
     doc.autoTable({
       startY: y,
       margin: { left: ml, right: mr },
+      pageBreak: "avoid",
       theme: "plain",
       styles: { fontSize: 9, cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
       columnStyles: { 0: { fontStyle: "bold", cellWidth: 65 }, 1: { halign: "right" } },
@@ -2689,6 +2694,7 @@ function ROICalculator() {
       doc.autoTable({
         startY: y + 12,
         margin: { left: ml + 4, right: mr + 4 },
+        pageBreak: "avoid",
         theme: "plain",
         tableWidth: cw - 8,
         styles: { fontSize: 8.5, cellPadding: { top: 1.8, bottom: 1.8, left: 3, right: 3 }, textColor: DARK, lineWidth: 0 },
@@ -2745,6 +2751,7 @@ function ROICalculator() {
     doc.autoTable({
       startY: y,
       margin: { left: ml, right: mr },
+      pageBreak: "avoid",
       head: [["Category", "Annual impact", "Source"]],
       body: [
         ...reimbBody,
@@ -2803,6 +2810,7 @@ function ROICalculator() {
       doc.autoTable({
         startY: y,
         margin: { left: ml, right: mr },
+      pageBreak: "avoid",
         head: [["Category", "Annual savings", "Basis"]],
         body: [
           ["Research system decommission", fmtK(r.researchDecomSave) + "/yr", r.researchSystems + " systems at " + fmtK(RESEARCH_SYSTEM_AVG_COST) + " avg"],
@@ -2827,6 +2835,7 @@ function ROICalculator() {
       doc.autoTable({
         startY: y,
         margin: { left: ml, right: mr },
+        pageBreak: "avoid",
         head: [["Category", "Annual savings", "Basis"]],
         body: [
           ["Duplicate system elimination", fmtK(r.duplicateElimination) + "/yr", r.duplicateSystems + " duplicates across " + inputs.org_count + " facilities"],
@@ -2854,6 +2863,7 @@ function ROICalculator() {
       doc.autoTable({
         startY: y,
         margin: { left: ml, right: mr },
+      pageBreak: "avoid",
         theme: "plain",
         styles: { fontSize: 9, cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
         columnStyles: { 0: { fontStyle: "bold", cellWidth: 80 }, 1: { halign: "right" } },
@@ -2982,6 +2992,7 @@ function ROICalculator() {
       doc.autoTable({
         startY: y,
         margin: { left: ml, right: mr },
+      pageBreak: "avoid",
         head: [["", "Conservative", "Expected", "Stretch"]],
         body: [
           ["Decom savings", fmtK(rCon.decomSave) + "/yr", fmtK(r.decomSave) + "/yr", fmtK(rStr.decomSave) + "/yr"],
