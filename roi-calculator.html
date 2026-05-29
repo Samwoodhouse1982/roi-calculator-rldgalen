@@ -587,7 +587,7 @@ function calc(inp, mode, ov = {}, flagships = []) {
   let preventableADEs=0, excessDaysAvoided=0, excessDayCostAvoided=0;
   let estLabSpend=0, duplicateWaste=0, duplicateReduction=0;
   // Sector-specific
-  let acAnaccUplift=0, acAgencyReduction=0, acComplianceSaving=0, acHarmAvoidance=0;
+  let acAnaccUplift=0, acAgencyReduction=0, acComplianceSaving=0, acHarmAvoidance=0, acPPHAvoidance=0;
   let ndisClaimsRecovery=0, ndisUtilisationUplift=0, ndisComplianceSaving=0, ndisRetentionSaving=0;
 
   if (isAgedCare) {
@@ -601,6 +601,8 @@ function calc(inp, mode, ov = {}, flagships = []) {
     acComplianceSaving = Math.round(inp.org_count * AC_COMPLIANCE_FTE_PER_FACILITY * AC_COMPLIANCE_COST_PER_FTE * decomPct * 0.5);
     // Avoidable cost of harm
     acHarmAvoidance = Math.round(inp.bed_count * AC_HARM_COST_PER_PLACE * AC_FRAGMENTATION_ATTRIBUTION * safetyPct);
+    // Preventable hospitalisations from aged care (UTIs, dehydration, falls without injury, ACSCs)
+    acPPHAvoidance = Math.round(inp.bed_count * AC_PPH_RATE_PER_PLACE * AC_PPH_COST * AC_PPH_FRAGMENTATION_ATTRIBUTION * safetyPct);
 
   } else if (isNDIS) {
     // Claims accuracy
@@ -680,7 +682,7 @@ function calc(inp, mode, ov = {}, flagships = []) {
   const reimbursementImpact = isAgedCare ? (acAnaccUplift + acAgencyReduction + acComplianceSaving)
                            : isNDIS ? (ndisClaimsRecovery + ndisUtilisationUplift + ndisComplianceSaving + ndisRetentionSaving)
                            : abfEfficiencyGain + privateRevRecovery;
-  const qualitySavings = isAgedCare ? acHarmAvoidance
+  const qualitySavings = isAgedCare ? (acHarmAvoidance + acPPHAvoidance)
                      : isNDIS ? 0
                      : malpracticeReduction + excessDayCostAvoided + duplicateReduction + ediscoverySaving + auReadmissionCostAvoidance;
 
@@ -730,7 +732,7 @@ function calc(inp, mode, ov = {}, flagships = []) {
     litigationCases, ediscoverySaving, cyberSystemsRetired,
     auReadmissions, auReadmissionsAvoided, auReadmissionCostAvoidance,
     sector, isAgedCare, isNDIS,
-    acAnaccUplift, acAgencyReduction, acComplianceSaving, acHarmAvoidance,
+    acAnaccUplift, acAgencyReduction, acComplianceSaving, acHarmAvoidance, acPPHAvoidance,
     ndisClaimsRecovery, ndisUtilisationUplift, ndisComplianceSaving, ndisRetentionSaving,
     annualWithReimbursement, total3WithReimbursement, totalRampWithReimbursement, yr1R, yr2R, yr3R,
     // Phase 1: Benefit categorisation
@@ -837,6 +839,9 @@ const AC_COMPLIANCE_FTE_PER_FACILITY = 0.5; // QI reporting, SIRS, Star Ratings,
 const AC_COMPLIANCE_COST_PER_FTE = 65000;  // Annual cost of compliance admin staff
 const AC_HARM_COST_PER_PLACE = 3000;       // Falls A$35k, pressure injuries A$10k, med incidents A$15k; blended ~A$3k/place/yr
 const AC_FRAGMENTATION_ATTRIBUTION = 0.25; // 25% of avoidable harm attributable to information fragmentation
+const AC_PPH_RATE_PER_PLACE = 0.15;        // 15% of aged-care residents have a preventable hospital admission/yr (AIHW Australian Health Performance Framework; midpoint of ACSC + falls/fractures + UTI/dehydration data)
+const AC_PPH_COST = 8000;                  // A$8,000 avg cost per preventable admission (AIHW IHACPA NWAU-derived; ACSC episode mid-range)
+const AC_PPH_FRAGMENTATION_ATTRIBUTION = 0.30; // 30% attributable to information fragmentation (consistent with acute readmissions; RACF medication-reconciliation evidence)
 const AC_FALL_FRACTURE_COST = 35000;       // AIHW injury hospitalisation data
 const AC_PRESSURE_INJURY_COST = 10000;     // Extended treatment course
 const AC_MED_INCIDENT_COST = 15000;        // Hospitalisation from medication incident
@@ -4379,13 +4384,13 @@ function ROICalculator() {
     </div>}
 
     {/* Aged care safety */}
-    {sector === "aged_care" && r.acHarmAvoidance > 0 && <><Card style={{border:"1px solid #f0c4d4",background:"#fdf5f8"}}>
+    {sector === "aged_care" && (r.acHarmAvoidance > 0 || r.acPPHAvoidance > 0) && <><Card style={{border:"1px solid #f0c4d4",background:"#fdf5f8"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
         <SIcon name="alert" size={18} color="#d4507a"/>
         <h3 style={{fontSize:16,fontWeight:700,margin:0}}>Avoidable cost of harm</h3>
       </div>
       <p style={{fontSize:13,color:C.textMid,margin:"0 0 14px",lineHeight:1.5}}>
-        Estimated financial impact of preventable safety incidents attributable to fragmented clinical information across your facilities.
+        Estimated financial impact of preventable safety incidents <strong>and avoidable hospital admissions</strong> attributable to fragmented clinical information across your facilities.
       </p>
       <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:14}}>
         <div style={{flex:"1 1 200px",padding:"16px 18px",background:"#fdf5f8",borderRadius:10}}>
@@ -4403,11 +4408,21 @@ function ROICalculator() {
           <div style={{fontSize:22,fontWeight:800,color:"#d4507a",margin:"6px 0"}}>{fmtK(Math.round(r.acHarmAvoidance * 0.30 * ts.mult))}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
           <div style={{fontSize:10,color:"#d4507a"}}>12-15 per 100 residents/yr, A$15k/hospitalisation</div>
         </div>
+        <div style={{flex:"1 1 200px",padding:"16px 18px",background:"#fdf5f8",borderRadius:10,border:"1px solid #f0c4d440"}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.textMuted}}>Preventable hospitalisations</div>
+          <div style={{fontSize:22,fontWeight:800,color:"#d4507a",margin:"6px 0"}}>{fmtK(Math.round(r.acPPHAvoidance * ts.mult))}<span style={{fontSize:13,fontWeight:500}}>{ts.suffix}</span></div>
+          <div style={{fontSize:10,color:"#d4507a"}}>15% residents/yr (UTI, dehydration, falls, ACSCs), A$8k/admission (AIHW)</div>
+        </div>
       </div>
       <Callout bg="#fdf5f8" border="#f0c4d4">
         <strong style={{color:"#d4507a"}}>Total avoidable cost of harm:</strong>{" "}
-        {fmtK(Math.round(r.acHarmAvoidance * ts.mult))}{ts.suffix} (included as cost avoidance)
+        {fmtK(Math.round((r.acHarmAvoidance + r.acPPHAvoidance) * ts.mult))}{ts.suffix} (included as cost avoidance)
       </Callout>
+      <EvidenceDropdown title="Why these savings appear (harm + preventable hospitalisations)">
+        <strong>Falls, pressure injuries, medication incidents.</strong> Blended at A$3,000/place/yr (Falls A$35k each at ~45% of the blend; pressure injuries A$10k each at ~25%; medication incidents A$15k each at ~30%). ACSQHC attributes 25% of these to information fragmentation across legacy systems \u2014 the consolidated EMR closes the gap that drives missed pressure-area observations, missed mobilisation/falls flags, and medication reconciliation errors at transfer.<br/><br/>
+        <strong>Preventable hospitalisations.</strong> Around 15% of aged-care residents have at least one potentially preventable hospital admission per year \u2014 UTIs, dehydration, falls without injury, COPD exacerbations and other ambulatory-care-sensitive conditions. Average admission cost A$8,000 (AIHW IHACPA NWAU-derived). 30% attributed to information fragmentation (consistent with acute readmissions evidence). This is typically the <strong>largest aged-care quality lever</strong> because residents are pulled out of acute beds that cost A$3,100/day each \u2014 a per-admission saving that is structurally absent from the falls/pressure-injuries/medication-incidents components above.<br/><br/>
+        <strong>Sources:</strong> AIHW Australian Health Performance Framework (potentially preventable hospitalisation rates and costs). ACSQHC Residential Aged Care Quality Indicators (falls, pressure injuries). Royal Commission into Aged Care Final Report (2021). IHACPA NWAU pricing. All figures are scenario-adjusted.
+      </EvidenceDropdown>
     </Card><LockedConnector/></>}
 
     {/* Legal & compliance */}
