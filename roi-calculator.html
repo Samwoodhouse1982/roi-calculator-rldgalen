@@ -2775,8 +2775,8 @@ function ROICalculator() {
       y = doc.lastAutoTable.finalY + 10;
     }
 
-    // Year-by-year
-    if (y > 220) { doc.addPage(); addPageHeader(); y = 22; }
+    // Year-by-year (projection ~60mm; need room for scenario range 22mm too before disclaimer page-break can fire)
+    if (y > 180) { doc.addPage(); addPageHeader(); y = 22; }
     doc.setFontSize(12); doc.setFont("helvetica","bold"); setC(TEAL);
     doc.text(r.rampN + "-Year Projection", ml, y); y += 2;
     // Build year-by-year projection with all components and ramp
@@ -2864,8 +2864,8 @@ function ROICalculator() {
       addFooter(i, totalPages);
     }
 
-    // Disclaimer
-    if (y > 240) { doc.addPage(); addPageHeader(); y = 22; }
+    // Disclaimer (need to clear the fixed CTA at y=273; disclaimer is ~28-40mm)
+    if (y > 215) { doc.addPage(); addPageHeader(); y = 22; }
     doc.setFillColor(245,244,240);
     doc.roundedRect(ml, y, cw, 28, 2, 2, "F");
     doc.setFontSize(7); doc.setFont("helvetica","bold"); setC(MID);
