@@ -2235,8 +2235,7 @@ function ROICalculator() {
     doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(190,230,220);
     doc.text("All assumptions documented in the methodology report. Every figure is adjustable.", pw / 2, ctaY + 9, { align: "center" });
 
-    // Add footer logo to all pages except the first (front page already has hero logo)
-    // Note: footer (text + logo) is now drawn directly by addFooter for each page —
+    // Footer (text + logo) is now drawn directly by addFooter for each page —
     // no post-render loop needed.
 
     // Save or return
