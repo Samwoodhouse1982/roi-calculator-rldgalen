@@ -2145,16 +2145,18 @@ function ROICalculator() {
     doc.setFontSize(22); doc.setFont("helvetica","bold");
     doc.text("ROI Estimate", ml, 26);
     doc.setFontSize(11); doc.setFont("helvetica","normal");
-    doc.text("Galen Clinical Archive  |  " + dateStr + "  |  " + scenarioLabel + " scenario", ml, 36);
+    doc.text("RLDatix Vital Centre Online: Clinical Archive  |  " + dateStr + "  |  " + scenarioLabel + " scenario", ml, 36);
     
     y = 64;
     setC(DARK); doc.setFontSize(10); doc.setFont("helvetica","bold");
     doc.text("ESTIMATED ANNUAL SAVINGS AT STEADY STATE", ml, y);
     y += 8;
     setC(TEAL); doc.setFontSize(36); doc.setFont("helvetica","bold");
-    doc.text(fmtKp(r.annualWithReimbursement), ml, y+4);
+    const heroNumStr = fmtKp(r.annualWithReimbursement);
+    const heroNumW = doc.getTextWidth(heroNumStr);  // measure at 36pt before font change
+    doc.text(heroNumStr, ml, y+4);
     setC(MID); doc.setFontSize(10); doc.setFont("helvetica","normal");
-    doc.text("per year", ml + doc.getTextWidth(fmtKp(r.annualWithReimbursement)) + 4, y+4);
+    doc.text("per year", ml + heroNumW + 4, y+4);
     
     y += 18;
     setC(DARK); doc.setFontSize(10); doc.setFont("helvetica","bold");
@@ -2189,9 +2191,6 @@ function ROICalculator() {
         doc.rect(xCursor, barY, w, barH, "F");
         xCursor += w;
       });
-      // Single rounded outline over the whole bar for a polished outer edge
-      doc.setDrawColor(15, 65, 70); doc.setLineWidth(0.3);
-      doc.roundedRect(ml, barY, cw, barH, 1.5, 1.5, "S");
       y += barH + 4;
       doc.setFont("helvetica","normal"); doc.setFontSize(7);
       let legX = ml; let legY = y;
@@ -2221,7 +2220,7 @@ function ROICalculator() {
     ].filter(card => card.v > 0).slice(0, 4);
     const ncols = allCards.length <= 2 ? allCards.length : 2;
     const cardW = (cw - 4 * (ncols - 1)) / ncols;
-    const cardH = 26;
+    const cardH = 32;
     allCards.forEach((card, i) => {
       const col = i % ncols;
       const row = Math.floor(i / ncols);
@@ -2232,11 +2231,11 @@ function ROICalculator() {
       doc.setFillColor(card.c[0],card.c[1],card.c[2]);
       doc.rect(x, cy, 2, cardH, "F");
       setC(MID); doc.setFontSize(7.5); doc.setFont("helvetica","bold");
-      doc.text(card.l.toUpperCase(), x + 5, cy + 6);
-      setC(card.c); doc.setFontSize(15); doc.setFont("helvetica","bold");
-      doc.text(fmtKp(card.v), x + 5, cy + 16);
+      doc.text(card.l.toUpperCase(), x + 5, cy + 7);
+      setC(card.c); doc.setFontSize(22); doc.setFont("helvetica","bold");
+      doc.text(fmtKp(card.v), x + 5, cy + 21);
       setC(MID); doc.setFontSize(7); doc.setFont("helvetica","normal");
-      doc.text(card.sub, x + 5, cy + 22);
+      doc.text(card.sub, x + 5, cy + 28);
     });
     const rows = Math.ceil(allCards.length / ncols);
     y += rows * cardH + (rows > 1 ? (rows - 1) * 4 : 0) + 8;
@@ -2261,14 +2260,14 @@ function ROICalculator() {
     
     if (galenMigrationCost > 0 || galenAnnualCost > 0) {
       setC(DARK); doc.setFontSize(11); doc.setFont("helvetica","bold");
-      doc.text("Net of Galen costs", ml, y);
+      doc.text("Net of RLDatix Vital Centre costs", ml, y);
       y += 6;
       setC(GRAY); doc.setFontSize(9); doc.setFont("helvetica","normal");
       const rampSum = r.rampPcts.reduce((a,b)=>a+b,0);
       const galenAnnualTotal = Math.round(galenAnnualCost * rampSum);
       const netTotal = r.total3WithReimbursement - galenMigrationCost - galenAnnualTotal;
       doc.text("Gross " + r.rampN + "-yr savings: " + fmtKp(r.total3WithReimbursement), ml, y);
-      doc.text("Galen migration: " + fmtKp(galenMigrationCost) + "  \u00b7  Galen annual (" + r.rampN + "yr): " + fmtKp(galenAnnualTotal), ml, y + 5);
+      doc.text("Vital Centre migration: " + fmtKp(galenMigrationCost) + "  \u00b7  Vital Centre annual (" + r.rampN + "yr): " + fmtKp(galenAnnualTotal), ml, y + 5);
       setC(netTotal > 0 ? TEAL : [153,53,53]);
       doc.setFont("helvetica","bold");
       doc.text("Net " + r.rampN + "-yr savings: " + fmtKp(netTotal), ml, y + 11);
@@ -2288,7 +2287,7 @@ function ROICalculator() {
     doc.setDrawColor(15,65,70); doc.setLineWidth(0.6);
     doc.line(ml, ph - 14, pw - mr, ph - 14);
     doc.setFontSize(7); setC(MID);
-    doc.text("Galen Clinical Archive  |  Board Summary  |  " + dateStr, ml, ph - 10);
+    doc.text("RLDatix Vital Centre Online: Clinical Archive  |  Board Summary  |  " + dateStr, ml, ph - 10);
     doc.text("Page 1 of 2", pw - mr, ph - 10, { align: "right" });
     doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]); doc.rect(0, ph - 4, pw, 4, "F");
 
@@ -2398,7 +2397,7 @@ function ROICalculator() {
     setC(WHITE); doc.setFontSize(13); doc.setFont("helvetica","bold");
     doc.text("Next step", ml + 6, y + 9);
     doc.setFontSize(9); doc.setFont("helvetica","normal");
-    doc.text("Schedule a 30-minute walkthrough with a Galen specialist to validate these figures", ml + 6, y + 16);
+    doc.text("Schedule a 30-minute walkthrough with an RLDatix specialist to validate these figures", ml + 6, y + 16);
     doc.text("against your specific legacy estate and contract structure.", ml + 6, y + 21);
     y += 34;
     
@@ -2410,13 +2409,13 @@ function ROICalculator() {
     doc.setDrawColor(15,65,70); doc.setLineWidth(0.6);
     doc.line(ml, ph - 14, pw - mr, ph - 14);
     doc.setFontSize(7); setC(MID);
-    doc.text("Galen Clinical Archive  |  Board Summary  |  " + dateStr, ml, ph - 10);
+    doc.text("RLDatix Vital Centre Online: Clinical Archive  |  Board Summary  |  " + dateStr, ml, ph - 10);
     doc.text("Page 2 of 2", pw - mr, ph - 10, { align: "right" });
     doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]); doc.rect(0, ph - 4, pw, 4, "F");
     
     // Note: footer logo is now placed on page 2's TOP header band (above) rather than as a
     // separate footer band, because the latter overlapped the existing footer text + seafoam strip.
-    doc.save("Galen_ROI_Board_Summary_" + new Date().toISOString().split("T")[0] + ".pdf");
+    doc.save("RLDatix_VCO_Board_Summary_" + new Date().toISOString().split("T")[0] + ".pdf");
     return null;
   }, [r, am, scenarioBlend, reimbursementModel, inputs, galenMigrationCost, galenAnnualCost]);
 
