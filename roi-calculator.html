@@ -1973,29 +1973,60 @@ function ROICalculator() {
     doc.line(ml, y, pw - mr, y);
     y += 8;
 
-    // Summary cards (4 if quality present, else 3)
+    // ── HERO: estimated annual savings at steady state (mirrors web report's headline hero box) ──
+    doc.setFillColor(232, 250, 246);
+    doc.setDrawColor(180, 230, 220);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(ml, y, cw, 38, 3, 3, "FD");
+    doc.setFontSize(8); doc.setFont("helvetica","bold"); setC(GREY);
+    doc.text("ESTIMATED ANNUAL SAVINGS AT STEADY STATE", pw / 2, y + 7, { align: "center" });
+    doc.setFontSize(32); doc.setFont("helvetica","bold"); setC(TEAL);
+    doc.text(fmtK(r.annual) + "/yr", pw / 2, y + 22, { align: "center" });
+    doc.setFontSize(9); doc.setFont("helvetica","normal"); setC(GREY);
+    doc.text("per year  \u00b7  " + r.rampYears + "-year total: " + fmtK(r.totalRamp), pw / 2, y + 29, { align: "center" });
+    doc.setFontSize(8); setC(MID);
+    doc.text("Range across scenarios: " + fmtK(rCon.annual) + " \u2013 " + fmtK(rStr.annual) + " /yr", pw / 2, y + 34, { align: "center" });
+    y += 42;
+
+    // Summary cards (Quality + FTE) — the headline figures (annual recurring, N-year total)
+    // are now in the hero box above.
     const hasQ = r.qualitySavings > 0;
-    const cards = [
-      { label: r.rampYears + "-YEAR TOTAL", value: fmtK(r.totalRamp), sub: "phased over " + r.rampYears + " years", bg: LTBG },
-      { label: "ANNUAL RECURRING", value: fmtK(r.annual), sub: hasQ ? "decom + capacity + quality" : "decom + clinician time", bg: TEALBG },
-      ...(hasQ ? [{ label: "QUALITY / SAFETY", value: fmtK(r.qualitySavings), sub: "indemnity + bed days + tests", bg: [253,240,244] }] : [{ label: "HOURS FREED / YR", value: fmtNum(r.hrsSaved), sub: Math.round(r.realisation*100) + "% realisation", bg: [230,248,252] }]),
+    const cards = hasQ ? [
+      { label: "QUALITY / COST AVOIDANCE", value: fmtK(r.qualitySavings), sub: "indemnity + bed days + duplicate testing", bg: [253,240,244] },
+      { label: "FTE EQUIVALENT", value: String(r.fteEquivalent), sub: fmtNum(r.hrsSaved) + " hrs/yr freed", bg: [232,250,246] },
+    ] : [
+      { label: "HOURS FREED / YR", value: fmtNum(r.hrsSaved), sub: Math.round(r.realisation*100) + "% realisation", bg: [230,248,252] },
       { label: "FTE EQUIVALENT", value: String(r.fteEquivalent), sub: fmtNum(r.hrsSaved) + " hrs/yr freed", bg: [232,250,246] },
     ];
-    const ncards = cards.length;
-    const cardW = (cw - 4 * (ncards - 1)) / ncards;
+    const cardW = (cw - 4) / 2;
     cards.forEach((cd, i) => {
       const cx = ml + i * (cardW + 4);
       doc.setFillColor(cd.bg[0],cd.bg[1],cd.bg[2]);
       doc.roundedRect(cx, y, cardW, 28, 3, 3, "F");
-      doc.setFontSize(6.5); doc.setFont("helvetica","bold"); setC(GREY);
-      doc.text(cd.label, cx + cardW/2, y + 7, { align: "center" });
-      doc.setFontSize(ncards >= 4 ? 14 : 18); doc.setFont("helvetica","bold"); setC(TEAL);
-      doc.text(cd.value, cx + cardW/2, y + 17, { align: "center" });
-      doc.setFontSize(6.5); doc.setFont("helvetica","normal"); setC(MID);
-      const subLines = doc.splitTextToSize(cd.sub, cardW - 4);
-      doc.text(subLines.slice(0, 2), cx + cardW/2, y + 23, { align: "center" });
+      doc.setFontSize(7); doc.setFont("helvetica","bold"); setC(GREY);
+      doc.text(cd.label, cx + cardW/2, y + 8, { align: "center" });
+      doc.setFontSize(22); doc.setFont("helvetica","bold"); setC(TEAL);
+      doc.text(cd.value, cx + cardW/2, y + 18, { align: "center" });
+      doc.setFontSize(7); doc.setFont("helvetica","normal"); setC(MID);
+      doc.text(cd.sub, cx + cardW/2, y + 24, { align: "center" });
     });
     y += 36;
+
+    // Journey context (matches the banner on the web report at the top of the results page)
+    const journeyBlurb = isArchiveOnly
+      ? "You said: \"We want to decommission systems\" \u2014 so this report estimates the potential ROI of retiring legacy applications and consolidating data into a single clinical archive. Retiring legacy systems eliminates ongoing licensing, hosting and support costs; an archive keeps historical patient records accessible at the point of care for continuity, CQC inspection readiness and NHS Records Management Code of Practice compliance."
+      : "You said: \"We're evaluating enterprise EPRs\" \u2014 so this report estimates the potential ROI of both migration and archiving. Migrating to a single EPR improves safety at care transitions; archiving legacy systems eliminates ongoing licensing, hosting and support costs while ensuring historical information remains accessible in context to clinicians at the point of care, in line with NHS Records Management Code of Practice.";
+    doc.setFontSize(7.5); doc.setFont("helvetica","normal");
+    const journeyLines = doc.splitTextToSize(journeyBlurb, cw - 10);
+    const journeyBoxH = Math.max(18, 6 + journeyLines.length * 3.2 + 4);
+    const journeyBg = isArchiveOnly ? [238, 247, 241] : [250, 245, 247];
+    const journeyBorder = isArchiveOnly ? [195, 221, 211] : [224, 196, 207];
+    doc.setFillColor(journeyBg[0], journeyBg[1], journeyBg[2]);
+    doc.setDrawColor(journeyBorder[0], journeyBorder[1], journeyBorder[2]);
+    doc.roundedRect(ml, y, cw, journeyBoxH, 2, 2, "FD");
+    doc.setTextColor(70, 80, 85);
+    doc.text(journeyLines, ml + 5, y + 5);
+    y += journeyBoxH + 8;
 
     // Programme inputs
     if (y > 220) { doc.addPage(); addPageHeader(); y = 22; }
@@ -2142,6 +2173,83 @@ function ROICalculator() {
         ],
       });
       y = doc.lastAutoTable.finalY + 10;
+    }
+
+    // ── Legal & operational risk reduction (UK: hospital sector) ──
+    {
+      const riskTiles = [];
+      if (r.decom > 0) {
+        riskTiles.push({ label: "CYBER ATTACK SURFACES REMOVED", value: String(r.decom), sub: "decommissioned systems eliminated (IBM/Ponemon: avg UK healthcare breach \u00a33.6M)" });
+      }
+      if (r.hasClinicalScope && r.safetyPatientsProtected > 0) {
+        riskTiles.push({ label: "PATIENTS POTENTIALLY PROTECTED", value: fmtNum(r.safetyPatientsProtected) + "/yr", sub: "from medication errors at care transitions (Camacho et al BMJ Quality & Safety 2024)" });
+      }
+      if (riskTiles.length > 0) {
+        if (y > 225) { doc.addPage(); addPageHeader(); y = 22; }
+        doc.setFontSize(12); doc.setFont("helvetica","bold"); setC(TEAL);
+        doc.text("Legal and operational risk reduction", ml, y); y += 5;
+        const riskTileW = (cw - (riskTiles.length - 1) * 4) / riskTiles.length;
+        riskTiles.forEach((t, i) => {
+          const tx = ml + i * (riskTileW + 4);
+          doc.setFillColor(240, 242, 248);
+          doc.setDrawColor(196, 204, 224);
+          doc.roundedRect(tx, y, riskTileW, 30, 2, 2, "FD");
+          doc.setFontSize(6.5); doc.setFont("helvetica","bold"); setC(MID);
+          doc.text(t.label, tx + riskTileW/2, y + 5, { align: "center" });
+          doc.setFontSize(16); doc.setFont("helvetica","bold"); doc.setTextColor(44, 62, 107);
+          doc.text(t.value, tx + riskTileW/2, y + 14, { align: "center" });
+          doc.setFontSize(6); doc.setFont("helvetica","normal"); setC(MID);
+          const subLines = doc.splitTextToSize(t.sub, riskTileW - 6);
+          doc.text(subLines, tx + riskTileW/2, y + 20, { align: "center" });
+        });
+        y += 30 + 10;
+      }
+    }
+
+    // ── Projected KPI improvements (decommissioned, tickets, SAR turnaround) ──
+    if (y > 220) { doc.addPage(); addPageHeader(); y = 22; }
+    doc.setFontSize(12); doc.setFont("helvetica","bold"); setC(TEAL);
+    doc.text("Projected KPI improvements", ml, y); y += 5;
+    {
+      const decomPctNum = Math.round(r.decom / Math.max(1, r.legacy) * 100);
+      const kpiTiles = [
+        {
+          label: "DECOMMISSIONED",
+          value: String(r.decom),
+          sub: "of " + r.legacy + " legacy systems",
+          tag: decomPctNum + "% retired",
+          bg: LTBG,
+        },
+        {
+          label: "SERVICE DESK TICKETS",
+          value: r.ticketsReductionPct + "%",
+          sub: r.ticketsBaselineMonthly + "/mo to " + r.ticketsAfter + "/mo",
+          tag: "monthly reduction",
+          bg: TEALBG,
+        },
+        {
+          label: "SAR TURNAROUND",
+          value: r.sarReductionPct + "%",
+          sub: r.sarDaysBefore + " days to " + r.sarDaysAfter + " days",
+          tag: "faster fulfilment (ICO/UK GDPR)",
+          bg: [232, 250, 246],
+        },
+      ];
+      const kpiTileW = (cw - 8) / 3;
+      kpiTiles.forEach((t, i) => {
+        const tx = ml + i * (kpiTileW + 4);
+        doc.setFillColor(t.bg[0], t.bg[1], t.bg[2]);
+        doc.roundedRect(tx, y, kpiTileW, 32, 3, 3, "F");
+        doc.setFontSize(6.5); doc.setFont("helvetica","bold"); setC(MID);
+        doc.text(t.label, tx + kpiTileW/2, y + 6, { align: "center" });
+        doc.setFontSize(20); doc.setFont("helvetica","bold"); setC(TEAL);
+        doc.text(t.value, tx + kpiTileW/2, y + 17, { align: "center" });
+        doc.setFontSize(7); doc.setFont("helvetica","normal"); setC(MID);
+        doc.text(t.tag, tx + kpiTileW/2, y + 22, { align: "center" });
+        doc.setFontSize(6.5); setC(GREY);
+        doc.text(t.sub, tx + kpiTileW/2, y + 28, { align: "center" });
+      });
+      y += 32 + 10;
     }
 
     // Year-by-year (dynamic - respects rampPcts.length)
