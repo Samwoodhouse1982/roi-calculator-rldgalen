@@ -1607,9 +1607,11 @@ function ROICalculator() {
     doc.text("ESTIMATED ANNUAL SAVINGS", ml, y);
     y += 8;
     setC(TEAL); doc.setFontSize(36); doc.setFont("helvetica","bold");
-    doc.text(fmtKp(r.annual), ml, y+4);
+    const heroNumStr = fmtKp(r.annual);
+    const heroNumW = doc.getTextWidth(heroNumStr);  // measure at 36pt before font change
+    doc.text(heroNumStr, ml, y+4);
     setC(MID); doc.setFontSize(10); doc.setFont("helvetica","normal");
-    doc.text("per year", ml + doc.getTextWidth(fmtKp(r.annual)) + 4, y+4);
+    doc.text("per year", ml + heroNumW + 4, y+4);
     
     y += 18;
     setC(DARK); doc.setFontSize(10); doc.setFont("helvetica","bold");
@@ -1632,10 +1634,11 @@ function ROICalculator() {
       y += 4;
       const barH = 8, barY = y;
       let xCursor = ml;
+      // Plain rect for each segment - clean joins, no notch artefacts
       segs.forEach(s => {
         const w = (cw * s.v) / total;
         doc.setFillColor(s.c[0], s.c[1], s.c[2]);
-        doc.roundedRect(xCursor, barY, w, barH, 1.5, 1.5, "F");
+        doc.rect(xCursor, barY, w, barH, "F");
         xCursor += w;
       });
       y += barH + 4;
@@ -1664,7 +1667,7 @@ function ROICalculator() {
     
     const ncols = hasQ ? 2 : 3;
     const cardW = (cw - 4 * (ncols - 1)) / ncols;
-    const cardH = 26;
+    const cardH = 32;
     cards.forEach((card, i) => {
       const col = i % ncols;
       const row = Math.floor(i / ncols);
@@ -1675,11 +1678,11 @@ function ROICalculator() {
       doc.setFillColor(card.c[0],card.c[1],card.c[2]);
       doc.rect(x, cy, 2, cardH, "F");
       setC(MID); doc.setFontSize(7.5); doc.setFont("helvetica","bold");
-      doc.text(card.l.toUpperCase(), x + 5, cy + 6);
-      setC(card.c); doc.setFontSize(15); doc.setFont("helvetica","bold");
-      doc.text(typeof card.v === "string" ? card.v : fmtKp(card.v), x + 5, cy + 16);
+      doc.text(card.l.toUpperCase(), x + 5, cy + 7);
+      setC(card.c); doc.setFontSize(22); doc.setFont("helvetica","bold");
+      doc.text(typeof card.v === "string" ? card.v : fmtKp(card.v), x + 5, cy + 21);
       setC(MID); doc.setFontSize(7); doc.setFont("helvetica","normal");
-      doc.text(card.sub, x + 5, cy + 22);
+      doc.text(card.sub, x + 5, cy + 28);
     });
     const rows = Math.ceil(cards.length / ncols);
     y += rows * cardH + (rows - 1) * 4 + 8;
@@ -1737,6 +1740,14 @@ function ROICalculator() {
     doc.setFillColor(TEAL[0],TEAL[1],TEAL[2]); doc.rect(0,0,pw,18,"F");
     setC(WHITE); doc.setFontSize(11); doc.setFont("helvetica","bold");
     doc.text("ROI Estimate \u00b7 Components & Methodology", ml, 12);
+    // Small logo top-right of page 2 header
+    if (PDF_LOGO_BASE64) {
+      try {
+        const p2LogoW = PDF_LOGO_FOOTER_W;
+        const p2LogoH = p2LogoW / PDF_LOGO_ASPECT;
+        doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, pw - p2LogoW - 10, (18 - p2LogoH) / 2, p2LogoW, p2LogoH);
+      } catch (e) {}
+    }
     
     y = 28;
     setC(DARK); doc.setFontSize(13); doc.setFont("helvetica","bold");
@@ -1832,24 +1843,13 @@ function ROICalculator() {
     doc.text("Page 2 of 2", pw - mr, ph - 10, { align: "right" });
     doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]); doc.rect(0, ph - 4, pw, 4, "F");
     
-    // Add footer logo to all pages except the first
-    if (PDF_LOGO_BASE64) {
-      const totalPages = doc.internal.getNumberOfPages();
-      const fLogoW = PDF_LOGO_FOOTER_W;
-      const fLogoH = fLogoW / PDF_LOGO_ASPECT;
-      for (let p = 2; p <= totalPages; p++) {
-        doc.setPage(p);
-        try {
-          const bandH = 10;
-          doc.setFillColor(TEAL[0], TEAL[1], TEAL[2]);
-          doc.rect(0, ph - bandH, pw, bandH, "F");
-          doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, pw - fLogoW - 5, ph - bandH + (bandH - fLogoH) / 2, fLogoW, fLogoH);
-        } catch (e) {}
-      }
-    }
-    doc.save("Galen_ROI_Board_Summary_" + new Date().toISOString().split("T")[0] + ".pdf");
+    // Note: footer logo is now placed on page 2's TOP header band (above) rather than as a
+    // separate footer band, because the latter overlapped the existing footer text + seafoam strip.
+    const orgSlug = leadForm.org ? "-" + leadForm.org.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") : "";
+    const filenameDate = new Date().toISOString().split("T")[0];
+    doc.save("RLDatix-VCO-Board-Summary" + orgSlug + "-" + filenameDate + ".pdf");
     return null;
-  }, [r, am, scenarioBlend, inputs, galenMigrationCost, galenAnnualCost]);
+  }, [r, am, scenarioBlend, inputs, galenMigrationCost, galenAnnualCost, leadForm]);
 
   const generatePDF = useCallback(async (returnBlob) => {
     let jsPDF;
@@ -1877,19 +1877,36 @@ function ROICalculator() {
     // name). Without this, sections that don't perform their own
     // page-break check before drawing can overflow into the footer.
     const addFooter = (pageNum, totalPages) => {
-      // 1. Clear the footer region (18mm tall at bottom, white fill)
+      // 1. Clear the footer region (18mm tall at bottom, white fill — masks any content overflow)
       doc.setFillColor(255, 255, 255);
       doc.rect(0, ph - 18, pw, 18, "F");
-      // 2. Draw separator line + footer text
-      doc.setDrawColor(15,65,70); doc.setLineWidth(0.6);
-      doc.line(ml, ph - 14, pw - mr, ph - 14);
-      doc.setFontSize(7); setC(MID);
-      doc.text(PDF_COMPANY_NAME, ml, ph - 10);
-      doc.text("ROI Calculator  |  " + dateStr, pw / 2, ph - 10, { align: "center" });
-      doc.text("Page " + pageNum + " of " + totalPages, pw - mr, ph - 10, { align: "right" });
-      // 3. Seafoam accent bar at very bottom (sits below the text)
-      doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]);
-      doc.rect(0, ph - 4, pw, 4, "F");
+
+      if (pageNum === 1) {
+        // Page 1 (cover): teal separator line, grey text on white, seafoam accent strip
+        doc.setDrawColor(15,65,70); doc.setLineWidth(0.6);
+        doc.line(ml, ph - 14, pw - mr, ph - 14);
+        doc.setFontSize(7); setC(MID);
+        doc.text(PDF_COMPANY_NAME, ml, ph - 10);
+        doc.text("ROI Calculator  |  " + dateStr, pw / 2, ph - 10, { align: "center" });
+        doc.text("Page " + pageNum + " of " + totalPages, pw - mr, ph - 10, { align: "right" });
+        doc.setFillColor(SEAFOAM[0],SEAFOAM[1],SEAFOAM[2]);
+        doc.rect(0, ph - 4, pw, 4, "F");
+      } else {
+        // Pages 2+: 10mm teal band with all footer text in white, logo on right
+        doc.setFillColor(TEAL[0], TEAL[1], TEAL[2]);
+        doc.rect(0, ph - 10, pw, 10, "F");
+        doc.setFontSize(7); doc.setFont("helvetica","normal"); setC(WHITE);
+        const footerText = PDF_COMPANY_NAME + "  |  ROI Calculator  |  " + dateStr + "  |  Page " + pageNum + " of " + totalPages;
+        doc.text(footerText, ml, ph - 4);
+        // Logo on the right of the band
+        if (PDF_LOGO_BASE64) {
+          try {
+            const fLogoW = PDF_LOGO_FOOTER_W;
+            const fLogoH = fLogoW / PDF_LOGO_ASPECT;
+            doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, pw - fLogoW - 5, ph - 10 + (10 - fLogoH) / 2, fLogoW, fLogoH);
+          } catch (e) {}
+        }
+      }
     };
 
     // Repeating header for pages 2+
@@ -1981,11 +1998,13 @@ function ROICalculator() {
     y += 36;
 
     // Programme inputs
+    if (y > 220) { doc.addPage(); addPageHeader(); y = 22; }
     doc.setFontSize(12); doc.setFont("helvetica","bold"); setC(TEAL);
     doc.text("Programme Inputs", ml, y); y += 2;
     doc.autoTable({
       startY: y,
       margin: { left: ml, right: mr },
+      pageBreak: "avoid",
       theme: "plain",
       styles: { fontSize: 9, cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
       columnStyles: { 0: { fontStyle: "bold", cellWidth: 55 }, 1: { halign: "right" } },
@@ -2001,6 +2020,7 @@ function ROICalculator() {
     y = doc.lastAutoTable.finalY + 10;
 
     // Decommission savings
+    if (y > 220) { doc.addPage(); addPageHeader(); y = 22; }
     doc.setFontSize(12); doc.setFont("helvetica","bold"); setC(TEAL);
     doc.text("Decommission Savings", ml, y); y += 2;
     const decomBody = [];
@@ -2012,6 +2032,7 @@ function ROICalculator() {
     doc.autoTable({
       startY: y,
       margin: { left: ml, right: mr },
+      pageBreak: "avoid",
       head: [["Tier", "Systems", "Cost/sys/yr", "Retired", "Saving"]],
       body: decomBody,
       headStyles: { fillColor: TEAL, textColor: WHITE, fontStyle: "bold", fontSize: 7.5, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 } },
@@ -2029,6 +2050,7 @@ function ROICalculator() {
     doc.autoTable({
       startY: y,
       margin: { left: ml, right: mr },
+      pageBreak: "avoid",
       theme: "plain",
       styles: { fontSize: 9, cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
       columnStyles: { 0: { fontStyle: "bold", cellWidth: 65 }, 1: { halign: "right" } },
@@ -2086,6 +2108,7 @@ function ROICalculator() {
       doc.autoTable({
         startY: y,
         margin: { left: ml, right: mr },
+        pageBreak: "avoid",
         theme: "plain",
         styles: { fontSize: 9, cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
         columnStyles: { 0: { fontStyle: "bold", cellWidth: 80 }, 1: { halign: "right" } },
@@ -2106,6 +2129,7 @@ function ROICalculator() {
       doc.autoTable({
         startY: y,
         margin: { left: ml, right: mr },
+        pageBreak: "avoid",
         theme: "plain",
         styles: { fontSize: 9, cellPadding: { top: 2.5, bottom: 2.5, left: 4, right: 4 }, textColor: DARK, lineWidth: 0.2, lineColor: [224,232,228] },
         columnStyles: { 0: { fontStyle: "bold", cellWidth: 80 }, 1: { halign: "right" } },
@@ -2167,6 +2191,7 @@ function ROICalculator() {
       doc.autoTable({
         startY: y,
         margin: { left: ml, right: mr },
+        pageBreak: "avoid",
         head: [["", "Conservative", "Expected", "Stretch"]],
         body: [
           ["Decom savings", fmtK(rCon.decomSave) + "/yr", fmtK(r.decomSave) + "/yr", fmtK(rStr.decomSave) + "/yr"],
@@ -2211,25 +2236,13 @@ function ROICalculator() {
     doc.text("All assumptions documented in the methodology report. Every figure is adjustable.", pw / 2, ctaY + 9, { align: "center" });
 
     // Add footer logo to all pages except the first (front page already has hero logo)
-    if (PDF_LOGO_BASE64) {
-      const totalPages = doc.internal.getNumberOfPages();
-      const fLogoW = PDF_LOGO_FOOTER_W;
-      const fLogoH = fLogoW / PDF_LOGO_ASPECT;
-      for (let p = 2; p <= totalPages; p++) {
-        doc.setPage(p);
-        try {
-          // Small teal band at bottom for white-on-teal contrast
-          const bandH = 10;
-          doc.setFillColor(TEAL[0], TEAL[1], TEAL[2]);
-          doc.rect(0, ph - bandH, pw, bandH, "F");
-          // Logo right-aligned in band, vertically centered
-          doc.addImage(PDF_LOGO_BASE64, PDF_LOGO_FORMAT, pw - fLogoW - 5, ph - bandH + (bandH - fLogoH) / 2, fLogoW, fLogoH);
-        } catch (e) {}
-      }
-    }
+    // Note: footer (text + logo) is now drawn directly by addFooter for each page —
+    // no post-render loop needed.
 
     // Save or return
-    const filename = "ROI-Estimate-" + (leadForm.org || "Report").replace(/[^a-zA-Z0-9]/g, "-") + ".pdf";
+    const orgSlug = leadForm.org ? "-" + leadForm.org.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") : "";
+    const filenameDate = new Date().toISOString().split("T")[0];
+    const filename = "RLDatix-VCO-ROI-Report" + orgSlug + "-" + filenameDate + ".pdf";
     if (returnBlob) return { blob: doc.output("blob"), filename };
     doc.save(filename);
   }, [am, scenarioBlend, r, rCon, rStr, inputs, leadForm, isArchiveOnly, flagships, galenMigrationCost, galenAnnualCost, loadJsPDF]);
