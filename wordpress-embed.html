@@ -35,6 +35,20 @@
     *, *::before, *::after { box-sizing: border-box; }
     body { margin: 0; padding: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background: transparent; overflow-x: hidden; }
 
+/* ── Range inputs: fat track + big tactile thumb (SmartMatch pattern) ── */
+input[type="range"] { -webkit-appearance: none; appearance: none; height: 12px; border-radius: 6px; background: #D4E0DD; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #0F4146; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(15,65,70,0.35); }
+input[type="range"]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: #0F4146; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(15,65,70,0.35); }
+input[type="range"]::-moz-range-track { height: 12px; border-radius: 6px; background: #D4E0DD; }
+
+/* ── Hero figure glow (results co-headline) ── */
+@keyframes roi-glow {
+  0%, 100% { filter: drop-shadow(0 2px 8px rgba(15,65,70,0.19)); }
+  50% { filter: drop-shadow(0 3px 16px rgba(52,222,194,0.5)); }
+}
+.roi-hero-num { animation: roi-glow 3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .roi-hero-num { animation: none; } }
+
 /* ═══════════════════════════════════════════════════════════════
    ROI Calculator — Animations & Interactions
    ═══════════════════════════════════════════════════════════════ */
@@ -314,12 +328,6 @@
 .roi-result { animation: kpi-pulse .55s ease-out; }
 
 @media (max-width: 480px) {
-  /* Ensure range inputs are fat enough to thumb-drag - bumped to 40px for better hit-target */
-  input[type="range"] {
-    height: 40px;
-    min-height: 40px;
-  }
-
   /* Stack flagship rows vertically */
   .roi-flag {
     flex-direction: column !important;
@@ -567,6 +575,7 @@ function useCountUp(target, duration = 1200, active = true) {
 function AnimatedNum({ value, active }) { const v = useCountUp(value, 1200, active); return <span>{v.toLocaleString("en-GB")}</span>; }
 function AnimatedK({ value, active }) { const v = useCountUp(value, 1200, active); return <span>{v >= 1e6 ? `£${(v/1e6).toFixed(1)}m` : v >= 1000 ? `£${Math.round(v/1000).toLocaleString("en-GB")}k` : `£${v.toLocaleString("en-GB")}`}</span>; }
 function AnimatedFTE({ value, active }) { const dec = value < 1; const v10 = useCountUp(Math.round((value||0) * 10), 1200, active); const v = v10 / 10; return <span>{(dec ? v.toFixed(1) : Math.round(v).toLocaleString("en-GB")) + " FTE freed"}</span>; }
+function AnimatedFTENum({ value, active }) { const dec = value < 10; const v10 = useCountUp(Math.round((value||0) * 10), 1200, active); const v = v10 / 10; return <span>{dec ? v.toFixed(1) : Math.round(v).toLocaleString("en-GB")}</span>; }
 
 /* ═══════════════════════════════════════════════════════════════════════
    CALC ENGINE – tiered systems, bed-scaled costs, no parallel-run
@@ -847,7 +856,7 @@ const C = {
   override:"#1a6b5a",overridePale:"#f0faf6"
 };
 
-function Card({children,style,dimmed,className,id}){return <div id={id} className={className||"roi-card"} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:"24px 28px 20px",marginBottom:0,opacity:dimmed?0.3:1,pointerEvents:dimmed?"none":"auto",filter:dimmed?"grayscale(.5)":"none",transition:"opacity .4s,filter .4s",...style}}>{children}</div>;}
+function Card({children,style,dimmed,className,id}){return <div id={id} className={className||"roi-card"} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:18,padding:"clamp(20px, 3vw, 30px)",marginBottom:0,opacity:dimmed?0.3:1,pointerEvents:dimmed?"none":"auto",filter:dimmed?"grayscale(.5)":"none",transition:"opacity .4s,filter .4s",...style}}>{children}</div>;}
 
 function InfoTip({text}){
   const [show, setShow] = useState(false);
@@ -924,7 +933,7 @@ function InfoTip({text}){
       onClick={toggle}
       role="button"
       aria-label="More information"
-      style={{width:18,height:18,borderRadius:"50%",background:"#e8ecf1",color:C.textMid,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,cursor:"help",border:"1px solid #d0d5dd",lineHeight:1,userSelect:"none"}}>i</span>
+      style={{width:24,height:24,borderRadius:"50%",background:"#e3edea",color:C.textMid,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,cursor:"pointer",border:"1px solid #c8d8d4",lineHeight:1,userSelect:"none"}}>i</span>
     {bubble}
   </span>;
 }
@@ -948,31 +957,31 @@ function OverridableStat({label,computed,override,onOverride,prefix,suffix,step:
   return<div style={{minWidth:130,flex:"1 1 130px"}}>
     {label&&<div style={{fontSize:12,fontWeight:600,color:C.textMuted,letterSpacing:".01em",marginBottom:2,display:"flex",alignItems:"center"}}>{label}{info&&<InfoTip text={info}/>}</div>}
     <div style={{display:"flex",alignItems:"center",gap:8}}>
-      <span style={{fontSize:26,fontWeight:800,color:dc,letterSpacing:"-.5px",background:isOv?C.overridePale:"transparent",padding:isOv?"2px 10px":0,borderRadius:6}}>{prefix||""}{typeof val==="number"?fmtNum(val):val}{suffix||""}</span>
+      <span style={{fontSize:"clamp(1.35rem, 2.7vw, 1.65rem)",fontWeight:800,color:dc,letterSpacing:"-.5px",background:isOv?C.overridePale:"transparent",padding:isOv?"2px 10px":0,borderRadius:6}}>{prefix||""}{typeof val==="number"?fmtNum(val):val}{suffix||""}</span>
       <PencilBtn onClick={()=>setEditing(true)} isOverridden={isOv}/>
     </div>
     {isOv&&<div style={{fontSize:11,color:C.override,marginTop:2}}>Your figure (est:{prefix||""}{fmtNum(computed)}{suffix||""}) <button type="button" onClick={()=>onOverride(null)} style={{border:"none",background:"none",color:C.override,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>reset</button></div>}
   </div>;
 }
 
-function Stat({label,value,sub,color,info}){return<div style={{minWidth:130,flex:"1 1 130px"}}><div style={{fontSize:12,fontWeight:600,color:C.textMuted,letterSpacing:".01em",display:"flex",alignItems:"center"}}>{label}{info&&<InfoTip text={info}/>}</div><div style={{fontSize:26,fontWeight:800,color:color||C.text,letterSpacing:"-.5px",margin:"2px 0"}}>{value}</div>{sub&&<div style={{fontSize:12,color:C.textMuted}}>{sub}</div>}</div>;}
+function Stat({label,value,sub,color,info}){return<div style={{minWidth:130,flex:"1 1 130px"}}><div style={{fontSize:12,fontWeight:600,color:C.textMuted,letterSpacing:".01em",display:"flex",alignItems:"center"}}>{label}{info&&<InfoTip text={info}/>}</div><div style={{fontSize:"clamp(1.35rem, 2.7vw, 1.65rem)",fontWeight:800,color:color||C.text,letterSpacing:"-.5px",margin:"2px 0"}}>{value}</div>{sub&&<div style={{fontSize:12,color:C.textMuted}}>{sub}</div>}</div>;}
 function ResultCard({ label, value, sub, bg, border, valueColor, icon, dimmed, info }) {
   return (
     <div className="roi-result" style={{
-      background: bg, border: `1px solid ${border}`, borderRadius: 12,
-      padding: "22px 24px", flex: "1 1 220px", minWidth: 200,
+      background: bg, border: `1px solid ${border}`, borderRadius: 16,
+      padding: "clamp(18px, 2.5vw, 26px)", flex: "1 1 220px", minWidth: 200,
       opacity: dimmed ? 0.3 : 1, filter: dimmed ? "grayscale(.5)" : "none",
       transition: "all .3s",
     }}>
       <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".01em", color: C.textMid, marginBottom: 2, display: "flex", alignItems: "center" }}>
         {icon && <span style={{ marginRight: 6 }}>{icon}</span>}{label}{info && <InfoTip text={info}/>}
       </div>
-      <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-.5px", color: valueColor, margin: "4px 0" }}>{value}</div>
+      <div style={{ fontSize: "clamp(1.55rem, 3.2vw, 1.9rem)", fontWeight: 800, letterSpacing: "-.5px", color: valueColor, margin: "4px 0" }}>{value}</div>
       {sub && <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.4 }}>{sub}</div>}
     </div>
   );
 }
-function Callout({bg,border,children}){return<div style={{padding:"14px 18px",background:bg,borderRadius:8,border:`1px solid ${border}`,fontSize:13,color:C.textMid,lineHeight:1.6}}>{children}</div>;}
+function Callout({bg,border,children}){return<div style={{padding:"14px 18px",background:bg,borderRadius:12,border:`1px solid ${border}`,fontSize:13,color:C.textMid,lineHeight:1.6}}>{children}</div>;}
 
 function TogglePill({active, onToggle, labelA, labelB, labelAText, labelBText}) {
   return <div className="roi-toggle-pill" style={{display:"inline-flex",borderRadius:8,border:`1px solid ${C.border}`,overflow:"hidden",background:C.bg}}>
@@ -1047,12 +1056,12 @@ function AnimatedSlider({ value, min, max, step, onChange, label, suffix, displa
   return <div className="roi-slider" style={{flex:"1 1 200px",minWidth:180}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
       <label style={{fontSize:13,fontWeight:600,color:C.textMid}}>{label}</label>
-      <span style={{fontSize:20,fontWeight:800,color:C.accent}}>{display!=null?display:av}{suffix||""}</span>
+      <span style={{fontSize:"clamp(1.2rem, 2.4vw, 1.45rem)",fontWeight:800,color:C.accent}}>{display!=null?display:av}{suffix||""}</span>
     </div>
-    <div ref={trackRef} style={{position:"relative",height:24,cursor:"pointer",display:"flex",alignItems:"center"}}>
-      <div style={{position:"absolute",left:0,right:0,height:6,borderRadius:3,background:"#e0e4ea"}}/>
-      <div style={{position:"absolute",left:0,width:`${pct}%`,height:6,borderRadius:3,background:C.accent,transition:drag?"none":"width .3s"}}/>
-      <div style={{position:"absolute",left:`${pct}%`,width:18,height:18,borderRadius:"50%",background:"#fff",border:`3px solid ${C.accent}`,transform:"translateX(-50%)",boxShadow:"0 1px 4px rgba(0,0,0,.15)",transition:drag?"none":"left .3s",zIndex:1}}/>
+    <div ref={trackRef} style={{position:"relative",height:32,cursor:"pointer",display:"flex",alignItems:"center"}}>
+      <div style={{position:"absolute",left:0,right:0,height:10,borderRadius:5,background:"#D4E0DD"}}/>
+      <div style={{position:"absolute",left:0,width:`${pct}%`,height:10,borderRadius:5,background:C.accent,transition:drag?"none":"width .3s"}}/>
+      <div style={{position:"absolute",left:`${pct}%`,width:26,height:26,borderRadius:"50%",background:C.accent,border:"3px solid #fff",transform:"translateX(-50%)",boxShadow:"0 2px 8px rgba(15,65,70,.35)",transition:drag?"none":"left .3s",zIndex:1}}/>
       <input type="range" min={min} max={max} step={step} value={av}
         onInput={e=>{setDrag(true);const v=+e.target.value;setAv(v);onChange(v);}}
         onMouseDown={()=>setDrag(true)} onMouseUp={()=>setDrag(false)}
@@ -3106,24 +3115,31 @@ function ROICalculator() {
       <div style={{padding:"4px 0 18px"}}>
         <input type="range" min="0" max="1" step="0.01" value={scenarioBlend ?? 0.5}
           onChange={(e)=>setBlend(parseFloat(e.target.value))}
-          style={{width:"100%",accentColor:C.accent,cursor:"pointer",height:24,padding:0,margin:0}}/>
+          style={{width:"100%",cursor:"pointer",margin:"8px 0",padding:0}}/>
         <div style={{position:"relative",height:14,marginTop:2}}>
           <button type="button" className="roi-anchor" onClick={()=>setBlend(0)} style={{position:"absolute",left:0,fontSize:11,color:C.textMuted,fontWeight:500,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}>Conservative</button>
           <button type="button" className="roi-anchor" onClick={()=>setBlend(0.5)} style={{position:"absolute",left:"50%",transform:"translateX(-50%)",fontSize:11,color:C.textMuted,fontWeight:500,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit",whiteSpace:"nowrap"}}>Expected</button>
           <button type="button" className="roi-anchor" onClick={()=>setBlend(1)} style={{position:"absolute",right:0,fontSize:11,color:C.textMuted,fontWeight:500,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}>Optimistic</button>
         </div>
       </div>
-      {!dim && <div style={{padding:"24px 18px 18px",background:`linear-gradient(180deg, ${C.tealPale} 0%, #fff 100%)`,border:`1px solid ${C.accent}33`,borderTop:`3px solid ${C.accent}`,borderRadius:12,textAlign:"center",boxShadow:`0 6px 24px ${C.accent}1a, 0 1px 3px ${C.accent}10`}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.textMid,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>{ts.heroLabel}</div>
-        <div style={{fontSize:56,fontWeight:900,letterSpacing:"-2.5px",lineHeight:1,fontVariantNumeric:"tabular-nums",background:`linear-gradient(135deg, ${C.accent} 0%, ${C.amber} 55%, ${C.seafoam} 100%)`,WebkitBackgroundClip:"text",backgroundClip:"text",WebkitTextFillColor:"transparent",display:"inline-block",filter:`drop-shadow(0 2px 8px ${C.accent}30)`,paddingBottom:4}}>{an?<AnimatedK value={Math.round(r.annual * ts.mult)} active={an}/>:fmtK(Math.round(r.annual * ts.mult))}<span style={{fontSize:18,fontWeight:600,color:C.textMid,WebkitTextFillColor:C.textMid,background:"none",marginLeft:4}}>{ts.suffix || "/yr"}</span></div>
-        <div style={{fontSize:12,color:C.textMid,marginTop:12}}>
-          {viewTimescale === "annual"
-            ? <>per year · {r.rampYears}-year total: <strong style={{color:C.accent}}>{fmtK(r.totalRamp)}</strong></>
-            : <>{ts.subContext} · annual at steady state: <strong style={{color:C.accent}}>{fmtK(r.annual)}</strong></>
-          }
+      {!dim && <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(min(100%, 270px), 1fr))",gap:12}}>
+        <div style={{padding:"24px 18px 18px",background:`linear-gradient(180deg, ${C.tealPale} 0%, #fff 100%)`,border:`1px solid ${C.accent}33`,borderTop:`3px solid ${C.accent}`,borderRadius:14,textAlign:"center",boxShadow:`0 6px 24px ${C.accent}1a, 0 1px 3px ${C.accent}10`,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.textMid,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>{ts.heroLabel}</div>
+          <div className="roi-hero-num" style={{fontSize:"clamp(2.4rem, 6.5vw, 3.5rem)",fontWeight:900,letterSpacing:"-2.5px",lineHeight:1,fontVariantNumeric:"tabular-nums",background:`linear-gradient(135deg, ${C.accent} 0%, ${C.amber} 55%, ${C.seafoam} 100%)`,WebkitBackgroundClip:"text",backgroundClip:"text",WebkitTextFillColor:"transparent",display:"inline-block",paddingBottom:4,alignSelf:"center"}}>{an?<AnimatedK value={Math.round(r.annual * ts.mult)} active={an}/>:fmtK(Math.round(r.annual * ts.mult))}<span style={{fontSize:18,fontWeight:600,color:C.textMid,WebkitTextFillColor:C.textMid,background:"none",marginLeft:4}}>{ts.suffix || "/yr"}</span></div>
+          <div style={{fontSize:12,color:C.textMid,marginTop:12}}>
+            {viewTimescale === "annual"
+              ? <>per year · {r.rampYears}-year total: <strong style={{color:C.accent}}>{fmtK(r.totalRamp)}</strong></>
+              : <>{ts.subContext} · annual at steady state: <strong style={{color:C.accent}}>{fmtK(r.annual)}</strong></>
+            }
+          </div>
         </div>
-        <div style={{fontSize:11,color:C.textMuted,marginTop:6}}>Range across scenarios: <strong style={{color:C.textMid}}>{fmtK(rCon.annual)}</strong> {"\u2013"} <strong style={{color:C.textMid}}>{fmtK(rStr.annual)}</strong> /yr</div>
+        <div style={{padding:"24px 18px 18px",background:`linear-gradient(180deg, ${C.tealPale} 0%, #fff 100%)`,border:`1px solid ${C.accent}33`,borderTop:"3px solid #1a8a7a",borderRadius:14,textAlign:"center",boxShadow:`0 6px 24px ${C.accent}1a, 0 1px 3px ${C.accent}10`,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.textMid,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>Clinical capacity released</div>
+          <div style={{fontSize:"clamp(2.4rem, 6.5vw, 3.5rem)",fontWeight:900,letterSpacing:"-2px",lineHeight:1,color:"#1a8a7a",fontVariantNumeric:"tabular-nums"}}>{an?<AnimatedFTENum value={r.fteEquivalent*ts.mult} active={an}/>:fmtNum(Math.round(r.fteEquivalent*ts.mult))}<span style={{fontSize:18,fontWeight:600,color:C.textMid,marginLeft:6}}>FTE</span></div>
+          <div style={{fontSize:12,color:C.textMid,marginTop:12}}>full-time clinicians{"\u2019"} worth of time freed · <strong style={{color:"#1a8a7a"}}>{fmtK(Math.round(r.timeSave * ts.mult))}</strong> included in savings</div>
+        </div>
       </div>}
+      {!dim && <div style={{fontSize:11,color:C.textMuted,marginTop:10,textAlign:"center"}}>Range across scenarios: <strong style={{color:C.textMid}}>{fmtK(rCon.annual)}</strong> to <strong style={{color:C.textMid}}>{fmtK(rStr.annual)}</strong>/yr</div>}
     </Card>
     </div>
 
@@ -3193,10 +3209,10 @@ function ROICalculator() {
 
     {/* KPI cards (2x2 grid, AU-style colour scheme) */}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-      <ResultCard dimmed={dim} info={`Direct annual cost savings from switching off legacy systems. Calculated from per-system licensing, hosting, and support costs by tier (Enterprise / Departmental / Standalone), modelled on NHS contract benchmarks and supplier pricing data.`} label={"Legacy decommission" + (viewTimescale==="annual"?"":" ("+ts.heroLabel.replace("Estimated ","").replace(" savings","")+")")} value={an?<AnimatedK value={Math.round(r.decomSave * ts.mult)} active={an}/>:"–"} sub={an?r.decom+" of "+r.legacy+" systems retired":""} bg={C.greenPale} border="#c3ddd3" valueColor="#0F4146" />
-      <ResultCard dimmed={dim} info={`Clinician time freed when legacy system switching is eliminated. Based on Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events; switch penalty 0.04/system) corroborated by Westbrook et al JAMIA 2010 and Sinsky et al 2016. Valued at £55/hr blended NHS Agenda for Change mid-band rate including on-costs. Only ${Math.round(r.realisation*100)}% counted as realisable capacity. Scales with the selected timeframe (Year 1 / 3-yr / 5-yr cumulative). This represents capacity redirected to patient care, not headcount reduction.`} label="Clinical capacity" value={an?<AnimatedFTE value={r.fteEquivalent*ts.mult} active={an}/>:"–"} sub={an?fmtK(Math.round(r.timeSave * ts.mult))+(ts.suffix||" total"):""} bg="#e8faf6" border="#b0e8dc" valueColor="#1a8a7a" />
-      {r.qualitySavings > 0 && <ResultCard dimmed={dim} info={`Cashable cost avoidance from reduced clinical risk: indemnity exposure reduction (5% of attributable NHS Resolution exposure at £7,500/bed), excess bed-day savings (NHS Reference Costs at £400/day, harm estimates per Camacho et al BMJ Quality & Safety 2024), and duplicate testing avoidance (18% of pathology / imaging waste eliminated when records are fragmented, per Bates et al).`} label="Quality / cost avoidance" value={an?<AnimatedK value={Math.round(r.qualitySavings * ts.mult)} active={an}/>:"–"} sub={an?"Indemnity + bed days + duplicate testing":""} bg="#fdf0f4" border="#f0c4d4" valueColor="#d4507a" />}
-      <ResultCard dimmed={dim} info={`The total for the selected timeframe — the sum of decommission, clinical capacity, and quality / cost avoidance. Switch the timeframe toggle to see Year 1 (partial ramp), the 3-year or 5-year cumulative total, or the steady-state annual rate. The phased ramp applied is ${r.rampPcts.map(p=>Math.round(p*100)+"%").join(" / ")}; full steady-state savings of ${fmtK(r.annual)}/yr are reached by year ${r.rampYears}.`} label="Total savings" value={an?<AnimatedK value={Math.round(r.annual * ts.mult)} active={an}/>:"–"} sub={an?(viewTimescale==="annual" ? `${r.rampYears}-yr total ${fmtK(r.totalRamp)}` : (ts.subContext||`phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join("/")}`)):""} bg={C.blue25} border={C.blue50} valueColor="#0f4146" />
+      <ResultCard dimmed={dim} info={`Direct annual cost savings from switching off legacy systems. Calculated from per-system licensing, hosting, and support costs by tier (Enterprise / Departmental / Standalone), modelled on NHS contract benchmarks and supplier pricing data.`} icon={<SIcon name="unlock" size={15} color="#0F4146"/>} label={"Legacy decommission" + (viewTimescale==="annual"?"":" ("+ts.heroLabel.replace("Estimated ","").replace(" savings","")+")")} value={an?<AnimatedK value={Math.round(r.decomSave * ts.mult)} active={an}/>:"–"} sub={an?r.decom+" of "+r.legacy+" systems retired":""} bg={C.greenPale} border="#c3ddd3" valueColor="#0F4146" />
+      <ResultCard dimmed={dim} info={`Clinician time freed when legacy system switching is eliminated. Based on Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events; switch penalty 0.04/system) corroborated by Westbrook et al JAMIA 2010 and Sinsky et al 2016. Valued at £55/hr blended NHS Agenda for Change mid-band rate including on-costs. Only ${Math.round(r.realisation*100)}% counted as realisable capacity. Scales with the selected timeframe (Year 1 / 3-yr / 5-yr cumulative). This represents capacity redirected to patient care, not headcount reduction.`} icon={<SIcon name="clock" size={15} color="#1a8a7a"/>} label="Clinical capacity" value={an?<AnimatedFTE value={r.fteEquivalent*ts.mult} active={an}/>:"–"} sub={an?fmtK(Math.round(r.timeSave * ts.mult))+(ts.suffix||" total"):""} bg="#e8faf6" border="#b0e8dc" valueColor="#1a8a7a" />
+      {r.qualitySavings > 0 && <ResultCard dimmed={dim} info={`Cashable cost avoidance from reduced clinical risk: indemnity exposure reduction (5% of attributable NHS Resolution exposure at £7,500/bed), excess bed-day savings (NHS Reference Costs at £400/day, harm estimates per Camacho et al BMJ Quality & Safety 2024), and duplicate testing avoidance (18% of pathology / imaging waste eliminated when records are fragmented, per Bates et al).`} icon={<SIcon name="shield" size={15} color="#d4507a"/>} label="Quality / cost avoidance" value={an?<AnimatedK value={Math.round(r.qualitySavings * ts.mult)} active={an}/>:"–"} sub={an?"Indemnity + bed days + duplicate testing":""} bg="#fdf0f4" border="#f0c4d4" valueColor="#d4507a" />}
+      <ResultCard dimmed={dim} info={`The total for the selected timeframe — the sum of decommission, clinical capacity, and quality / cost avoidance. Switch the timeframe toggle to see Year 1 (partial ramp), the 3-year or 5-year cumulative total, or the steady-state annual rate. The phased ramp applied is ${r.rampPcts.map(p=>Math.round(p*100)+"%").join(" / ")}; full steady-state savings of ${fmtK(r.annual)}/yr are reached by year ${r.rampYears}.`} icon={<SIcon name="chart" size={15} color="#0f4146"/>} label="Total savings" value={an?<AnimatedK value={Math.round(r.annual * ts.mult)} active={an}/>:"–"} sub={an?(viewTimescale==="annual" ? `${r.rampYears}-yr total ${fmtK(r.totalRamp)}` : (ts.subContext||`phased ramp ${r.rampPcts.map(p=>Math.round(p*100)+"%").join("/")}`)):""} bg={C.blue25} border={C.blue50} valueColor="#0f4146" />
     </div>
 
     {viewMode === "executive" && <><div style={{textAlign:"center",fontSize:12,color:C.textMid,marginBottom:24,padding:"14px 16px",background:"#f8fafb",border:`1px dashed ${C.border}`,borderRadius:8}}>
@@ -3313,7 +3329,7 @@ function ROICalculator() {
 
     {/* Clinical safety */}
     {r.hasClinicalScope && <div>
-    <Card dimmed={dim} id="card-quality" style={{border:"1px solid #e0c4cf",background:"#faf5f7"}}>
+    <Card dimmed={dim} id="card-quality" style={{border:"1px solid #e0c4cf",background:"#faf5f7",borderLeft:"4px solid #d4507a"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
         <div style={{width:40,height:40,borderRadius:10,background:"#d4507a15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <SIcon name="shield" size={22} color="#d4507a"/>
@@ -3348,7 +3364,7 @@ function ROICalculator() {
     </div>}
 
     {/* KPIs */}
-    <Card dimmed={dim} style={{background:C.surface,border:`1px solid ${C.border}`}}>
+    <Card dimmed={dim} style={{background:C.surface,border:`1px solid ${C.border}`,borderLeft:"4px solid #73D2E1"}}>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}><SIcon name="chart" size={20} color={C.accent}/><h3 style={{fontSize:16,fontWeight:700,margin:0}}>Projected KPI improvements</h3></div>
       <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16,marginTop:16}}>
         <div style={{flex:"1 1 180px",minWidth:170,padding:"18px 20px",background:C.greenPale,borderRadius:10,textAlign:"center"}}>
@@ -3381,7 +3397,7 @@ function ROICalculator() {
 
 
     {/* Year-by-year */}
-    <Card dimmed={dim}>
+    <Card dimmed={dim} style={{borderLeft:"4px solid #1a5459"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}><SIcon name="calendar" size={20} color={C.accent}/><h3 style={{fontSize:16,fontWeight:700,margin:0}}>{r.rampYears}-year phased breakdown</h3></div>
       </div>
@@ -3432,7 +3448,7 @@ function ROICalculator() {
       const halfDecom = Math.round(r.decomSave * 0.5 + r.timeSave + qual);
       const halfBoth = Math.round((r.decomSave + r.timeSave + qual) * 0.5);
       const halfBothPct = Math.round(halfBoth / Math.max(1, baseAnnual) * 100);
-      return <Card style={{marginTop:16,background:"#f8fafb",border:`1px solid ${C.borderLight}`}}>
+      return <Card style={{marginTop:16,background:"#f8fafb",border:`1px solid ${C.borderLight}`,borderLeft:"4px solid #2a6e6e"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
           <SIcon name="search" size={18} color={C.text}/><h3 style={{fontSize:14,fontWeight:700,margin:0,color:C.text}}>Sensitivity check</h3>
           <span style={{fontSize:9,fontWeight:600,padding:"2px 8px",borderRadius:20,background:"#e8f5f0",color:"#0F4146"}}>How robust is your number?</span>
@@ -3584,7 +3600,7 @@ function ROICalculator() {
       const Md = ({s}) => <Tag label="Modelled estimate" color={C.textMuted} source={s}/>;
       const F = ({children}) => <div style={{padding:"12px 16px",background:C.bg,borderRadius:8,margin:"10px 0",fontFamily:"'FK Grotesk Neue','FK Grotesk',monospace",fontSize:12,color:C.text,lineHeight:1.6}}>{children}</div>;
 
-      return <Card style={{marginTop:20}}>
+      return <Card style={{marginTop:20,borderLeft:"4px solid #80F8E4"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
           <SIcon name="book" size={22} color={C.accent}/>
           <h3 style={{fontSize:17,fontWeight:800,margin:0,color:C.text}}>How we calculated this</h3>
@@ -3721,7 +3737,7 @@ function ROICalculator() {
       const grossTotal = r.totalRamp;
       const netTotal = grossTotal - galenMigrationCost - galenAnnualTotal;
       const isNetPositive = netTotal > 0;
-      return <Card dimmed={dim}>
+      return <Card dimmed={dim} style={{borderLeft:"4px solid #0F4146"}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
           <div style={{width:40,height:40,borderRadius:10,background:`${C.accent}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
             <SIcon name="pound" size={22} color={C.accent}/>
