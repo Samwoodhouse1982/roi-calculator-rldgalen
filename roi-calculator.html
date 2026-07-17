@@ -1425,7 +1425,7 @@ function ROICalculator() {
   // ── Data layer: exposes all values for external PDF engines / integrations ──
   const roiData = useMemo(() => ({
     // Meta
-    _version: "3.0",
+    _version: "3.1",
     _generated: new Date().toISOString(),
     _scenario: am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Optimistic":"Expected",
 
@@ -1826,7 +1826,7 @@ function ROICalculator() {
       "reduction from EHR consolidation), Sinsky et al 2016 (clinician EHR time burden).",
       "NHS / regulatory: NHS Resolution annual report, HSSIB investigations, NHS Records Management",
       "Code of Practice, DCB0129/DCB0160 clinical safety standards, CQC inspection framework.",
-      "All assumptions documented in Full Report. Methodology v3.0 - last reviewed 17 May 2026.",
+      "All assumptions documented in Full Report. Methodology v3.1 - last reviewed 17 July 2026.",
     ];
     methLines.forEach(line => { doc.text(line, ml, y); y += 4; });
     y += 6;
@@ -3749,7 +3749,7 @@ function ROICalculator() {
 
     {/* Methodology version */}
     <div style={{maxWidth:900,margin:"24px auto 0",padding:"0 24px",fontSize:11,color:C.textMuted,textAlign:"center"}}>
-      Methodology v3.0 — last reviewed 17 May 2026 — next review November 2026
+      Methodology v3.1 — last reviewed 17 July 2026 — next review January 2027
     </div>
 
     {/* Disclaimer */}
