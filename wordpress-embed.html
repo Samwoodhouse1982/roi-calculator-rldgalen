@@ -2589,24 +2589,22 @@ function ROICalculator() {
           <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:".06em",marginBottom:14}}>Journey stage</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {[
-              {k:"HAVE_EPR",l:"Have an EPR",d:"Archiving focus"},
-              {k:"EVALUATING",l:"Evaluating EPRs",d:"Migration + archiving"},
+              {k:"HAVE_EPR",l:"We want to decommission systems",d:"We already have our EPR in place and want to retire legacy applications, archiving their records for access at the point of care."},
+              {k:"EVALUATING",l:"We’re evaluating enterprise EPRs",d:"We’re assessing a move to a single platform and need the full case for both migration and archiving."},
             ].map(j=><button type="button" key={j.k} onClick={()=>update("journey",j.k)} style={{flex:"1 1 200px",padding:"12px 14px",textAlign:"left",border:inputs.journey===j.k?`2px solid ${C.accent}`:`1px solid ${C.border}`,borderRadius:10,background:inputs.journey===j.k?C.accentPale:"#fff",cursor:"pointer",fontFamily:"inherit"}}>
               <div style={{fontSize:13,fontWeight:700,color:inputs.journey===j.k?C.accent:C.text}}>{j.l}</div>
-              <div style={{fontSize:11,color:C.textMuted,marginTop:2}}>{j.d}</div>
+              <div style={{fontSize:11,color:C.textMuted,marginTop:2,lineHeight:1.5}}>{j.d}</div>
             </button>)}
           </div>
         </Card>
         <Card style={{marginBottom:12}}>
           <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:".06em",marginBottom:14}}>Organisation scale</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:8}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:14,marginBottom:8}}>
             <div>
-              <div style={{fontSize:11,fontWeight:600,color:C.textMid,marginBottom:6}}>Trusts / sites</div>
-              <input type="number" value={inputs.org_count} onChange={e=>update("org_count",Math.max(1,parseInt(e.target.value)||1))} min={1} max={500} style={{width:"100%",padding:"10px 12px",border:`1px solid ${C.border}`,borderRadius:8,fontSize:16,fontWeight:700,fontFamily:"inherit",textAlign:"center"}}/>
+              <AnimatedSlider label={<span style={{fontSize:11,fontWeight:600,color:C.textMid}}>Trusts / sites</span>} value={inputs.org_count} min={1} max={Math.max(10, inputs.org_count)} step={1} onChange={v=>handleOrgCountChange(v)} hideRange/>
             </div>
             <div>
-              <div style={{fontSize:11,fontWeight:600,color:C.textMid,marginBottom:6}}>Total beds</div>
-              <input type="number" value={inputs.bed_count} onChange={e=>update("bed_count",Math.max(10,parseInt(e.target.value)||10))} min={10} step={50} style={{width:"100%",padding:"10px 12px",border:`1px solid ${C.border}`,borderRadius:8,fontSize:16,fontWeight:700,fontFamily:"inherit",textAlign:"center"}}/>
+              <AnimatedSlider label={<span style={{fontSize:11,fontWeight:600,color:C.textMid}}>Total beds</span>} value={inputs.bed_count} min={0} max={Math.max(8000, inputs.bed_count)} step={10} onChange={v=>update("bed_count",v)} hideRange/>
               <div style={{fontSize:10,color:C.textMuted,textAlign:"center",marginTop:4}}>avg {fmtNum(avgBeds)} per site</div>
             </div>
           </div>
@@ -2616,14 +2614,13 @@ function ROICalculator() {
             <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:".06em"}}>Legacy systems</div>
             <div style={{fontSize:22,fontWeight:800,color:C.accent}}>{totalSys}<span style={{fontSize:12,fontWeight:600,color:C.textMuted,marginLeft:6}}>systems</span></div>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:12}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:10,marginBottom:12}}>
             {[
-              {label:"Enterprise",tier:"enterprise",sub:"EPR, PAS"},
-              {label:"Departmental",tier:"departmental",sub:"Lab, Pharmacy, PACS"},
-              {label:"Standalone",tier:"niche",sub:"ECM, rostering"}
+              {label:"Enterprise",tier:"enterprise",sub:"EPR, PAS",max:10},
+              {label:"Departmental",tier:"departmental",sub:"Lab, Pharmacy, PACS",max:30},
+              {label:"Standalone",tier:"niche",sub:"ECM, rostering",max:100}
             ].map(t => <div key={t.tier}>
-              <div style={{fontSize:10,fontWeight:600,color:C.accent,marginBottom:4}}>{t.label}</div>
-              <input type="number" value={inputs.tiers[t.tier]} onChange={e=>updateTier(t.tier,Math.max(0,parseInt(e.target.value)||0))} min={0} max={200} style={{width:"100%",padding:"6px 10px",border:`1px solid ${C.border}`,borderRadius:8,fontSize:14,fontWeight:700,fontFamily:"inherit",textAlign:"center"}}/>
+              <AnimatedSlider label={<span style={{fontSize:10,fontWeight:600,color:C.accent}}>{t.label}</span>} value={inputs.tiers[t.tier]} min={0} max={Math.max(t.max, inputs.tiers[t.tier])} step={1} onChange={v=>updateTier(t.tier,v)} hideRange/>
               <div style={{fontSize:9,color:C.textMuted,textAlign:"center",marginTop:3}}>{t.sub}</div>
             </div>)}
           </div>
@@ -2649,8 +2646,7 @@ function ROICalculator() {
               </select>
             </div>
             <div>
-              <div style={{fontSize:10,fontWeight:600,color:C.textMid,marginBottom:4}}>Decom target %</div>
-              <input type="number" value={Math.round(inputs.decom_retire_rate*100)} onChange={e=>update("decom_retire_rate",Math.max(20,Math.min(100,parseInt(e.target.value)||70))/100)} min={20} max={100} step={5} style={{width:"100%",padding:"8px 6px",fontSize:13,fontWeight:700,border:`1px solid ${C.border}`,borderRadius:8,fontFamily:"inherit",color:C.accent,textAlign:"center"}}/>
+              <AnimatedSlider label={<span style={{fontSize:10,fontWeight:600,color:C.textMid}}>Decom target</span>} value={Math.round(inputs.decom_retire_rate*100)} min={20} max={100} step={5} suffix="%" onChange={v=>update("decom_retire_rate",v/100)} hideRange/>
             </div>
           </div>
         </Card>
