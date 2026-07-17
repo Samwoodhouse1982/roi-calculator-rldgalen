@@ -1,0 +1,98 @@
+<!-- ===================================================================
+     RLDatix Galen Clinical Archive — UK EPR ROI Calculator
+     Iframe embed snippet (hand-off reference for the host site's web team)
+     ===================================================================
+
+     The calculator is a single self-contained HTML file
+     (roi-calculator.html) deployed on the `uki` branch. It loads React
+     and Babel at runtime from a CDN (cdnjs, with jsdelivr / unpkg
+     fallback). There is NO build step.
+
+     It posts three messages to the parent window via postMessage:
+       • roi-calculator-resize     { height }  → auto-size the iframe
+       • roi-calculator-scroll-top {}          → re-scroll iframe into view
+       • roi-calculator-data       { data }    → full calculation payload
+     =================================================================== -->
+
+
+<!-- ── Option A: auto-resizing (recommended) ───────────────────────── -->
+<iframe
+  id="roi-calculator"
+  src="https://YOUR-PRODUCTION-DOMAIN/roi-calculator.html"
+  style="width: 100%; border: none; overflow: hidden; min-height: 800px;"
+  scrolling="no"
+  title="EPR Migration ROI Calculator"
+  loading="lazy"
+></iframe>
+
+<script>
+  window.addEventListener("message", function (e) {
+    if (!e.data || typeof e.data !== "object") return;
+    if (e.data.type === "roi-calculator-resize") {
+      document.getElementById("roi-calculator").style.height = e.data.height + "px";
+    }
+    if (e.data.type === "roi-calculator-scroll-top") {
+      document.getElementById("roi-calculator").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    // Optional: capture the calculation payload on the host side
+    // if (e.data.type === "roi-calculator-data") { console.log(e.data.data); }
+  });
+</script>
+
+
+<!-- ── Option B: fixed height (simpler; uses the iframe's own scrollbar) ──
+<iframe
+  src="https://YOUR-PRODUCTION-DOMAIN/roi-calculator.html"
+  style="width: 100%; height: 1100px; border: none;"
+  title="EPR Migration ROI Calculator"
+  loading="lazy"
+></iframe>
+-->
+
+
+<!-- ===================================================================
+     NOTES FOR THE HOST SITE'S WEB TEAM
+     ===================================================================
+
+     SRC URL
+       Point `src` directly at /roi-calculator.html, NOT the site root.
+       The root path redirects (index.html -> roi-calculator.html) which
+       causes a brief flash inside the iframe. Use the deployed HTTPS
+       production URL of the `uki` branch.
+
+     HTTPS
+       Serve over HTTPS. A secure host page cannot embed an http:// iframe.
+
+     CONTENT SECURITY POLICY (host page)
+       If the host page sets a CSP, it must allow framing the calculator's
+       domain:
+         frame-src https://YOUR-PRODUCTION-DOMAIN;   (or child-src)
+       The React/Babel CDN scripts load INSIDE the iframe, from the
+       calculator's own origin — they are governed by the calculator
+       host's CSP, not the parent page's. The host page does not need to
+       allow those CDNs.
+
+     BACKGROUND / APPEARANCE
+       The calculator renders on its own pale mint background (#EEF6F4)
+       inside a rounded, bordered "card". It does NOT render transparent,
+       so it will not blend invisibly into the host page — it looks like a
+       self-contained panel. If a seamless/transparent look is wanted, the
+       body background and the outer container's border/background can be
+       made transparent — ask the calculator owner.
+
+     LEAD CAPTURE / HUBSPOT
+       The "download report" step shows a lead form (name, work email,
+       organisation, role). On submit it posts the lead directly to
+       HubSpot (EU1, portal 27174408) via the public Forms API. This works
+       cross-origin from inside the iframe — no host-side setup needed.
+       The full calculation payload is also posted to the parent window
+       (roi-calculator-data) if the host wants to capture it too.
+
+     PDF
+       "Download report" generates a branded PDF client-side (jsPDF) and
+       downloads it directly — no popup or print dialog.
+
+     FILE
+       roi-calculator.html — single self-contained file
+     ~3807 lines, ~284 KB. Requires internet access for the CDN scripts.
+     =================================================================== -->
