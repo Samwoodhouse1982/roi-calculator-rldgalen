@@ -4,7 +4,7 @@ The **United States** version of the RLDatix Galen Clinical Archive ROI
 calculator. US terminology (EHR, hospital, CMS), US dollars, US evidence base
 (CMS, AHRQ, AHA, KFF, HFMA, CRICO, Mello, Bates, HCUP, Joint Commission).
 
-> This repository uses **one branch per market**. See the table at the bottom.
+> This repository uses **one folder per product** on a single branch. See the table at the bottom.
 
 ## What's the calculator?
 
@@ -43,12 +43,13 @@ holds the routing.
 - US work uses **US English and US evidence sources only** (CMS, AHRQ, AHA, KFF,
   HFMA, CRICO, Mello, Bates, HCUP, Joint Commission). No UK/AU contamination.
 
-## The other branches
+## The other products in this repo
 
-| Branch | Market | Deploys |
-|--------|--------|---------|
-| `uki` | UK / Ireland (EPR, NHS, GBP) | `roi-calculator.html` |
-| **`us`** | United States (this branch) | `roi-calculator.html` |
-| `au` | Australia (EMR, ACSQHC, AUD) | `roi-calculator.html` |
-| `us-touchscreen` | US conference kiosk (fixed 1080x1920) | `kiosk-app/` (Vite/React) |
-| `us-embed` | US responsive / iframe kiosk | `kiosk-app/` (Vite/React) |
+All products now live on one branch, one folder each:
+
+| Folder | Product | Deploys |
+|--------|---------|---------|
+| `web/uki/` | UK / Ireland web (EPR, NHS, GBP) | `roi-calculator.html` |
+| `web/us/` | US web (EHR, CMS, USD) | `roi-calculator.html` |
+| `web/au/` | Australia web (EMR, ACSQHC, AUD) | `roi-calculator.html` |
+| `kiosk-app/` | US kiosk — touchscreen (`npm run build`) and embed (`npm run build:embed`) | Vite/React |

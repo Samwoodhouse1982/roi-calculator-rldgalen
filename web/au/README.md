@@ -5,7 +5,7 @@ Australian terminology (EMR, ACSQHC), Australian dollars, AU evidence base and
 frameworks (AN-ACC, ABF / NWAU, ACSQHC, VMIA, AIHW). Includes aged-care and NDIS
 provider models not present on the other branches.
 
-> This repository uses **one branch per market**. See the table at the bottom.
+> This repository uses **one folder per product** on a single branch. See the table at the bottom.
 
 ## What's the calculator?
 
@@ -39,12 +39,13 @@ equivalent.)
   generic bed counts).
 - Sanity-check the JSX parses before pushing.
 
-## The other branches
+## The other products in this repo
 
-| Branch | Market | Deploys |
-|--------|--------|---------|
-| `uki` | UK / Ireland (EPR, NHS, GBP) | `roi-calculator.html` |
-| `us` | United States (EHR, CMS, USD) | `roi-calculator.html` |
-| **`au`** | Australia (this branch) | `roi-calculator.html` |
-| `us-touchscreen` | US conference kiosk (fixed 1080x1920) | `kiosk-app/` (Vite/React) |
-| `us-embed` | US responsive / iframe kiosk | `kiosk-app/` (Vite/React) |
+All products now live on one branch, one folder each:
+
+| Folder | Product | Deploys |
+|--------|---------|---------|
+| `web/uki/` | UK / Ireland web (EPR, NHS, GBP) | `roi-calculator.html` |
+| `web/us/` | US web (EHR, CMS, USD) | `roi-calculator.html` |
+| `web/au/` | Australia web (EMR, ACSQHC, AUD) | `roi-calculator.html` |
+| `kiosk-app/` | US kiosk — touchscreen (`npm run build`) and embed (`npm run build:embed`) | Vite/React |

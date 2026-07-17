@@ -4,7 +4,7 @@ The **UK / Ireland** version of the RLDatix Galen Clinical Archive ROI calculato
 NHS terminology (EPR, Trust, NHS Reference Costs), pounds sterling, `en-GB`
 formatting.
 
-> This repository uses **one branch per market**. See the table at the bottom.
+> This repository uses **one folder per product** on a single branch. See the table at the bottom.
 
 ## What's the calculator?
 
@@ -47,12 +47,13 @@ one calculator file. `vercel.json` holds the routing.
   et al BMJ Qual Saf 2024, NHS Reference Costs, NHS Resolution / NAO, HSSIB).
   Over-counting is worse than under-counting.
 
-## The other branches
+## The other products in this repo
 
-| Branch | Market | Deploys |
-|--------|--------|---------|
-| **`uki`** | UK / Ireland (this branch) | `roi-calculator.html` |
-| `us` | United States (EHR, CMS, USD) | `roi-calculator.html` |
-| `au` | Australia (EMR, ACSQHC, AUD) | `roi-calculator.html` |
-| `us-touchscreen` | US conference kiosk (fixed 1080x1920) | `kiosk-app/` (Vite/React) |
-| `us-embed` | US responsive / iframe kiosk | `kiosk-app/` (Vite/React) |
+All products now live on one branch, one folder each:
+
+| Folder | Product | Deploys |
+|--------|---------|---------|
+| `web/uki/` | UK / Ireland web (EPR, NHS, GBP) | `roi-calculator.html` |
+| `web/us/` | US web (EHR, CMS, USD) | `roi-calculator.html` |
+| `web/au/` | Australia web (EMR, ACSQHC, AUD) | `roi-calculator.html` |
+| `kiosk-app/` | US kiosk — touchscreen (`npm run build`) and embed (`npm run build:embed`) | Vite/React |

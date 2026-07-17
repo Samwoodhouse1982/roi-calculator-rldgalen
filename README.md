@@ -1,49 +1,51 @@
-# US Touchscreen Kiosk — `us-touchscreen`
+# RLDatix Galen Clinical Archive — ROI Calculators
 
-The **US conference-kiosk** version of the RLDatix Galen Clinical Archive ROI
-calculator: a Vite/React app designed for a **fixed 1080x1920 portrait
-touchscreen** at events, with sales-rep guidance.
+All market/surface versions of the RLDatix Galen Clinical Archive ROI
+calculator, in one repository, **one folder per product** on a single
+branch.
 
-> This repository uses **one branch per market/surface**. See the table below.
+| Folder | Product | Tech | Build / entry |
+|--------|---------|------|---------------|
+| `web/uki/` | UK / Ireland web (EPR, Trusts, NHS Reference Costs, GBP, `en-GB`) | Self-contained HTML | `roi-calculator.html` — no build step |
+| `web/us/` | US web (EHR, CMS, USD, `en-US`) | Self-contained HTML | `roi-calculator.html` — no build step |
+| `web/au/` | Australia web (EMR, ACSQHC, AUD, `en-AU`) | Self-contained HTML | `roi-calculator.html` — no build step |
+| `kiosk-app/` | US conference kiosk — **touchscreen** (fixed 1080×1920 portrait) | Vite + React | `npm run build` |
+| `kiosk-app/` | US kiosk — **embed** (responsive / iframe-friendly) | Vite + React (same app, build flag) | `npm run build:embed` |
 
-## What's the calculator?
+## The two codebases
 
-Everything lives in **`kiosk-app/`** -- a Vite + React application (unlike the
-web branches, which are a single self-contained `roi-calculator.html`). This
-branch has **no root calculator file**; the root previously carried leftover
-web-calc files which have been removed.
+**Web calculators** (`web/uki`, `web/us`, `web/au`): each is a single
+self-contained `roi-calculator.html` (React + Babel from CDN, all styles
+inline, no build step). Open it in a browser and it runs. Each market
+folder also carries its own `vercel.json` routing and embed snippet. See
+the README inside each folder for market-specific editing notes and
+evidence-sourcing rules.
 
-```bash
-cd kiosk-app
-npm install
-npm run dev      # local dev server
-npm run build    # production build -> kiosk-app/dist/
-```
+**Kiosk app** (`kiosk-app/`): one Vite/React app with two build modes —
+the fixed 1080×1920 touchscreen build (default) and the responsive embed
+build (`--mode embed`, driven by `VITE_EMBED=1` from `.env.embed`). The
+calculation engine, input flow and results are shared; only sizing/layout
+variants differ. See `kiosk-app/README.md` and `kiosk-app/README-EMBED.md`.
 
-## Structure (`kiosk-app/src/`)
+## Deploys
 
-| Path | Purpose |
-|------|---------|
-| `calc/engine.js` | Calculation engine (pure). |
-| `calc/presets.js`, `calc/vendors.js` | Presets and vendor/system lists. |
-| `theme.js` | Design tokens (colours, fonts, sizing). |
-| `App.jsx` | Root component, step flow, timescale bar. |
-| `steps/index.jsx` | Input steps (Scope, Journey, Facilities, Systems, Fine-tune). |
-| `results/ResultsPage.jsx` | Results report. |
-| `components/` | Splash screen, particles, icons, shared UI. |
+Each product deploys as its own Vercel/Netlify project pointed at its
+folder (Root Directory setting), all from this branch:
 
-## How it deploys
+| Product | Root directory | Build command |
+|---------|---------------|---------------|
+| UKI web | `web/uki` | — (static) |
+| US web | `web/us` | — (static) |
+| AU web | `web/au` | — (static) |
+| US touchscreen | `kiosk-app` | `npm run build` |
+| US embed | `kiosk-app` | `npm run build:embed` |
 
-From `kiosk-app/` via Vite. `kiosk-app/vercel.json` and `kiosk-app/netlify.toml`
-both build with `npm run build` and publish `dist/`. Fixed 1080x1920 portrait;
-fully offline-capable.
+## History
 
-## The other branches
-
-| Branch | Market / surface | Deploys |
-|--------|------------------|---------|
-| `uki` | UK / Ireland web | `roi-calculator.html` |
-| `us` | US web | `roi-calculator.html` |
-| `au` | Australia web | `roi-calculator.html` |
-| **`us-touchscreen`** | US kiosk, fixed 1080x1920 (this branch) | `kiosk-app/` |
-| `us-embed` | US kiosk, responsive / iframe | `kiosk-app/` |
+This repo previously used one branch per product (`uki`, `us`, `au`,
+`us-touchscreen`, `us-embed`). Those branches were merged here with full
+history preserved: the web branches via subtree merges into `web/<market>/`
+(files byte-identical to each branch tip at merge time), and `us-embed`
+unified into `kiosk-app/` behind the embed build flag (rendered output
+verified identical for both modes). `git log --follow` works across the
+merge for every file.
