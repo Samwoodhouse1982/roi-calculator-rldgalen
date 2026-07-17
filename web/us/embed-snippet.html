@@ -1,0 +1,91 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     ROI Calculator – Iframe Embed Snippet
+     ═══════════════════════════════════════════════════════════════
+     
+     Drop this wherever you want the calculator to appear.
+     Host roi-calculator.html on the same domain or a CDN.
+     
+     The calculator posts its height to the parent via postMessage
+     so the iframe auto-sizes with no scrollbars.
+     ═══════════════════════════════════════════════════════════════ -->
+
+<!-- Option A: Auto-resizing (recommended) -->
+<iframe
+  id="roi-calculator"
+  src="/path/to/roi-calculator.html"
+  style="width: 100%; border: none; overflow: hidden; min-height: 800px;"
+  scrolling="no"
+  title="EPR Migration ROI Calculator"
+  loading="lazy"
+></iframe>
+
+<script>
+  window.addEventListener("message", function(e) {
+    if (e.data && e.data.type === "roi-calculator-resize") {
+      document.getElementById("roi-calculator").style.height = e.data.height + "px";
+    }
+    if (e.data && e.data.type === "roi-calculator-scroll-top") {
+      document.getElementById("roi-calculator").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+</script>
+
+
+<!-- Option B: Fixed height (simpler, uses iframe scrollbar) -->
+<!--
+<iframe
+  src="/path/to/roi-calculator.html"
+  style="width: 100%; height: 900px; border: none;"
+  title="EPR Migration ROI Calculator"
+  loading="lazy"
+></iframe>
+-->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     NOTES FOR DEVELOPER
+     ═══════════════════════════════════════════════════════════════
+
+     File:     roi-calculator.html (103 KB, single self-contained file)
+     Requires: Internet access for CDN scripts (React 18, Babel 7)
+     Fonts:    Falls back to system fonts; for brand fonts, host
+               National 2 Condensed Bold + FK Grotesk Neue and
+               add @font-face rules to the <style> block.
+
+     What changed for iframe embedding:
+     
+     1. PDF generation: Uses jsPDF + autoTable to generate a
+        branded vector PDF with teal header bar, styled tables,
+        summary cards, and page footers. Downloads directly as
+        a .pdf file — no popup or print dialog needed.
+
+     2. Auto-resize: A ResizeObserver posts the document height
+        to the parent window via postMessage. The parent listener
+        (Option A above) sets the iframe height dynamically.
+        Falls back to setInterval polling if ResizeObserver is
+        unavailable.
+
+     3. Body styles: background set to transparent so the iframe
+        inherits the host page background. overflow-x hidden to
+        prevent horizontal scroll bleed.
+     
+     4. No other changes to content, calculations, or functionality.
+        Everything works identically to the standalone version.
+
+     Cross-origin note:
+     If hosted on a different domain to the parent page, the
+     postMessage resize still works (uses "*" origin). The Blob
+     URL PDF will open in the iframe's origin context, which is
+     fine.
+
+     Content Security Policy:
+     The file loads scripts from up to three CDN providers (with
+     automatic fallback if one is blocked):
+       - cdnjs.cloudflare.com (primary)
+       - cdn.jsdelivr.net (fallback)
+       - unpkg.com (fallback)
+     Ensure your CSP allows script-src from at least ONE of these.
+     If all three are blocked, the calculator still works but PDF
+     download will show an error asking the user to contact IT.
+
+     ═══════════════════════════════════════════════════════════════ -->
