@@ -47,5 +47,10 @@ This repo previously used one branch per product (`uki`, `us`, `au`,
 history preserved: the web branches via subtree merges into `web/<market>/`
 (files byte-identical to each branch tip at merge time), and `us-embed`
 unified into `kiosk-app/` behind the embed build flag (rendered output
-verified identical for both modes). `git log --follow` works across the
-merge for every file.
+verified identical for both modes). Every pre-merge commit remains
+reachable; to see a web calculator's pre-merge history, follow the merge's
+second parent, e.g. for UKI:
+
+```bash
+git log $(git log --merges --format=%H -1 --grep="Merge branch 'uki'")^2 -- roi-calculator.html
+```
