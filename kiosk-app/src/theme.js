@@ -1,4 +1,12 @@
-export const C = {
+// Build-time flag: '1' when built with `--mode embed` (see .env.embed).
+// Selects the responsive/iframe variant; default is the fixed 1080×1920 kiosk.
+const EMBED = import.meta.env.VITE_EMBED === '1';
+
+// DARK palette — the kiosk's original navy theme, unchanged.
+// The extra tokens at the bottom (onAccent, scrim, …) carry the values that
+// used to be hard-coded literals in components, so the embed build can swap
+// them; in kiosk mode each token equals the old literal exactly.
+const C_KIOSK = {
   bg: "#0a0f1a", surface: "#141b2d", border: "#2a3548", borderLight: "#1e2840",
   text: "#e8edf5", textMid: "#a0b0c0", textMuted: "#8494a8",
   accent: "#00d4aa", accentLight: "#003328", accentPale: "#0a2520",
@@ -7,10 +15,40 @@ export const C = {
   teal: "#00d4aa", tealLight: "#00ffc8", tealPale: "#0a2a22",
   rose: "#ff4f7a", rosePale: "#2a1020",
   blue: "#40b0ff", purple: "#c090f0",
+  onAccent: "#0a0f1a",                      // text on accent-filled buttons/badges
+  inkOnColor: "#0a0f1a",                    // text on bright variable-colored chips
+  scrim: "rgba(10,15,26,0.94)",             // modal overlay backdrop
+  tooltipBg: "#1e2840",
+  tooltipShadow: "0 12px 48px rgba(0,0,0,.6)",
+  ctaGrad: "linear-gradient(135deg, #00d4aa, #00ffc8)",   // Calculate ROI button
+  ctaShadow: "0 6px 28px rgba(0,212,170,0.4)",
+  glowA: "rgba(0,212,170,0.3)", glowB: "rgba(0,212,170,0.6)",  // hero text-shadow pulse
 };
-// Build-time flag: '1' when built with `--mode embed` (see .env.embed).
-// Selects the responsive/iframe variant; default is the fixed 1080×1920 kiosk.
-const EMBED = import.meta.env.VITE_EMBED === '1';
+
+// LIGHT palette — the RLDatix web-calculator design system (deep teal +
+// seafoam on white), matching the Smart Match web build and the wider RLDatix
+// ROI suite so the embed sits comfortably on rldatix.com. Colours only: the
+// kiosk build keeps the dark palette above.
+const C_EMBED = {
+  bg: "#EEF7F2", surface: "#FFFFFF", border: "#D4E0DD", borderLight: "#E8EFEC",
+  text: "#0F4146", textMid: "#3D5A5E", textMuted: "#5F787C",
+  accent: "#0F4146", accentLight: "#D6F7EE", accentPale: "#F3FBF9",
+  green: "#1A8A7A", greenPale: "#EEF7F1",
+  amber: "#8A6508", amberLight: "#F7EFD8",
+  teal: "#0F4146", tealLight: "#1A8A7A", tealPale: "#E8FAF6",
+  rose: "#93405A", rosePale: "#FAF0F4",
+  blue: "#2E7BA6", purple: "#6E5AA8",
+  onAccent: "#FFFFFF",
+  inkOnColor: "#0F4146",
+  scrim: "rgba(15,65,70,0.45)",
+  tooltipBg: "#FFFFFF",
+  tooltipShadow: "0 12px 48px rgba(15,65,70,.18)",
+  ctaGrad: "linear-gradient(135deg, #0F4146, #1A8A7A)",
+  ctaShadow: "0 6px 28px rgba(15,65,70,0.25)",
+  glowA: "rgba(26,138,122,0.18)", glowB: "rgba(26,138,122,0.32)",
+};
+
+export const C = EMBED ? C_EMBED : C_KIOSK;
 
 /**
  * Font scale.
@@ -30,14 +68,19 @@ const EMBED = import.meta.env.VITE_EMBED === '1';
  */
 export const F = EMBED
   ? {
-      hero:  "clamp(56px,  9.5vw, 108px)",
-      h1:    "clamp(30px,  3.7vw, 40px)",
-      h2:    "clamp(22px,  2.6vw, 28px)",
-      h3:    "clamp(18px,  2.0vw, 22px)",
-      body:  "clamp(15px,  1.7vw, 18px)",
-      small: "clamp(13px,  1.5vw, 16px)",
-      tiny:  "clamp(12px,  1.3vw, 14px)",
-      label: "clamp(13px,  1.4vw, 15px)",
+      // Web-scale fluid typography (ported from the Smart Match web build):
+      // each step scales between a phone floor and a desktop ceiling. The
+      // ceilings are deliberately smaller than the kiosk's px sizes — kiosk
+      // type is sized for reading at arm's length on a 1920px-tall display,
+      // web type for a browser page.
+      hero:  "clamp(2.4rem, 7.5vw, 4rem)",
+      h1:    "clamp(1.45rem, 3.4vw, 1.9rem)",
+      h2:    "clamp(1.2rem, 2.6vw, 1.5rem)",
+      h3:    "clamp(1.05rem, 2.2vw, 1.25rem)",
+      body:  "clamp(0.92rem, 1.7vw, 1.02rem)",
+      small: "clamp(0.85rem, 1.5vw, 0.92rem)",
+      tiny:  "clamp(0.76rem, 1.35vw, 0.82rem)",
+      label: "clamp(0.82rem, 1.5vw, 0.88rem)",
     }
   : { hero: 108, h1: 40, h2: 28, h3: 22, body: 18, small: 16, tiny: 14, label: 15 };
 
@@ -54,6 +97,9 @@ export const F = EMBED
  * min-height: 100vh on the outer container instead.
  */
 export const W = 1080, H = 1920;
+// Embed build content max width — a web-page column (the Smart Match web
+// build uses the same), narrower than the kiosk's 1080.
+export const MAXW = 900;
 export const fmt = n => typeof n === "number" ? n.toLocaleString("en-US") : n;
 export const fmtK = n => n >= 1e6 ? `$${(n/1e6).toFixed(1)}m` : n >= 1000 ? `$${Math.round(n/1000).toLocaleString("en-US")}k` : `$${fmt(n)}`;
 export const fmtNum = n => typeof n === "number" ? n.toLocaleString("en-US") : n;

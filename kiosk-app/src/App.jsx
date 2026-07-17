@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { C, F, W, H, KIOSK_STEPS } from './theme';
+import { C, F, W, H, MAXW, KIOSK_STEPS } from './theme';
 
 // Build-time flag: '1' when built with `--mode embed` (see .env.embed).
 // Selects the responsive/iframe variant; default is the fixed 1080×1920 kiosk.
@@ -197,7 +197,7 @@ function AdminOverlay({ onClose }) {
   const lastStr = stats.last ? new Date(stats.last).toLocaleString() : 'never';
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,15,26,0.94)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, overflow: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, background: C.scrim, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, overflow: 'auto' }}>
       {pinOpen ? (
         <PinKeypad onSubmit={handlePinSubmit} onCancel={() => { setPinOpen(false); setPinError(false); }} error={pinError} />
       ) : confirmReset ? (
@@ -217,7 +217,7 @@ function AdminOverlay({ onClose }) {
             <div style={{ fontSize: 12, fontWeight: 700, color: C.accent, letterSpacing: 3, textTransform: 'uppercase' }}>Kiosk Stats</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: C.text, marginTop: 4 }}>Assessments completed</div>
           </div>
-          <button onClick={onClose} style={{ padding: '10px 22px', borderRadius: 10, border: 'none', background: C.accent, color: '#0a0f1a', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Close</button>
+          <button onClick={onClose} style={{ padding: '10px 22px', borderRadius: 10, border: 'none', background: C.accent, color: C.onAccent, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Close</button>
         </div>
 
         {/* Top row: total + 24h */}
@@ -347,7 +347,7 @@ function TimescaleBar({ viewTimescale, setViewTimescale }) {
           padding: "12px 22px", borderRadius: 12, fontSize: F.small, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
           border: active ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
           background: active ? C.accent : C.surface,
-          color: active ? "#0a0f1a" : C.textMid,
+          color: active ? C.onAccent : C.textMid,
           transition: "all .15s",
           minWidth: 120,
         }}>{opt.label}</button>;
@@ -456,7 +456,7 @@ function CalibratingScreen({ onDone }) {
           return (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: done ? 1 : active ? 0.9 : 0.2, transform: done || active ? 'translateX(0)' : 'translateX(-8px)', transition: 'all .4s cubic-bezier(0.16, 1, 0.3, 1)' }}>
               <div style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: done ? C.accent : active ? C.accent + '30' : C.border, border: active ? '2px solid ' + C.accent : '2px solid transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .3s' }}>
-                {done && <span style={{ color: '#0a0f1a', fontSize: 18, fontWeight: 800 }}>{'✓'}</span>}
+                {done && <span style={{ color: C.onAccent, fontSize: 18, fontWeight: 800 }}>{'✓'}</span>}
                 {active && <div style={{ width: 8, height: 8, borderRadius: 4, background: C.accent }} />}
               </div>
               <span style={{ fontSize: F.body, fontWeight: active ? 700 : 400, color: done ? C.accent : active ? C.text : C.textMuted, transition: 'all .3s' }}>{label}</span>
@@ -633,8 +633,10 @@ export default function App() {
 
   // Idle timeout - reset to splash after 90 seconds of no user activity
   // Only active when not on splash (otherwise the splash auto-advances unwantedly)
+  // Kiosk-only chrome: a web visitor stepping away shouldn't lose their inputs,
+  // so the embed build never idle-resets (same as the Smart Match web build).
   useEffect(() => {
-    if (showSplash) return;
+    if (EMBED || showSplash) return;
     let timeoutId = null;
     const IDLE_MS = 15 * 60 * 1000; // 15 minutes
     const goToSplash = () => {
@@ -676,10 +678,10 @@ export default function App() {
   if (calibrating) {
 
   return <div style={EMBED
-      ? { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: "100%", maxWidth: W, margin: "0 auto", minHeight: "100vh", color: C.text, position: "relative", zIndex: 0 }
+      ? { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: "100%", maxWidth: MAXW, margin: "0 auto", minHeight: "100vh", color: C.text, position: "relative", zIndex: 0 }
       : { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: W, minHeight: H, height: '100vh', color: C.text, position: "relative", zIndex: 0 }}>
       {EMBED && <EmbedStyles />}
-      <BackgroundParticles />
+      {!EMBED && <BackgroundParticles />}
       <CalibratingScreen onDone={handleCalibrationDone} />
       {adminVisible && <AdminOverlay onClose={() => setAdminVisible(false)} />}
     </div>;
@@ -687,10 +689,10 @@ export default function App() {
 
   return (
     <div style={EMBED
-      ? { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: "100%", maxWidth: W, margin: "0 auto", minHeight: "100vh", color: C.text, lineHeight: 1.55, display: "flex", flexDirection: "column", position: "relative", zIndex: 0 }
+      ? { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: "100%", maxWidth: MAXW, margin: "0 auto", minHeight: "100vh", color: C.text, lineHeight: 1.55, display: "flex", flexDirection: "column", position: "relative", zIndex: 0 }
       : { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: W, minHeight: H, color: C.text, lineHeight: 1.55, display: "flex", flexDirection: "column", position: "relative", zIndex: 0 }}>
       {EMBED && <EmbedStyles />}
-      <BackgroundParticles />
+      {!EMBED && <BackgroundParticles />}
       <div className={EMBED ? "embed-header-pad" : undefined} style={{ padding: "48px 56px 0" }}>
         <StepIndicator steps={KIOSK_STEPS} current={kioskStep} onJump={setKioskStep} />
       </div>

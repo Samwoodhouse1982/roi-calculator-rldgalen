@@ -68,7 +68,7 @@ function OnScreenKeyboard({ value, onChange, onDone, maxLen = 40 }) {
         <button onClick={() => press('.')} style={keyStyle({ flex: 0.6 })}>.</button>
         <button onClick={space} style={keyStyle({ flex: 4, color: C.textMuted })}>space</button>
         <button onClick={() => press('/')} style={keyStyle({ flex: 0.6 })}>/</button>
-        <button onClick={onDone} style={keyStyle({ flex: 1.4, background: C.accent, color: '#0a0f1a', borderColor: C.accent, fontWeight: 800 })}>Done</button>
+        <button onClick={onDone} style={keyStyle({ flex: 1.4, background: C.accent, color: C.onAccent, borderColor: C.accent, fontWeight: 800 })}>Done</button>
       </div>
     </div>
   );
@@ -86,7 +86,7 @@ function CustomSystemModal({ tier, color, onAdd, onCancel }) {
     onAdd({ label: trimmed, cost });
   };
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,15,26,0.94)', zIndex: 99998, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflow: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, background: C.scrim, zIndex: 99998, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflow: 'auto' }}>
       <div style={{ background: C.surface, padding: '28px 32px', borderRadius: 24, border: '1px solid ' + C.border, width: '100%', maxWidth: 920, marginTop: 60 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }}>{range.label}</div>
         <div style={{ fontSize: 24, fontWeight: 800, color: C.text, marginBottom: 4 }}>Add a system not in the list</div>
@@ -121,7 +121,7 @@ function CustomSystemModal({ tier, color, onAdd, onCancel }) {
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
           <button onClick={onCancel} style={{ padding: '14px 28px', borderRadius: 12, border: '1px solid ' + C.border, background: 'transparent', color: C.textMid, fontSize: 16, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-          <button onClick={handleAdd} disabled={!name.trim()} style={{ padding: '14px 36px', borderRadius: 12, border: 'none', background: name.trim() ? color : C.border, color: name.trim() ? '#0a0f1a' : C.textMuted, fontSize: 16, fontWeight: 800, cursor: name.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>Add system</button>
+          <button onClick={handleAdd} disabled={!name.trim()} style={{ padding: '14px 36px', borderRadius: 12, border: 'none', background: name.trim() ? color : C.border, color: name.trim() ? C.inkOnColor : C.textMuted, fontSize: 16, fontWeight: 800, cursor: name.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>Add system</button>
         </div>
       </div>
     </div>
@@ -354,7 +354,7 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
             </div>
             {selected.length > 0 && <button onClick={() => { selected.forEach(sys => addFlagship(sys, t.key)); setSelected([]); setOpenTier(null); }} style={{
               marginTop: 10, padding: "14px 32px", borderRadius: 14, border: "none",
-              background: t.color, color: "#0a0f1a", fontSize: F.small, fontWeight: 700,
+              background: t.color, color: C.inkOnColor, fontSize: F.small, fontWeight: 700,
               cursor: "pointer", fontFamily: "inherit", width: "100%"
             }}>Add {selected.length} system{selected.length > 1 ? "s" : ""}</button>}
           </div>}

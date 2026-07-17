@@ -1,15 +1,32 @@
 # US Embed / Responsive build
 
 The embed build mode (`npm run build:embed`) produces a **responsive,
-iframe-friendly variant** of the US touchscreen kiosk calculator. It uses
-the **same calculation engine, same input flow, same results layout, same
-components** — only the visual sizing is fluid instead of locked at the
-kiosk's 1080×1920 portrait.
+iframe-friendly WEB variant** of the US touchscreen kiosk calculator. It
+uses the **same calculation engine, same input flow, same results layout,
+same components**, restyled for the web: the RLDatix web-calculator design
+system (deep teal + seafoam on white — the same light theme as the Smart
+Match web build) instead of the kiosk's dark navy, with the kiosk-only
+theatre removed.
 
 Historically this was a separate branch (`us-embed`); it is now a build
 mode of the same app, selected by `--mode embed` / `VITE_EMBED=1`.
 
 ## What changes vs the touchscreen build
+
+- **Light web theme**: `theme.js` swaps the dark navy palette for the
+  RLDatix web design system. Values that used to be hard-coded in
+  components (text-on-accent, modal scrims, tooltip surface, CTA gradient,
+  hero glow) are theme tokens so both palettes stay correct.
+- **Static start screen**: the animated attract splash (particle canvas,
+  pulse, radial launch wipe) is replaced by a static landing with the same
+  content — eyebrow, headline, intro, "Get started" CTA, Best in KLAS
+  badge, RLDatix wordmark (rendered in brand teal via CSS mask). A tap on
+  the wordmark still opens the admin stats overlay.
+- **No background particles**, and **no idle-timeout reset** — a web
+  visitor stepping away shouldn't lose their inputs.
+- **Web typography and column**: fluid rem-based type scale and a 900px
+  max content width (both ported from the Smart Match web build) instead
+  of kiosk-size type on a 1080px column.
 
 - **theme.js**: font sizes (`F.hero`, `F.h1` etc) are CSS `clamp()` values
   that scale fluidly with viewport width. The kiosk values become the

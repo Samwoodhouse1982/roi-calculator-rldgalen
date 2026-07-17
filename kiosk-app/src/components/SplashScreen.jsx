@@ -1,12 +1,11 @@
 // Selects the splash screen variant at build time.
 //
-// The two variants are intentionally kept as separate, untouched files
-// (rather than one file full of conditionals) because they differ
-// structurally: the kiosk version lays out the badge/logo/footer with
-// absolute positioning against a fixed 1080×1920 canvas, while the embed
-// version uses a responsive flex column and a devicePixelRatio-aware
-// canvas. Keeping each file byte-identical to its original branch
-// guarantees neither build's behaviour changed in the unification.
+// The two variants are intentionally kept as separate files (rather than one
+// file full of conditionals) because they differ structurally: the kiosk
+// version is the animated attract screen (particle canvas, pulse, radial
+// launch wipe) laid out against a fixed 1080×1920 display, while the embed
+// version is a static, light-themed web start screen with the same content
+// (ported from the Smart Match web-from-kiosk conversion).
 //
 // VITE_EMBED is set by `.env.embed` when building with `--mode embed`
 // (see package.json scripts). The condition is replaced with a constant

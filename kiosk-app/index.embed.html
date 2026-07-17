@@ -13,24 +13,25 @@
        Removed the kiosk's hardcoded 1080×1920 from html, body, #root.
        Removed user-scalable=no from viewport so people can pinch-zoom if
        they want to inspect a tile up close on mobile. */
-    html, body { margin: 0; padding: 0; width: 100%; min-height: 100vh; -webkit-font-smoothing: antialiased; background: #0a0f1a; font-family: 'DM Sans', sans-serif; }
+    /* Light web theme — RLDatix web-calculator design system (deep teal +
+       seafoam on white), matching the Smart Match web build. */
+    html, body { margin: 0; padding: 0; width: 100%; min-height: 100vh; -webkit-font-smoothing: antialiased; background: #EEF7F2; font-family: 'DM Sans', sans-serif; }
     #root { width: 100%; min-height: 100vh; }
-    input[type=range] { -webkit-appearance: none; height: 16px; border-radius: 8px; background: #1e2840; }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 44px; border-radius: 50%; background: #00d4aa; cursor: pointer; border: 3px solid #0a0f1a; box-shadow: 0 2px 12px rgba(0,212,170,0.5); }
-    input[type=range]::-moz-range-thumb { width: 44px; height: 44px; border-radius: 50%; background: #00d4aa; cursor: pointer; border: 3px solid #0a0f1a; }
-    select { background: #141b2d; color: #e8edf5; border-color: #2a3548; }
-    input[type=number] { background: #141b2d; color: #00d4aa; border-color: #2a3548; }
+    input[type=range] { -webkit-appearance: none; height: 12px; border-radius: 6px; background: #D4E0DD; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%; background: #0F4146; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(15,65,70,0.35); }
+    input[type=range]::-moz-range-thumb { width: 30px; height: 30px; border-radius: 50%; background: #0F4146; cursor: pointer; border: 3px solid #fff; }
+    select { background: #fff; color: #0F4146; border-color: #D4E0DD; }
+    input[type=number] { background: #fff; color: #0F4146; border-color: #D4E0DD; }
     ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #0a0f1a; }
-    ::-webkit-scrollbar-thumb { background: #2a3548; border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #EEF7F2; }
+    ::-webkit-scrollbar-thumb { background: #C2D4D0; border-radius: 4px; }
   </style>
 </head>
 <body>
   <div id="root">
-    <div id="js-fallback" style="color:#8494a8;text-align:center;padding:200px 60px;font-family:DM Sans,sans-serif;font-size:18px;">
-      <div style="font-size:28px;font-weight:700;color:#00d4aa;margin-bottom:20px;">Loading calculator...</div>
-      <div>If this message persists, open DevTools (F12) and check the Console for errors.</div>
-      <div style="margin-top:12px;font-size:14px;opacity:0.5;">Requires Chromium 61+ with JavaScript enabled.</div>
+    <div id="js-fallback" style="color:#3D5A5E;text-align:center;padding:120px 32px;font-family:DM Sans,sans-serif;font-size:16px;">
+      <div style="font-size:24px;font-weight:700;color:#0F4146;margin-bottom:16px;">Loading calculator...</div>
+      <div>This calculator needs JavaScript. If this message persists, please contact your RLDatix representative.</div>
     </div>
   </div>
   <script>window.onerror=function(m,s,l,c,e){document.getElementById('js-fallback').innerHTML='<div style="color:#e74c3c;font-size:20px;font-weight:700;">JavaScript Error</div><div style="margin-top:12px;color:#8494a8;">'+m+'</div><div style="margin-top:8px;font-size:13px;color:#607080;">'+s+' line '+l+'</div>';}</script>

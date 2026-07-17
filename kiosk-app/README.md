@@ -6,7 +6,7 @@ Dark theme, touch-optimized. One codebase, two build modes:
 | Mode | Command | Output | Surface |
 |------|---------|--------|---------|
 | **Touchscreen** (default) | `npm run build` | `dist/` | Fixed portrait 1080×1920 (9:16) conference kiosk |
-| **Embed** | `npm run build:embed` | `dist/` | Responsive / iframe-friendly, scales from ~320px phones to desktop |
+| **Embed** | `npm run build:embed` | `dist/` | Responsive / iframe-friendly web version — light RLDatix web theme, scales from ~320px phones to desktop |
 
 The mode is selected at build time via `--mode embed`, which loads
 `.env.embed` (`VITE_EMBED=1`). The flag switches the font scale

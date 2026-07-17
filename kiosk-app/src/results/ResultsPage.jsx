@@ -152,7 +152,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
 
   return <div style={{ animation: "rfade .5s ease-out" }}>
     <style>{`@keyframes rfade { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-      @keyframes glow { 0%,100% { text-shadow: 0 0 30px rgba(0,212,170,0.3); } 50% { text-shadow: 0 0 60px rgba(0,212,170,0.6); } }
+      @keyframes glow { 0%,100% { text-shadow: 0 0 30px ${C.glowA}; } 50% { text-shadow: 0 0 60px ${C.glowB}; } }
       @keyframes numPulse { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }`}</style>
 
     {/* Timescale bar now rendered in App.jsx above the scroll container so

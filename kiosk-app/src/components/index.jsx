@@ -59,9 +59,9 @@ export function NavButtons({ step, totalSteps, onBack, onNext, onCalculate, onSt
       </button>}
       <div style={{ flex: 1 }} />
       {step < totalSteps - 2 ? (
-        <button onClick={onNext} style={{ padding: "24px 64px", borderRadius: 18, border: "none", background: C.accent, color: "#0a0f1a", fontSize: F.h3, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Next →</button>
+        <button onClick={onNext} style={{ padding: "24px 64px", borderRadius: 18, border: "none", background: C.accent, color: C.onAccent, fontSize: F.h3, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Next →</button>
       ) : (
-        <button onClick={onCalculate} style={{ padding: "24px 64px", borderRadius: 18, border: "none", background: `linear-gradient(135deg, ${C.accent}, #00ffc8)`, color: "#0a0f1a", fontSize: F.h2, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 6px 28px rgba(0,212,170,0.4)" }}>Calculate ROI →</button>
+        <button onClick={onCalculate} style={{ padding: "24px 64px", borderRadius: 18, border: "none", background: C.ctaGrad, color: C.onAccent, fontSize: F.h2, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: C.ctaShadow }}>Calculate ROI →</button>
       )}
     </div>
   </div>;
@@ -149,10 +149,10 @@ export function InfoTip({ text }) {
         position: "fixed",
         top: pos.top, left: pos.left,
         transform: pos.placeAbove ? "translateY(-100%)" : "none",
-        background: "#1e2840", color: C.text,
+        background: C.tooltipBg, color: C.text,
         fontSize: F.small, lineHeight: 1.6, padding: "20px 24px",
         borderRadius: 18, width: 400, maxWidth: "calc(100vw - 40px)",
-        boxShadow: "0 12px 48px rgba(0,0,0,.6)",
+        boxShadow: C.tooltipShadow,
         zIndex: 99997, border: `1px solid ${C.border}`,
         animation: "kfade .2s ease-out"
       }}>{text}</span>
@@ -183,7 +183,7 @@ export function BigChoice({ options, value, onChange }) {
 
 export function SectionTitle({ number, children }) {
   return <div style={{ fontSize: F.h2, fontWeight: 700, color: C.textMid, marginBottom: 28, display: "flex", alignItems: "center", gap: 16 }}>
-    <span style={{ width: 52, height: 52, borderRadius: "50%", background: C.accent, color: "#0a0f1a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: F.h3, fontWeight: 800, flexShrink: 0 }}>{number}</span>
+    <span style={{ width: 52, height: 52, borderRadius: "50%", background: C.accent, color: C.onAccent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: F.h3, fontWeight: 800, flexShrink: 0 }}>{number}</span>
     {children}
   </div>;
 }
