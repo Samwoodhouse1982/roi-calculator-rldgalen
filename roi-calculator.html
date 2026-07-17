@@ -1159,7 +1159,7 @@ function ROICalculator() {
   const [galenAnnualCost, setGalenAnnualCost] = useState(0);
   const [viewTimescale, setViewTimescale] = useState("annual");
   const [scenarioMode, setScenarioMode] = useState(null);
-  // Continuous slider position (null = unselected; 0=Conservative, 0.5=Expected, 1=Stretch)
+  // Continuous slider position (null = unselected; 0=Conservative, 0.5=Expected, 1=Optimistic)
   const [scenarioBlend, setScenarioBlend] = useState(null);
   // Helper: set both blend and discrete scenario together (slider drags + scenario buttons)
   const setBlend = useCallback((val) => {
@@ -1418,7 +1418,7 @@ function ROICalculator() {
     // Meta
     _version: "3.0",
     _generated: new Date().toISOString(),
-    _scenario: am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Stretch":"Expected",
+    _scenario: am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Optimistic":"Expected",
 
     // User info
     user_name: leadForm.name || "",
@@ -1573,7 +1573,7 @@ function ROICalculator() {
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const pw = 210, ph = 297, ml = 16, mr = 16, cw = pw - ml - mr;
     let y = 0;
-    const scenarioLabel = (am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Stretch":"Expected") + ((scenarioBlend != null && Math.abs(scenarioBlend - 0) > 0.005 && Math.abs(scenarioBlend - 0.5) > 0.005 && Math.abs(scenarioBlend - 1) > 0.005) ? " (custom blend at " + Math.round(scenarioBlend*100) + "%)" : "");
+    const scenarioLabel = (am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Optimistic":"Expected") + ((scenarioBlend != null && Math.abs(scenarioBlend - 0) > 0.005 && Math.abs(scenarioBlend - 0.5) > 0.005 && Math.abs(scenarioBlend - 1) > 0.005) ? " (custom blend at " + Math.round(scenarioBlend*100) + "%)" : "");
     const dateStr = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
     const TEAL = [15,65,70], WHITE = [255,255,255], SEAFOAM = [190,250,240];
     const GRAY = [61,90,94], LTBG = [238,247,241], DARK = [31,41,55], MID = [110,138,142];
@@ -1861,7 +1861,7 @@ function ROICalculator() {
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const pw = 210, ph = 297, ml = 16, mr = 16, mt = 16, cw = pw - ml - mr;
     let y = 0;
-    const scenarioLabel = (am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Stretch":"Expected") + ((scenarioBlend != null && Math.abs(scenarioBlend - 0) > 0.005 && Math.abs(scenarioBlend - 0.5) > 0.005 && Math.abs(scenarioBlend - 1) > 0.005) ? " (custom blend at " + Math.round(scenarioBlend*100) + "%)" : "");
+    const scenarioLabel = (am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Optimistic":"Expected") + ((scenarioBlend != null && Math.abs(scenarioBlend - 0) > 0.005 && Math.abs(scenarioBlend - 0.5) > 0.005 && Math.abs(scenarioBlend - 1) > 0.005) ? " (custom blend at " + Math.round(scenarioBlend*100) + "%)" : "");
     const dateStr = new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
 
     // Colours
@@ -2296,7 +2296,7 @@ function ROICalculator() {
     doc.setFontSize(8); doc.setFont("helvetica","bold"); setC(TEAL);
     doc.text("Range across scenarios:", ml + 4, y + 5);
     doc.setFont("helvetica","normal"); setC(GREY);
-    doc.text(fmtK(rCon.total3) + " (conservative)  to  " + fmtK(rStr.total3) + " (stretch). Phased over " + r.rampYears + " years (" + r.rampPcts.map(p => Math.round(p*100) + "%").join(", ") + "). All figures are user-overridable.", ml + 4, y + 10);
+    doc.text(fmtK(rCon.total3) + " (conservative)  to  " + fmtK(rStr.total3) + " (optimistic). Phased over " + r.rampYears + " years (" + r.rampPcts.map(p => Math.round(p*100) + "%").join(", ") + "). All figures are user-overridable.", ml + 4, y + 10);
     y += 22;
 
     // Scenario comparison mini-table
@@ -2307,7 +2307,7 @@ function ROICalculator() {
       startY: y,
       margin: { left: ml, right: mr },
       pageBreak: "avoid",
-      head: [["", "Conservative", "Expected", "Stretch"]],
+      head: [["", "Conservative", "Expected", "Optimistic"]],
       body: [
         ["Decom savings", fmtK(rCon.decomSave) + "/yr", fmtK(r.decomSave) + "/yr", fmtK(rStr.decomSave) + "/yr"],
         ["Time savings", fmtK(rCon.timeSave) + "/yr", fmtK(r.timeSave) + "/yr", fmtK(rStr.timeSave) + "/yr"],
@@ -2390,7 +2390,7 @@ function ROICalculator() {
       const submission = {
         timestamp: new Date().toISOString(),
         format: pdfFormat,
-        scenario: am === "CONSERVATIVE" ? "Conservative" : am === "STRETCH" ? "Stretch" : "Expected",
+        scenario: am === "CONSERVATIVE" ? "Conservative" : am === "STRETCH" ? "Optimistic" : "Expected",
         lead: {
           name: leadForm.name || "",
           email: leadForm.email || "",
@@ -2432,7 +2432,7 @@ function ROICalculator() {
     // 3. Submit to HubSpot (EU1 region, fire-and-forget)
     if (HUBSPOT_PORTAL_ID && HUBSPOT_FORM_GUID) {
       try {
-        const scenarioLabel = (am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Stretch":"Expected") + ((scenarioBlend != null && Math.abs(scenarioBlend - 0) > 0.005 && Math.abs(scenarioBlend - 0.5) > 0.005 && Math.abs(scenarioBlend - 1) > 0.005) ? " (custom blend at " + Math.round(scenarioBlend*100) + "%)" : "");
+        const scenarioLabel = (am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Optimistic":"Expected") + ((scenarioBlend != null && Math.abs(scenarioBlend - 0) > 0.005 && Math.abs(scenarioBlend - 0.5) > 0.005 && Math.abs(scenarioBlend - 1) > 0.005) ? " (custom blend at " + Math.round(scenarioBlend*100) + "%)" : "");
         const calcContext = `ROI Calculator submission | Scenario: ${scenarioLabel} | Beds: ${inputs.bed_count} | Orgs: ${inputs.org_count} | Legacy systems: ${r.legacy} | Annual savings: ${fmtK(r.annual)} | 3-year total: ${fmtK(r.total3)} | Complexity: ${inputs.complexity_level} | Journey: ${isArchiveOnly?"Archive only":"Migration + archiving"}`;
         await fetch(`https://forms-${HUBSPOT_REGION}.hsforms.com/submissions/v3/integration/submit/${HUBSPOT_PORTAL_ID}/${HUBSPOT_FORM_GUID}`, {
           method: "POST",
@@ -2478,7 +2478,7 @@ function ROICalculator() {
                 role: leadForm.role || "",
                 filename: pdf.filename,
                 pdf_base64: base64,
-                scenario: am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Stretch":"Expected",
+                scenario: am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Optimistic":"Expected",
                 annual: r.annual,
                 total3: r.total3,
               }),
@@ -3074,7 +3074,7 @@ function ROICalculator() {
           {dim ? "Drag the slider to unlock results" : "Confidence level"}
         </div>
         {!dim && <div style={{fontSize:11,color:C.textMuted}}>
-          <span style={{fontWeight:700,color:C.text}}>{scenarioMode === "CONSERVATIVE" ? "Conservative" : scenarioMode === "STRETCH" ? "Stretch" : "Expected"}</span>
+          <span style={{fontWeight:700,color:C.text}}>{scenarioMode === "CONSERVATIVE" ? "Conservative" : scenarioMode === "STRETCH" ? "Optimistic" : "Expected"}</span>
           {scenarioBlend != null && Math.abs(scenarioBlend - 0) > 0.005 && Math.abs(scenarioBlend - 0.5) > 0.005 && Math.abs(scenarioBlend - 1) > 0.005 && <> · custom blend</>}
         </div>}
       </div>
@@ -3085,7 +3085,7 @@ function ROICalculator() {
         <div style={{position:"relative",height:14,marginTop:2}}>
           <button type="button" className="roi-anchor" onClick={()=>setBlend(0)} style={{position:"absolute",left:0,fontSize:11,color:C.textMuted,fontWeight:500,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}>Conservative</button>
           <button type="button" className="roi-anchor" onClick={()=>setBlend(0.5)} style={{position:"absolute",left:"50%",transform:"translateX(-50%)",fontSize:11,color:C.textMuted,fontWeight:500,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit",whiteSpace:"nowrap"}}>Expected</button>
-          <button type="button" className="roi-anchor" onClick={()=>setBlend(1)} style={{position:"absolute",right:0,fontSize:11,color:C.textMuted,fontWeight:500,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}>Stretch</button>
+          <button type="button" className="roi-anchor" onClick={()=>setBlend(1)} style={{position:"absolute",right:0,fontSize:11,color:C.textMuted,fontWeight:500,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}>Optimistic</button>
         </div>
       </div>
       {!dim && <div style={{padding:"24px 18px 18px",background:`linear-gradient(180deg, ${C.tealPale} 0%, #fff 100%)`,border:`1px solid ${C.accent}33`,borderTop:`3px solid ${C.accent}`,borderRadius:12,textAlign:"center",boxShadow:`0 6px 24px ${C.accent}1a, 0 1px 3px ${C.accent}10`}}>
@@ -3394,7 +3394,7 @@ function ROICalculator() {
         </tbody></table>
       </div>
       <div style={{marginTop:14,padding:"10px 14px",background:C.bg,borderRadius:6,fontSize:12,color:C.textMuted,display:"flex",gap:16,flexWrap:"wrap"}}>
-        <span>Showing: <strong style={{color:C.accent}}>{am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Stretch":"Expected"}</strong></span>
+        <span>Showing: <strong style={{color:C.accent}}>{am==="CONSERVATIVE"?"Conservative":am==="STRETCH"?"Optimistic":"Expected"}</strong></span>
         <span>Range: <strong>{fmtK(rCon.totalRamp)}</strong> {"–"} <strong>{fmtK(rStr.totalRamp)}</strong> across {r.rampYears} years (steady state: <strong>{fmtK(rCon.annual)}</strong> {"–"} <strong>{fmtK(rStr.annual)}</strong>/yr)</span>
       </div>
     </Card>
@@ -3569,14 +3569,14 @@ function ROICalculator() {
         <S title="1. Scenario multipliers" defaultOpen={true}>
           <p style={{margin:"0 0 8px"}}>Three scenarios scale all outputs to reflect confidence levels.</p>
           <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12,margin:"8px 0"}}>
-            <thead><tr style={{background:C.accent,color:"#fff"}}><th style={{padding:"6px 10px",textAlign:"left"}}>Parameter</th><th style={{padding:"6px 10px"}}>Conservative</th><th style={{padding:"6px 10px"}}>Expected</th><th style={{padding:"6px 10px"}}>Stretch</th></tr></thead>
+            <thead><tr style={{background:C.accent,color:"#fff"}}><th style={{padding:"6px 10px",textAlign:"left"}}>Parameter</th><th style={{padding:"6px 10px"}}>Conservative</th><th style={{padding:"6px 10px"}}>Expected</th><th style={{padding:"6px 10px"}}>Optimistic</th></tr></thead>
             <tbody>
               <tr style={{borderBottom:`1px solid ${C.borderLight}`}}><td style={{padding:"6px 10px",fontWeight:600}}>Decommission scaling</td><td style={{padding:"6px 10px",textAlign:"center"}}>0.85x</td><td style={{padding:"6px 10px",textAlign:"center"}}>1.00x</td><td style={{padding:"6px 10px",textAlign:"center"}}>1.10x</td></tr>
               <tr style={{borderBottom:`1px solid ${C.borderLight}`}}><td style={{padding:"6px 10px",fontWeight:600}}>Time realisation rate</td><td style={{padding:"6px 10px",textAlign:"center"}}>20%</td><td style={{padding:"6px 10px",textAlign:"center"}}>30%</td><td style={{padding:"6px 10px",textAlign:"center"}}>40%</td></tr>
               <tr><td style={{padding:"6px 10px",fontWeight:600}}>Safety reduction</td><td style={{padding:"6px 10px",textAlign:"center"}}>15%</td><td style={{padding:"6px 10px",textAlign:"center"}}>25%</td><td style={{padding:"6px 10px",textAlign:"center"}}>35%</td></tr>
             </tbody>
           </table></div>
-          <p style={{margin:"8px 0 4px"}}><strong>Decom scaling</strong> adjusts how many of your planned retirements actually happen {" - "} Conservative assumes 85% (programme delays, contractual holdups), Stretch assumes 10% overachievement. <Md s="No published benchmark. User sets their own target and this scales it."/></p>
+          <p style={{margin:"8px 0 4px"}}><strong>Decom scaling</strong> adjusts how many of your planned retirements actually happen {" - "} Conservative assumes 85% (programme delays, contractual holdups), Optimistic assumes 10% overachievement. <Md s="No published benchmark. User sets their own target and this scales it."/></p>
           <p style={{margin:"4px 0"}}><strong>Time realisation</strong> {" - "} the fraction of freed clinician time that translates into measurable capacity. NHS Productive Ward reported 20-40%. <Bm s="NHS Productive Ward programme; Lord Carter review of operational productivity."/></p>
           <p style={{margin:"4px 0"}}><strong>Safety reduction</strong> {" - "} avoidable medication errors from system consolidation. Camacho et al 2024 (BMJ Quality & Safety), Gate et al 2023 found 25-50% reductions. <Ev s="Camacho et al 2024 (BMJ Quality & Safety); Gate et al 2023."/></p>
         </S>
@@ -3774,7 +3774,7 @@ function ROICalculator() {
             <h2 style={{fontSize:22,fontWeight:800,color:C.text,margin:0}}>Why these numbers?</h2>
             <button type="button" onClick={()=>setShowFormulas(false)} style={{border:"none",background:"none",fontSize:24,color:C.textMid,cursor:"pointer",padding:"4px 12px",lineHeight:1}}>{"✕"}</button>
           </div>
-          <p style={{fontSize:13,color:C.textMid,margin:"0 0 16px",lineHeight:1.6}}>Annual recurring savings of <strong style={{color:C.accent}}>{fmtK(r.annual)}</strong> for the <strong>{am === "CONSERVATIVE" ? "Conservative" : am === "STRETCH" ? "Stretch" : "Expected"}</strong> scenario, broken down below. Every figure here flows from your specific inputs and the constants documented in our methodology report.</p>
+          <p style={{fontSize:13,color:C.textMid,margin:"0 0 16px",lineHeight:1.6}}>Annual recurring savings of <strong style={{color:C.accent}}>{fmtK(r.annual)}</strong> for the <strong>{am === "CONSERVATIVE" ? "Conservative" : am === "STRETCH" ? "Optimistic" : "Expected"}</strong> scenario, broken down below. Every figure here flows from your specific inputs and the constants documented in our methodology report.</p>
 
           <FormulaSection
             color="#0F4146"
@@ -3828,7 +3828,7 @@ function ROICalculator() {
           </div>
 
           <div style={{marginTop:14,fontSize:11,color:C.textMuted,lineHeight:1.6,fontStyle:"italic"}}>
-            All scenario factors: <strong>{am === "CONSERVATIVE" ? "Conservative" : am === "STRETCH" ? "Stretch" : "Expected"}</strong>{(scenarioBlend != null && Math.abs(scenarioBlend - 0) > 0.005 && Math.abs(scenarioBlend - 0.5) > 0.005 && Math.abs(scenarioBlend - 1) > 0.005) && <em style={{fontStyle:"normal",color:C.accent}}> (custom blend at {Math.round(scenarioBlend*100)}%)</em>} = decom ×{sc.decom_pct.toFixed(2)}, realisation ×{sc.realisation.toFixed(2)}, safety ×{sc.safety.toFixed(2)}. Drag the slider above to see how the numbers shift.
+            All scenario factors: <strong>{am === "CONSERVATIVE" ? "Conservative" : am === "STRETCH" ? "Optimistic" : "Expected"}</strong>{(scenarioBlend != null && Math.abs(scenarioBlend - 0) > 0.005 && Math.abs(scenarioBlend - 0.5) > 0.005 && Math.abs(scenarioBlend - 1) > 0.005) && <em style={{fontStyle:"normal",color:C.accent}}> (custom blend at {Math.round(scenarioBlend*100)}%)</em>} = decom ×{sc.decom_pct.toFixed(2)}, realisation ×{sc.realisation.toFixed(2)}, safety ×{sc.safety.toFixed(2)}. Drag the slider above to see how the numbers shift.
           </div>
 
           <div style={{marginTop:14,display:"flex",justifyContent:"center"}}>
