@@ -1985,7 +1985,7 @@ function ROICalculator() {
     doc.setFontSize(9); doc.setFont("helvetica","normal"); setC(GREY);
     doc.text("per year  \u00b7  " + r.rampYears + "-year total: " + fmtK(r.totalRamp), pw / 2, y + 29, { align: "center" });
     doc.setFontSize(8); setC(MID);
-    doc.text("Range across scenarios: " + fmtK(rCon.annual) + " \u2013 " + fmtK(rStr.annual) + " /yr", pw / 2, y + 34, { align: "center" });
+    doc.text("Range across scenarios: " + fmtK(rCon.annual) + " to " + fmtK(rStr.annual) + "/yr", pw / 2, y + 34, { align: "center" });
     y += 42;
 
     // Summary cards (Quality + FTE) — the headline figures (annual recurring, N-year total)
@@ -2014,8 +2014,8 @@ function ROICalculator() {
 
     // Journey context (matches the banner on the web report at the top of the results page)
     const journeyBlurb = isArchiveOnly
-      ? "You said: \"We want to decommission systems\" \u2014 so this report estimates the potential ROI of retiring legacy applications and consolidating data into a single clinical archive. Retiring legacy systems eliminates ongoing licensing, hosting and support costs; an archive keeps historical patient records accessible at the point of care for continuity, CQC inspection readiness and NHS Records Management Code of Practice compliance."
-      : "You said: \"We're evaluating enterprise EPRs\" \u2014 so this report estimates the potential ROI of both migration and archiving. Migrating to a single EPR improves safety at care transitions; archiving legacy systems eliminates ongoing licensing, hosting and support costs while ensuring historical information remains accessible in context to clinicians at the point of care, in line with NHS Records Management Code of Practice.";
+      ? "You said: \"We want to decommission systems\", so this report estimates the potential ROI of retiring legacy applications and consolidating data into a single clinical archive. Retiring legacy systems eliminates ongoing licensing, hosting and support costs; an archive keeps historical patient records accessible at the point of care for continuity, CQC inspection readiness and NHS Records Management Code of Practice compliance."
+      : "You said: \"We're evaluating enterprise EPRs\", so this report estimates the potential ROI of both migration and archiving. Migrating to a single EPR improves safety at care transitions; archiving legacy systems eliminates ongoing licensing, hosting and support costs while ensuring historical information remains accessible in context to clinicians at the point of care, in line with NHS Records Management Code of Practice.";
     doc.setFontSize(7.5); doc.setFont("helvetica","normal");
     const journeyLines = doc.splitTextToSize(journeyBlurb, cw - 10);
     const journeyBoxH = Math.max(18, 6 + journeyLines.length * 3.2 + 4);
@@ -2058,7 +2058,7 @@ function ROICalculator() {
     if (r.ent > 0) decomBody.push(["Enterprise", String(r.ent), fmtK(r.entCost), String(r.entDecom), fmtK(r.entDecom * r.entCost) + "/yr"]);
     if (r.dep > 0) decomBody.push(["Departmental", String(r.dep), fmtK(r.depCost), String(r.depDecom), fmtK(r.depDecom * r.depCost) + "/yr"]);
     if (r.nic > 0) decomBody.push(["Standalone", String(r.nic), fmtK(r.nicCost), String(r.nicDecom), fmtK(r.nicDecom * r.nicCost) + "/yr"]);
-    flagships.forEach(f => { decomBody.push([f.name || "Named system", "1", fmtK(f.cost), f.retire ? "1" : "0", f.retire ? fmtK(f.cost) + "/yr" : "\u2013"]); });
+    flagships.forEach(f => { decomBody.push([f.name || "Named system", "1", fmtK(f.cost), f.retire ? "1" : "0", f.retire ? fmtK(f.cost) + "/yr" : "-"]); });
     decomBody.push([{ content: "Total", styles: { fontStyle: "bold", fillColor: LTBG } }, { content: String(r.legacy), styles: { fontStyle: "bold", fillColor: LTBG } }, { content: fmtK(r.blendedCost) + " avg", styles: { fillColor: LTBG } }, { content: String(r.decom), styles: { fontStyle: "bold", fillColor: LTBG } }, { content: fmtK(r.decomSave) + "/yr", styles: { fontStyle: "bold", textColor: TEAL, fillColor: LTBG } }]);
     doc.autoTable({
       startY: y,
@@ -2163,7 +2163,7 @@ function ROICalculator() {
       const rampSum = r.rampPcts.reduce((a,b)=>a+b,0);
       const galenAnnualTotal = Math.round(galenAnnualCost * rampSum);
       const netTotal = r.totalRamp - galenMigrationCost - galenAnnualTotal;
-      const paybackYears = (r.annual > galenAnnualCost) ? (galenMigrationCost / Math.max(1, r.annual - galenAnnualCost)).toFixed(1) : "–";
+      const paybackYears = (r.annual > galenAnnualCost) ? (galenMigrationCost / Math.max(1, r.annual - galenAnnualCost)).toFixed(1) : "-";
       doc.autoTable({
         startY: y,
         margin: { left: ml, right: mr },
@@ -2333,8 +2333,15 @@ function ROICalculator() {
     doc.text(disclaimerLines, ml + 4, y + 9);
     y += Math.max(28, 12 + disclaimerLines.length * 3) + 4;
 
-    // CTA bar on last page
+    // Footer on all pages (run before the CTA so the footer's white mask
+    // can't wipe the CTA bar; totalPages is final here since the CTA never adds pages)
     const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      addFooter(i, totalPages);
+    }
+
+    // CTA bar on last page (drawn after the footers so it sits on top of the footer mask)
     doc.setPage(totalPages);
     const ctaY = ph - 24;
     doc.setFillColor(TEAL[0],TEAL[1],TEAL[2]);
@@ -2343,12 +2350,6 @@ function ROICalculator() {
     doc.text("To discuss your programme, contact the " + PDF_COMPANY_NAME + " team.", pw / 2, ctaY + 5, { align: "center" });
     doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(190,230,220);
     doc.text("All assumptions documented in the methodology report. Every figure is adjustable.", pw / 2, ctaY + 9, { align: "center" });
-
-    // Footer on all pages (run LAST so any pages added by disclaimer/CTA get footers too)
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      addFooter(i, totalPages);
-    }
 
     // Footer (text + logo) is now drawn directly by addFooter for each page —
     // no post-render loop needed.
