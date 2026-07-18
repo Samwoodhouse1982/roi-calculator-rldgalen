@@ -63,6 +63,7 @@ mode of the same app, selected by `--mode embed` / `VITE_EMBED=1`.
   `buildCommand`: a vercel.json buildCommand would override the
   dashboard's Build Command setting, which would silently break the
   per-project selection (both projects share this folder).
-- For iframe embedding: set the iframe's `width` and `height`; the app
-  fills 100% of both. `body { overflow: hidden }` is set so scrolling
-  happens inside the app's own scroll area, not on the host page.
+- The embed scrolls like a normal web page (body-level scrolling, with a
+  scroll-to-top on each step change). In an iframe, give the iframe a
+  height and the content scrolls within it using the iframe's own
+  scrollbar.

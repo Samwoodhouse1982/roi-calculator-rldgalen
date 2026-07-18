@@ -410,11 +410,13 @@ function EmbedStyles() {
       .embed-scroll-area { padding: 0 14px 16px !important; }
     }
 
-    /* Always: prevent body/iframe scrollbars from doubling up.
-       The embed should scroll INSIDE itself (.embed-scroll-area), not
-       force the parent page to scroll. */
+    /* The embed scrolls like a normal web page (same as the Smart Match web
+       build). The app's outer container only sets a MINIMUM height, so an
+       earlier body{overflow:hidden} rule here left tall steps clipped with
+       no way to scroll at all — the inner .embed-scroll-area never gets a
+       constrained height to scroll within. Body-level scrolling also makes
+       the results TimescaleBar's position:sticky work as designed. */
     html, body { margin: 0; padding: 0; }
-    body { overflow: hidden; }
     #root { width: 100%; min-height: 100vh; }
   `}</style>;
 }
@@ -669,6 +671,14 @@ export default function App() {
       document.removeEventListener('keydown', reset);
     };
   }, [showSplash]);
+
+  // Embed: the page scrolls at body level, so jump back to the top when the
+  // step changes — otherwise tapping Next leaves the user mid-page on the
+  // next step. (Kiosk scrolls inside its fixed-height container instead.)
+  useEffect(() => {
+    if (!EMBED) return;
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [kioskStep, calibrating, showSplash]);
 
   if (showSplash) return <>
     <SplashScreen onStart={() => setShowSplash(false)} onAdminReveal={() => setAdminVisible(true)} />
