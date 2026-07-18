@@ -11,6 +11,15 @@ import path from 'node:path';
 // `--mode embed` loads .env.embed (VITE_EMBED=1), which the source reads via
 // import.meta.env.VITE_EMBED to pick the embed variants. Both modes emit
 // dist/index.html so existing Vercel/Netlify configs work unchanged.
+//
+// The embed build can ALSO be selected by setting VITE_EMBED=1 in the
+// environment (e.g. a Vercel project env var) with the plain `npm run build`
+// command. This matters on Vercel: a buildCommand in vercel.json overrides
+// the dashboard's Build Command setting, so two projects sharing this folder
+// couldn't otherwise build different variants — with the env var, both run
+// `npm run build` and only the embed project sets VITE_EMBED=1. (Vite exposes
+// VITE_-prefixed process env vars to import.meta.env automatically, so the
+// source-level flag reads work the same in both paths.)
 const embedHtmlEntry = () => {
   let outDir;
   return {
@@ -36,7 +45,7 @@ const embedHtmlEntry = () => {
 };
 
 export default defineConfig(({ mode }) => {
-  const embed = mode === 'embed';
+  const embed = mode === 'embed' || process.env.VITE_EMBED === '1';
   return {
     plugins: [react(), ...(embed ? [embedHtmlEntry()] : [])],
     build: {
