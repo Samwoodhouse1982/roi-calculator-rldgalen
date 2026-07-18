@@ -37,8 +37,8 @@ folder (Root Directory setting), all from this branch:
 | UKI web | `web/uki` | — (static) |
 | US web | `web/us` | — (static) |
 | AU web | `web/au` | — (static) |
-| US touchscreen | `kiosk-app` | `npm run build` |
-| US embed | `kiosk-app` | `npm run build:embed` |
+| US touchscreen | `kiosk-app` | — (auto: `npm run build`) |
+| US embed | `kiosk-embed` | — (auto: builds `kiosk-app` in embed mode) |
 
 ## History
 
