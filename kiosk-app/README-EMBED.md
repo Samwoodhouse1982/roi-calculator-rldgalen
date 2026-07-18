@@ -55,14 +55,14 @@ mode of the same app, selected by `--mode embed` / `VITE_EMBED=1`.
 
 - Same Vite stack. `npm run build:embed` outputs to `dist/` (emitted as
   `index.html`, same as the touchscreen build).
-- **On Vercel, select the embed build with an environment variable, not a
-  build-command override.** `vercel.json` sets `buildCommand`, and a
-  vercel.json buildCommand overrides the dashboard's Build Command setting
-  — a dashboard override of `npm run build:embed` is silently ignored.
-  Instead, in the embed project add the env var `VITE_EMBED=1`
-  (Settings → Environment Variables, all environments) and leave the build
-  command alone; `vite.config.js` honours the env var and both projects
-  build with the same `npm run build`.
+- **On Vercel, select the embed build either way:** set the project's
+  Build Command override to `npm run build:embed` (Settings → Build and
+  Deployment), or add the env var `VITE_EMBED=1` (Settings → Environment
+  Variables) and keep the default `npm run build` — `vite.config.js`
+  honours both. Note `vercel.json` deliberately does NOT set a
+  `buildCommand`: a vercel.json buildCommand would override the
+  dashboard's Build Command setting, which would silently break the
+  per-project selection (both projects share this folder).
 - For iframe embedding: set the iframe's `width` and `height`; the app
   fills 100% of both. `body { overflow: hidden }` is set so scrolling
   happens inside the app's own scroll area, not on the host page.
