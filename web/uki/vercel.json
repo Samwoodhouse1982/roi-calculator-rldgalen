@@ -2,17 +2,33 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/uk", "destination": "/roi-calculator.html" },
-    { "source": "/calc", "destination": "/roi-calculator.html" },
-    { "source": "/calculator", "destination": "/roi-calculator.html" },
-    { "source": "/roi-calculator", "destination": "/roi-calculator.html" }
+    {
+      "source": "/uk",
+      "destination": "/roi-calculator.html"
+    },
+    {
+      "source": "/calc",
+      "destination": "/roi-calculator.html"
+    },
+    {
+      "source": "/calculator",
+      "destination": "/roi-calculator.html"
+    },
+    {
+      "source": "/roi-calculator",
+      "destination": "/roi-calculator.html"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
       ]
     }
-  ]
+  ],
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."
 }

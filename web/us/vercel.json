@@ -8,5 +8,6 @@
       "source": "/(.*)",
       "destination": "/roi-calculator.html"
     }
-  ]
+  ],
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."
 }
