@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { C, F, fmtK, fmtNum } from '../theme';
+import rldatixLogo from '../assets/rldatix-logo.png';
 
 /* ────────────────────────────────────────────────────────────────────────
    Lead capture — ported from the Smart Match web build's LeadCapture and
@@ -58,6 +59,206 @@ function saveSubmission(record) {
   } catch (e) { console.warn("Local backup failed:", e); }
 }
 
+// Fetch the bundled white RLDatix wordmark as a data URL for jsPDF (best-effort).
+async function logoDataUrl() {
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = rldatixLogo; });
+    // Downscale before embedding: jsPDF stores PNGs as raw pixels, so the
+    // full-size asset would bloat the file by megabytes.
+    const w = 400, h = Math.round(w * img.height / img.width);
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    cv.getContext("2d").drawImage(img, 0, 0, w, h);
+    return cv.toDataURL("image/png");
+  } catch (e) { return null; }
+}
+
+/* One-page PDF summary (jsPDF, bundled — no CDN dependency). Same layout
+   family as the Smart Match web report: navy header with the white RLDatix
+   wordmark top-right, two headline callout boxes, a KPI row, the savings-ramp
+   tiles, Your inputs + savings composition side by side, the worked-out
+   equation strip, About these figures, and the disclaimer. RLDatix light
+   palette. */
+async function generatePDF(r, lead, ctx) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+  const NAVY = [15, 65, 70], TEAL = [26, 138, 122], SEAFOAM = [52, 222, 194],
+        PALE = [238, 247, 242], PALE_SEA = [232, 250, 246], BORDER = [212, 224, 221],
+        TEXT = [15, 65, 70], MID = [61, 90, 94], MUTED = [120, 130, 150];
+  const M = 14, W = 210 - 2 * M;
+  const usd = n => "$" + Math.round(n || 0).toLocaleString("en-US");
+  const PROVIDERS = {
+    critical_access: "Critical Access / Rural", community: "Community Hospital",
+    regional: "Regional Medical Center", academic: "Academic Medical Center",
+    multi_hospital: "IDN / Health System",
+  };
+  const REIMB = { ffs: "Fee-for-Service", vbc: "Value-Based", mixed: "Mixed" };
+  const total = r.annualWithReimbursement || r.annual || 0;
+
+  // ── Header band ──
+  doc.setFillColor(...NAVY); doc.rect(0, 0, 210, 34, "F");
+  doc.setFillColor(...SEAFOAM); doc.rect(0, 34, 210, 1.4, "F");
+  doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(17);
+  doc.text("Galen Clinical Archive: ROI Estimate", M, 16);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...SEAFOAM);
+  doc.text("RLDatix · " + new Date().toLocaleDateString("en-US") + (lead.org ? " · " + lead.org : ""), M, 24);
+  const logo = await logoDataUrl();
+  if (logo) { try { doc.addImage(logo, "PNG", 210 - M - 38, 9, 38, 7.3); } catch (e) { /* header still fine without it */ } }
+
+  // ── Headline callouts ──
+  let y = 42;
+  doc.setTextColor(...MUTED); doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+  doc.text("YOUR ESTIMATED ANNUAL IMPACT", M, y); y += 3;
+  const hbW = (W - 4) / 2, hbH = 28;
+  const headlineBox = (x, big, label, sub) => {
+    doc.setFillColor(...PALE_SEA); doc.setDrawColor(...TEAL);
+    doc.roundedRect(x, y, hbW, hbH, 2.5, 2.5, "FD");
+    doc.setTextColor(...TEAL); doc.setFont("helvetica", "bold"); doc.setFontSize(21);
+    doc.text(big, x + hbW / 2, y + 13, { align: "center" });
+    doc.setTextColor(...TEXT); doc.setFontSize(9.5);
+    doc.text(label, x + hbW / 2, y + 20, { align: "center" });
+    doc.setTextColor(...MID); doc.setFont("helvetica", "normal"); doc.setFontSize(7.5);
+    doc.text(sub, x + hbW / 2, y + 24.5, { align: "center" });
+  };
+  headlineBox(M, usd(total), "Potential annual savings", "at steady state, all categories combined");
+  headlineBox(M + hbW + 4, `${r.decom || 0} of ${r.legacy || 0}`, "legacy systems retired", "decommissioned and archived into Galen");
+  y += hbH + 6;
+
+  // ── KPI row ──
+  const kW = (W - 9) / 4, kH = 21;
+  const kpis = [
+    ["DECOMMISSION SAVINGS", usd(r.decomSave), "licensing, support and infrastructure retired"],
+    ["CLINICAL CAPACITY", (r.fteEquivalent || 0) + " FTE", usd(r.timeSave) + "/yr clinician time value"],
+    ["REIMBURSEMENT", usd(r.reimbursementImpact), "CMS penalties + denial recovery"],
+    ["PATIENT SAFETY", usd(r.qualitySavings), "cost avoidance from harm prevented"],
+  ];
+  kpis.forEach(([label, val, sub], i) => {
+    const x = M + i * (kW + 3);
+    doc.setFillColor(255, 255, 255); doc.setDrawColor(...BORDER);
+    doc.roundedRect(x, y, kW, kH, 2, 2, "FD");
+    doc.setTextColor(...MUTED); doc.setFont("helvetica", "bold"); doc.setFontSize(6.3);
+    doc.text(label, x + 3, y + 5);
+    doc.setTextColor(...NAVY); doc.setFontSize(12.5);
+    doc.text(String(val), x + 3, y + 11.5);
+    doc.setTextColor(...MID); doc.setFont("helvetica", "normal"); doc.setFontSize(6.2);
+    doc.text(doc.splitTextToSize(sub, kW - 6), x + 3, y + 15.5);
+  });
+  y += kH + 7;
+
+  // ── Savings ramp: three year tiles + totals ──
+  doc.setTextColor(...MUTED); doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+  doc.text("SAVINGS RAMP (3-YEAR ADOPTION CURVE: 40 / 80 / 100%)", M, y); y += 3;
+  const sW = (W - 8) / 3, sH = 30;
+  const years = [
+    ["Year 1", "40% of steady state", r.yr1R],
+    ["Year 2", "80% of steady state", r.yr2R],
+    ["Year 3", "100% of steady state", r.yr3R],
+  ];
+  let cum = 0;
+  years.forEach(([label, sub, val], i) => {
+    cum += val || 0;
+    const x = M + i * (sW + 4);
+    const last = i === 2;
+    if (last) { doc.setFillColor(...PALE_SEA); doc.setDrawColor(...TEAL); doc.setLineWidth(0.7); }
+    else { doc.setFillColor(255, 255, 255); doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); }
+    doc.roundedRect(x, y, sW, sH, 2.5, 2.5, "FD");
+    doc.setLineWidth(0.2);
+    doc.setTextColor(...NAVY); doc.setFont("helvetica", "bold"); doc.setFontSize(9.5);
+    doc.text(label, x + 4, y + 8);
+    doc.setTextColor(...MID); doc.setFont("helvetica", "normal"); doc.setFontSize(7);
+    doc.text(sub, x + 4, y + 12.5);
+    doc.setTextColor(...TEAL); doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+    doc.text(usd(val), x + 4, y + 21);
+    doc.setTextColor(...MID); doc.setFont("helvetica", "normal"); doc.setFontSize(6.5);
+    doc.text("cumulative: " + usd(cum), x + 4, y + 26);
+  });
+  y += sH + 4;
+  doc.setTextColor(...MID); doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+  doc.text(`3-year total: ${usd(r.total3WithReimbursement)}   ·   5-year total (20/40/60/80/100% ramp): ${usd(r.total5WithReimbursement)}`, M, y);
+  y += 6;
+
+  // ── Two columns: Your inputs | Where the savings come from ──
+  const colW = (W - 4) / 2, colH = 42;
+  const colBox = (x, title, rows, note) => {
+    doc.setFillColor(...PALE); doc.setDrawColor(...BORDER);
+    doc.roundedRect(x, y, colW, colH, 2.5, 2.5, "FD");
+    doc.setTextColor(...NAVY); doc.setFont("helvetica", "bold"); doc.setFontSize(9.5);
+    doc.text(title, x + 4, y + 7);
+    let ry = y + 13;
+    doc.setFontSize(8);
+    rows.forEach(([k, v]) => {
+      doc.setTextColor(...MID); doc.setFont("helvetica", "normal");
+      doc.text(k, x + 4, ry);
+      doc.setTextColor(...TEXT); doc.setFont("helvetica", "bold");
+      doc.text(String(v), x + colW - 4, ry, { align: "right" });
+      ry += 5.1;
+    });
+    if (note) { doc.setTextColor(...MUTED); doc.setFont("helvetica", "italic"); doc.setFontSize(6.5); doc.text(note, x + 4, y + colH - 3.5); }
+  };
+  colBox(M, "Your inputs", [
+    ["Provider type", PROVIDERS[ctx.providerType] || ctx.providerType || "-"],
+    ["Total acute beds", fmtNum(ctx.beds || 0)],
+    ["Hospitals / facilities", fmtNum(ctx.orgs || 1)],
+    ["Reimbursement model", REIMB[ctx.reimbursementModel] || ctx.reimbursementModel || "-"],
+    ["Legacy systems in scope", fmtNum(r.legacy || 0)],
+  ]);
+  const comp = [
+    ["Legacy decommission", fmtK(r.decomSave)],
+    ["Clinical capacity", fmtK(r.timeSave)],
+    ["Reimbursement impact", fmtK(r.reimbursementImpact)],
+    ["Patient safety", fmtK(r.qualitySavings)],
+  ];
+  if (r.academicSavings > 0) comp.push(["Academic program", fmtK(r.academicSavings)]);
+  if (r.mergeSavings > 0) comp.push(["Network consolidation", fmtK(r.mergeSavings)]);
+  while (comp.length < 5) comp.push(["", ""]);
+  colBox(M + colW + 4, "Where the savings come from", comp.slice(0, 5),
+    "Patient safety is cost avoidance - harm that does not occur.");
+  y += colH + 5;
+
+  // ── How the total is built ──
+  doc.setFillColor(...PALE_SEA); doc.setDrawColor(...TEAL);
+  doc.roundedRect(M, y, W, 20, 2.5, 2.5, "FD");
+  doc.setTextColor(...NAVY); doc.setFont("helvetica", "bold"); doc.setFontSize(9.5);
+  doc.text("How the annual total is built", M + 4, y + 7);
+  doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(...MID);
+  const extras = (r.academicSavings > 0 ? `  +  ${usd(r.academicSavings)} academic` : "") + (r.mergeSavings > 0 ? `  +  ${usd(r.mergeSavings)} network` : "");
+  doc.text(`${usd(r.decomSave)} decommission  +  ${usd(r.timeSave)} capacity  +  ${usd(r.reimbursementImpact)} reimbursement  +  ${usd(r.qualitySavings)} safety${extras}`, M + 4, y + 12.5);
+  doc.setFont("helvetica", "bold"); doc.setTextColor(...TEAL);
+  doc.text(`=  ${usd(total)} per year at steady state`, M + 4, y + 17.5);
+  y += 20 + 6;
+
+  // ── About these figures ──
+  doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); doc.line(M, y, M + W, y); y += 5;
+  doc.setTextColor(...MUTED); doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+  doc.text("ABOUT THESE FIGURES", M, y); y += 5;
+  const explain = [
+    ["System costs", "per-system estimates by tier (enterprise / departmental / standalone), scaled by bed count. Sources: KLAS 2025 benchmarks, Becker's Hospital Review."],
+    ["Clinical capacity", "clinician time freed by eliminating context-switching across legacy systems, valued at a $95/hr blended rate with a conservative 30% realization factor. Sources: Bartek et al JIMI 2023 (2.78M EHR audit-log events), Sinsky et al 2016."],
+    ["Reimbursement", "CMS penalty programs (HRRP 0.33% avg, HAC, VBP) plus denial recovery: 4.8% net revenue loss (HFMA), 30% attributed to documentation fragmentation, 20% recoverable through consolidation."],
+  ];
+  doc.setFontSize(7.5);
+  explain.forEach(([term, def]) => {
+    const label = term + ": ";
+    doc.setFont("helvetica", "bold"); doc.setTextColor(...NAVY);
+    doc.text(label, M, y);
+    const lw = doc.getTextWidth(label);
+    doc.setFont("helvetica", "normal"); doc.setTextColor(...MID);
+    const lines = doc.splitTextToSize(def, W - lw);
+    doc.text(lines, M + lw, y);
+    y += lines.length * 3.3 + 1.3;
+  });
+  y += 2;
+
+  // ── Disclaimer ──
+  doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); doc.line(M, y, M + W, y); y += 4.5;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(...MUTED);
+  doc.text("DISCLAIMER", M, y); y += 3.6;
+  doc.setFont("helvetica", "italic"); doc.setFontSize(6.8); doc.setTextColor(...MUTED);
+  doc.text(doc.splitTextToSize("Indicative only, not a quote or a guarantee. Figures are modeled estimates with improvement rates attributed to system consolidation as a contributing factor, not sole cause. Validate against your organization's own application inventory, contracts, and payer mix before use in a business case.", W), M, y);
+
+  const orgSlug = lead.org ? "-" + lead.org.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") : "";
+  doc.save("galen-roi-estimate" + orgSlug + ".pdf");
+}
+
 const MailIcon = ({ size = 22, stroke = "#34DEC2" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -84,7 +285,10 @@ export function LeadCapture({ r, leadContext }) {
     const ctx = leadContext || {};
     const providerLabel = PROVIDER_LABELS[ctx.providerType] || ctx.providerType || "";
 
-    // 1. Local backup (reviewable at #admin-leads; survives blocked networks).
+    // 1. Generate + download the PDF summary (the value exchange).
+    try { await generatePDF(r, lead, ctx); } catch (e) { console.warn("PDF failed:", e); }
+
+    // 2. Local backup (reviewable at #admin-leads; survives blocked networks).
     saveSubmission({
       timestamp: new Date().toISOString(),
       lead: { name: lead.name, email: lead.email, org: lead.org, role: lead.role },
@@ -98,7 +302,7 @@ export function LeadCapture({ r, leadContext }) {
       },
     });
 
-    // 2. Fire-and-forget to HubSpot, context in the message field.
+    // 3. Fire-and-forget to HubSpot, context in the message field.
     if (HUBSPOT_PORTAL_ID && HUBSPOT_FORM_GUID) {
       try {
         const context = `Galen Clinical Archive ROI (US embed) submission | Provider: ${providerLabel} | Beds: ${fmtNum(ctx.beds || 0)} | Legacy systems: ${r.legacy || 0} (${r.decom || 0} retired) | Est. annual savings: ${fmtK(r.annualWithReimbursement || r.annual || 0)} | FTE freed: ${r.fteEquivalent || 0}`;
@@ -127,8 +331,8 @@ export function LeadCapture({ r, leadContext }) {
 
   if (submitted) {
     return <div style={{ marginBottom: 28, padding: "26px 28px", borderRadius: 18, background: "linear-gradient(135deg, #0F4146 0%, #1A5459 100%)", textAlign: "center" }}>
-      <div style={{ fontSize: F.h3, fontWeight: 800, color: "#34DEC2", marginBottom: 8 }}>Thanks, {lead.name.split(" ")[0]} — we've got your details.</div>
-      <div style={{ fontSize: F.small, color: "rgba(255,255,255,0.8)", lineHeight: 1.6 }}>An RLDatix archiving specialist will follow up with a full breakdown of these figures, validated against your legacy application estate.</div>
+      <div style={{ fontSize: F.h3, fontWeight: 800, color: "#34DEC2", marginBottom: 8 }}>Thanks, {lead.name.split(" ")[0]}, your report has downloaded.</div>
+      <div style={{ fontSize: F.small, color: "rgba(255,255,255,0.8)", lineHeight: 1.6 }}>An RLDatix archiving specialist can validate these figures against your legacy application estate. We'll be in touch.</div>
     </div>;
   }
 
@@ -138,9 +342,9 @@ export function LeadCapture({ r, leadContext }) {
   return <div style={{ marginBottom: 28, padding: "clamp(18px, 3vw, 28px)", borderRadius: 18, background: "linear-gradient(135deg, #0F4146 0%, #1A5459 100%)" }}>
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
       <MailIcon size={22} stroke="#34DEC2" />
-      <h3 style={{ fontSize: F.h3, fontWeight: 800, margin: 0, color: "#fff" }}>Get the full breakdown for your health system</h3>
+      <h3 style={{ fontSize: F.h3, fontWeight: 800, margin: 0, color: "#fff" }}>Get this breakdown as a PDF</h3>
     </div>
-    <p style={{ fontSize: F.small, color: "rgba(255,255,255,0.75)", marginTop: 6, marginBottom: 18 }}>Share your details and an RLDatix specialist will send a formatted summary of this estimate, ready for your team or board.</p>
+    <p style={{ fontSize: F.small, color: "rgba(255,255,255,0.75)", marginTop: 6, marginBottom: 18 }}>Download a formatted summary of this estimate, ready to share with your team or board.</p>
     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
       <input type="text" placeholder="Your name *" aria-label="Your name (required)" autoComplete="name" value={lead.name} onChange={e => setLead(p => ({ ...p, name: e.target.value }))} style={inputStyle} />
       <input type="email" placeholder="Work email *" aria-label="Work email (required)" autoComplete="email" value={lead.email} onChange={e => setLead(p => ({ ...p, email: e.target.value }))} style={inputStyle} />
@@ -157,7 +361,7 @@ export function LeadCapture({ r, leadContext }) {
       color: ready ? "#0F4146" : "rgba(255,255,255,0.4)",
       border: "none", borderRadius: 999, fontSize: F.body, fontWeight: 800,
       cursor: ready && !sending ? "pointer" : "not-allowed", fontFamily: "inherit",
-    }}>{sending ? "Sending..." : "Request my report"}</button>
+    }}>{sending ? "Generating report..." : "Download PDF report"}</button>
     <p style={{ fontSize: F.tiny, color: "rgba(255,255,255,0.55)", marginTop: 12, marginBottom: 0 }}>By submitting your details, you agree to share your name and email address so we can reach out about your estimate. Details are processed in line with RLDatix's privacy notice.</p>
   </div>;
 }
