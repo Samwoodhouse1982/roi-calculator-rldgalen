@@ -153,8 +153,8 @@ async function generatePDF(r, lead, ctx) {
     try {
       scenarios = [
         ["Conservative", "85% decom · 20% capacity · 15% safety capture", calc(ctx.calcInputs, "CONSERVATIVE", {}, ctx.flagships || [])],
-        ["Expected", "100% decom · 30% capacity · 25% safety capture", r],
-        ["Stretch", "110% decom · 40% capacity · 35% safety capture", calc(ctx.calcInputs, "STRETCH", {}, ctx.flagships || [])],
+        ["Moderate", "100% decom · 30% capacity · 25% safety capture", r],
+        ["Optimistic", "110% decom · 40% capacity · 35% safety capture", calc(ctx.calcInputs, "STRETCH", {}, ctx.flagships || [])],
       ];
     } catch (e) { scenarios = null; }
   }
@@ -164,7 +164,7 @@ async function generatePDF(r, lead, ctx) {
     const sW = (W - 8) / 3, sH = 44;
     scenarios.forEach(([key, factors, rr], i) => {
       const x = M + i * (sW + 4);
-      const selected = key === "Expected";
+      const selected = key === "Moderate";
       if (selected) { doc.setFillColor(...PALE_SEA); doc.setDrawColor(...TEAL); doc.setLineWidth(0.7); }
       else { doc.setFillColor(255, 255, 255); doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); }
       doc.roundedRect(x, y, sW, sH, 2.5, 2.5, "FD");
