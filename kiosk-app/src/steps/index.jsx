@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { C, F, fmtNum, fmtK, FACILITY_TYPES } from '../theme';
+import { C, F, fmtNum, fmtK, FACILITY_TYPES, FACILITY_GROUPS } from '../theme';
 import { Card, BigChoice, SectionTitle, TouchSlider, Stepper, SegmentedControl, InfoTip } from '../components';
 import { Icon } from '../components/Icons';
 
@@ -197,10 +197,20 @@ export function FacilitiesStep({ inputs, update, facilities, setFacility }) {
       </div>
     </Card>
 
-    {/* Other facilities */}
+    {/* Other facilities. Embed: split into Ambulatory / Post-acute /
+        Ancillary & specialty sections; kiosk keeps the flat list. */}
     <div style={{ fontSize: F.body, fontWeight: 600, color: C.textMid, marginBottom: 12, marginTop: 8 }}>Other facilities in scope</div>
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {FACILITY_TYPES.filter(ft => ft.key !== "hospitals").map(ft => {
+      {(EMBED ? FACILITY_GROUPS.flatMap(g => [
+        { header: true, key: "hdr-" + g.key, label: g.label },
+        ...FACILITY_TYPES.filter(ft => ft.key !== "hospitals" && ft.group === g.key),
+      ]) : FACILITY_TYPES.filter(ft => ft.key !== "hospitals")).map(ft => {
+        if (ft.header) {
+          return <div key={ft.key} style={{
+            fontSize: F.tiny, fontWeight: 700, color: C.textMuted, letterSpacing: 2,
+            textTransform: "uppercase", margin: "14px 2px 2px",
+          }}>{ft.label}</div>;
+        }
         const count = facilities[ft.key] || 0;
         return <div key={ft.key} style={{
           display: "flex", alignItems: "center", gap: 14, padding: "16px 20px",

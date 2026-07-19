@@ -115,16 +115,25 @@ export const fmtK = n => n >= 1e6 ? `$${(n/1e6).toFixed(1)}m` : n >= 1000 ? `$${
 export const fmtNum = n => typeof n === "number" ? n.toLocaleString("en-US") : n;
 export const KIOSK_STEPS = ["Scope", "Journey", "Facilities", "Systems", "Fine-tune", "Results"];
 
+// `group` drives the embed's sectioned facility list (Ambulatory /
+// Post-acute / Ancillary & specialty); the kiosk renders the flat list and
+// ignores it.
 export const FACILITY_TYPES = [
   { key: "hospitals", label: "Hospitals", iconKey: "hospital", hasBeds: true },
-  { key: "ambulatory_surgery", label: "Ambulatory Surgery Centers", iconKey: "surgery" },
-  { key: "physician_practices", label: "Physician Practices", iconKey: "physician" },
-  { key: "urgent_care", label: "Urgent Care Centers", iconKey: "urgentCare" },
-  { key: "imaging_centers", label: "Imaging Centers", iconKey: "imaging" },
-  { key: "dialysis", label: "Dialysis Centers", iconKey: "dialysis" },
-  { key: "snf", label: "Skilled Nursing Facilities", iconKey: "snf" },
-  { key: "home_health", label: "Home Health Agencies", iconKey: "homeHealth" },
-  { key: "behavioral", label: "Behavioral Health", iconKey: "behavioral" },
-  { key: "rehab", label: "Rehabilitation Centers", iconKey: "rehab" },
-  { key: "ltach", label: "Long-Term Acute Care", iconKey: "ltach" },
+  { key: "ambulatory_surgery", label: "Ambulatory Surgery Centers", iconKey: "surgery", group: "ambulatory" },
+  { key: "physician_practices", label: "Physician Practices", iconKey: "physician", group: "ambulatory" },
+  { key: "urgent_care", label: "Urgent Care Centers", iconKey: "urgentCare", group: "ambulatory" },
+  { key: "imaging_centers", label: "Imaging Centers", iconKey: "imaging", group: "ancillary" },
+  { key: "dialysis", label: "Dialysis Centers", iconKey: "dialysis", group: "ancillary" },
+  { key: "snf", label: "Skilled Nursing Facilities", iconKey: "snf", group: "postacute" },
+  { key: "home_health", label: "Home Health Agencies", iconKey: "homeHealth", group: "postacute" },
+  { key: "behavioral", label: "Behavioral Health", iconKey: "behavioral", group: "ancillary" },
+  { key: "rehab", label: "Rehabilitation Centers", iconKey: "rehab", group: "postacute" },
+  { key: "ltach", label: "Long-Term Acute Care", iconKey: "ltach", group: "postacute" },
+];
+
+export const FACILITY_GROUPS = [
+  { key: "ambulatory", label: "Ambulatory" },
+  { key: "postacute", label: "Post-acute" },
+  { key: "ancillary", label: "Ancillary & specialty" },
 ];
