@@ -23,6 +23,10 @@ const C_KIOSK = {
   ctaGrad: "linear-gradient(135deg, #00d4aa, #00ffc8)",   // Calculate ROI button
   ctaShadow: "0 6px 28px rgba(0,212,170,0.4)",
   glowA: "rgba(0,212,170,0.3)", glowB: "rgba(0,212,170,0.6)",  // hero text-shadow pulse
+  // Chart FILLS (composition strip, projection bars, legend dots). Separate
+  // from the text accents above: fills want vibrancy, text wants contrast.
+  // Kiosk values equal the literals the charts always used.
+  chart: { decom: "#00d4aa", capacity: "#f0a040", reimb: "#40b0ff", safety: "#c090f0", academic: "#e67e22", network: "#8e44ad" },
 };
 
 // LIGHT palette — the RLDatix web-calculator design system (deep teal +
@@ -34,10 +38,10 @@ const C_EMBED = {
   text: "#0F4146", textMid: "#3D5A5E", textMuted: "#5F787C",
   accent: "#0F4146", accentLight: "#D6F7EE", accentPale: "#F3FBF9",
   green: "#1A8A7A", greenPale: "#EEF7F1",
-  amber: "#8A6508", amberLight: "#F7EFD8",
+  amber: "#B45309", amberLight: "#F7EFD8",
   teal: "#0F4146", tealLight: "#1A8A7A", tealPale: "#E8FAF6",
   rose: "#93405A", rosePale: "#FAF0F4",
-  blue: "#2E7BA6", purple: "#6E5AA8",
+  blue: "#1D6FB8", purple: "#7C3AED",
   onAccent: "#FFFFFF",
   inkOnColor: "#0F4146",
   scrim: "rgba(15,65,70,0.45)",
@@ -46,6 +50,9 @@ const C_EMBED = {
   ctaGrad: "linear-gradient(135deg, #0F4146, #1A8A7A)",
   ctaShadow: "0 6px 28px rgba(15,65,70,0.25)",
   glowA: "rgba(26,138,122,0.18)", glowB: "rgba(26,138,122,0.32)",
+  // Vibrant, on-brand chart fills: deep teal anchor + seafoam, with clear
+  // azure/violet/orange/fuchsia for the remaining series.
+  chart: { decom: "#0F4146", capacity: "#34DEC2", reimb: "#2E9FE6", safety: "#8B5CF6", academic: "#F97316", network: "#C026D3" },
 };
 
 export const C = EMBED ? C_EMBED : C_KIOSK;

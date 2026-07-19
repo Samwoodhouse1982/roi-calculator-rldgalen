@@ -171,7 +171,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
           : viewTimescale === 'total3' ? 'Estimated 3-year cumulative savings'
           : 'Estimated 5-year cumulative savings'}
       </div>
-      <div style={{ fontSize: F.hero, fontWeight: 800, color: C.accent, lineHeight: 1, letterSpacing: "-4px", animation: "glow 3s ease-in-out infinite" }}><AnimK value={Math.round(totalAnnual * ts.mult)} /></div>
+      <div style={{ fontSize: F.hero, fontWeight: 800, color: C.accent, lineHeight: 1, letterSpacing: EMBED ? "-0.015em" : "-4px", animation: "glow 3s ease-in-out infinite" }}><AnimK value={Math.round(totalAnnual * ts.mult)} /></div>
       <div style={{ fontSize: F.h3, color: C.textMid, marginTop: 14 }}>
         {viewTimescale === 'annual' ? 'per year at steady state'
           : viewTimescale === 'year1' ? 'in Year 1 (40% of steady state during ramp)'
@@ -183,20 +183,20 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
     {/* Composition bar - every segment sums exactly to the topline */}
     <div style={{ marginBottom: 32, padding: "0 12px" }}>
       <div style={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", marginBottom: 12 }}>
-        {seg.decom > 0 && <div style={{ flex: seg.decom, background: C.accent }} />}
-        {seg.capacity > 0 && <div style={{ flex: seg.capacity, background: C.amber }} />}
-        {seg.reimb > 0 && <div style={{ flex: seg.reimb, background: C.blue }} />}
-        {seg.safety > 0 && <div style={{ flex: seg.safety, background: C.purple }} />}
-        {seg.academic > 0 && <div style={{ flex: seg.academic, background: "#e67e22" }} />}
-        {seg.network > 0 && <div style={{ flex: seg.network, background: "#8e44ad" }} />}
+        {seg.decom > 0 && <div style={{ flex: seg.decom, background: C.chart.decom }} />}
+        {seg.capacity > 0 && <div style={{ flex: seg.capacity, background: C.chart.capacity }} />}
+        {seg.reimb > 0 && <div style={{ flex: seg.reimb, background: C.chart.reimb }} />}
+        {seg.safety > 0 && <div style={{ flex: seg.safety, background: C.chart.safety }} />}
+        {seg.academic > 0 && <div style={{ flex: seg.academic, background: C.chart.academic }} />}
+        {seg.network > 0 && <div style={{ flex: seg.network, background: C.chart.network }} />}
       </div>
       <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-        <CompositionItem color={C.accent} label="Decommission" amount={Math.round(seg.decom * ts.mult)} pct={Math.round(seg.decom / Math.max(1, totalAnnual) * 100)} />
-        <CompositionItem color={C.amber} label="Capacity" amount={Math.round(seg.capacity * ts.mult)} pct={Math.round(seg.capacity / Math.max(1, totalAnnual) * 100)} />
-        {seg.reimb > 0 && <CompositionItem color={C.blue} label="Reimbursement" amount={Math.round(seg.reimb * ts.mult)} pct={Math.round(seg.reimb / Math.max(1, totalAnnual) * 100)} />}
-        {seg.safety > 0 && <CompositionItem color={C.purple} label="Patient safety" amount={Math.round(seg.safety * ts.mult)} pct={Math.round(seg.safety / Math.max(1, totalAnnual) * 100)} />}
-        {seg.academic > 0 && <CompositionItem color="#e67e22" label="Academic" amount={Math.round(seg.academic * ts.mult)} pct={Math.round(seg.academic / Math.max(1, totalAnnual) * 100)} />}
-        {seg.network > 0 && <CompositionItem color="#8e44ad" label="Network" amount={Math.round(seg.network * ts.mult)} pct={Math.round(seg.network / Math.max(1, totalAnnual) * 100)} />}
+        <CompositionItem color={C.accent} dotColor={C.chart.decom} label="Decommission" amount={Math.round(seg.decom * ts.mult)} pct={Math.round(seg.decom / Math.max(1, totalAnnual) * 100)} />
+        <CompositionItem color={C.amber} dotColor={C.chart.capacity} label="Capacity" amount={Math.round(seg.capacity * ts.mult)} pct={Math.round(seg.capacity / Math.max(1, totalAnnual) * 100)} />
+        {seg.reimb > 0 && <CompositionItem color={C.blue} dotColor={C.chart.reimb} label="Reimbursement" amount={Math.round(seg.reimb * ts.mult)} pct={Math.round(seg.reimb / Math.max(1, totalAnnual) * 100)} />}
+        {seg.safety > 0 && <CompositionItem color={C.purple} dotColor={C.chart.safety} label="Patient safety" amount={Math.round(seg.safety * ts.mult)} pct={Math.round(seg.safety / Math.max(1, totalAnnual) * 100)} />}
+        {seg.academic > 0 && <CompositionItem color="#e67e22" dotColor={C.chart.academic} label="Academic" amount={Math.round(seg.academic * ts.mult)} pct={Math.round(seg.academic / Math.max(1, totalAnnual) * 100)} />}
+        {seg.network > 0 && <CompositionItem color="#8e44ad" dotColor={C.chart.network} label="Network" amount={Math.round(seg.network * ts.mult)} pct={Math.round(seg.network / Math.max(1, totalAnnual) * 100)} />}
       </div>
     </div>
 
@@ -234,7 +234,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
           const firstYearPct = projYears === 5 ? 0.20 : 0.40;
           return <div style={{ textAlign: "center", padding: "12px 0 20px" }}>
             <div style={{ fontSize: F.tiny, color: C.textMuted, marginBottom: 4 }}>{projYears}-year cumulative savings</div>
-            <div style={{ fontSize: 56, fontWeight: 800, color: C.accent, letterSpacing: "-2px" }}>{fmtK(total)}</div>
+            <div style={{ fontSize: 56, fontWeight: 800, color: C.accent, letterSpacing: EMBED ? "-0.015em" : "-2px" }}>{fmtK(total)}</div>
             <div style={{ fontSize: F.tiny, color: C.textMid, marginTop: 6 }}>Builds from {fmtK(Math.round((r.annualWithReimbursement || r.annual || 0) * firstYearPct))} in Year 1 to {fmtK(r.annualWithReimbursement || r.annual || 0)}/yr at steady state</div>
           </div>;
         })()}
@@ -276,12 +276,12 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
             { yr: "Yr 3", pct: 1.0 },
           ];
           const segments = [
-            { key: "Decommission", color: C.accent, val: seg.decom },
-            { key: "Capacity", color: C.amber, val: seg.capacity },
-            { key: "Reimbursement", color: C.blue, val: seg.reimb },
-            { key: "Patient safety", color: C.purple, val: seg.safety },
-            { key: "Network", color: "#8e44ad", val: seg.network },
-            { key: "Academic", color: "#e67e22", val: seg.academic },
+            { key: "Decommission", color: C.chart.decom, val: seg.decom },
+            { key: "Capacity", color: C.chart.capacity, val: seg.capacity },
+            { key: "Reimbursement", color: C.chart.reimb, val: seg.reimb },
+            { key: "Patient safety", color: C.chart.safety, val: seg.safety },
+            { key: "Network", color: C.chart.network, val: seg.network },
+            { key: "Academic", color: C.chart.academic, val: seg.academic },
           ].filter(s => s.val > 0);
           const barH = 160;
           return <div style={{ marginBottom: 16 }}>
@@ -602,9 +602,9 @@ function KpiCard({ label, amount, value, sub, color, iconKey, onClick }) {
   </div>;
 }
 
-function CompositionItem({ color, label, amount, pct }) {
+function CompositionItem({ color, dotColor, label, amount, pct }) {
   return <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-    <div style={{ width: 10, height: 10, borderRadius: 3, background: color }} />
+    <div style={{ width: 10, height: 10, borderRadius: 3, background: dotColor || color }} />
     <span style={{ fontSize: F.tiny, color: C.textMid }}>{label}: <strong style={{ color }}><AnimK value={amount} /></strong> ({pct}%)</span>
   </div>;
 }
