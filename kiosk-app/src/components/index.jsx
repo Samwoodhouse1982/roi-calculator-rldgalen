@@ -2,6 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { C, F } from '../theme';
 import { Icon } from './Icons';
 
+// Build-time flag: '1' when built with `--mode embed` (see .env.embed).
+// Used only to attach embed-specific classNames; kiosk DOM is unchanged.
+const EMBED = import.meta.env.VITE_EMBED === '1';
+
 export function Card({ children, style }) {
   return <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 24, padding: "36px 40px 32px", ...style }}>{children}</div>;
 }
@@ -35,14 +39,14 @@ export function NavButtons({ step, totalSteps, onBack, onNext, onCalculate, onSt
   if (step >= totalSteps - 1) return null;
   const ctx = STEP_CONTEXT[step];
   return <div style={{ borderTop: `1px solid ${C.border}` }}>
-    {ctx && <div style={{ margin: "20px 56px 0", padding: "16px 20px", background: `${C.accent}08`, border: `1px solid ${C.accent}20`, borderRadius: 14, display: "flex", gap: 12, alignItems: "flex-start" }}>
+    {ctx && <div className={EMBED ? "embed-nav-hint" : undefined} style={{ margin: "20px 56px 0", padding: "16px 20px", background: `${C.accent}08`, border: `1px solid ${C.accent}20`, borderRadius: 14, display: "flex", gap: 12, alignItems: "flex-start" }}>
       <span style={{ flexShrink: 0, marginTop: 1 }}><Icon name="lightbulb" size={20} stroke={C.accent} /></span>
       <div>
         <div style={{ fontSize: F.tiny, fontWeight: 700, color: C.accent, marginBottom: 4 }}>{ctx.title}</div>
         <div style={{ fontSize: F.tiny, color: C.textMid, lineHeight: 1.6 }}>{ctx.text}</div>
       </div>
     </div>}
-    <div style={{ padding: "16px 56px 40px", display: "flex", gap: 20, alignItems: "center" }}>
+    <div className={EMBED ? "embed-nav-row" : undefined} style={{ padding: "16px 56px 40px", display: "flex", gap: 20, alignItems: "center" }}>
       {step > 0 && <button onClick={onBack} style={{ padding: "24px 44px", borderRadius: 18, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: F.body, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>← Back</button>}
       <div style={{ flex: 1 }} />
       {/* Subtle Start over button - sits centred between Back and Next/Calculate.
@@ -182,7 +186,7 @@ export function BigChoice({ options, value, onChange }) {
 }
 
 export function SectionTitle({ number, children }) {
-  return <div style={{ fontSize: F.h2, fontWeight: 700, color: C.textMid, marginBottom: 28, display: "flex", alignItems: "center", gap: 16 }}>
+  return <div className={EMBED ? "embed-step-title" : undefined} style={{ fontSize: F.h2, fontWeight: 700, color: C.textMid, marginBottom: 28, display: "flex", alignItems: "center", gap: 16 }}>
     <span style={{ width: 52, height: 52, borderRadius: "50%", background: C.accent, color: C.onAccent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: F.h3, fontWeight: 800, flexShrink: 0 }}>{number}</span>
     {children}
   </div>;

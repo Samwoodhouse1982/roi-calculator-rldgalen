@@ -316,7 +316,7 @@ function AdminOverlay({ onClose }) {
  * across re-renders and can be used by ResultsPage to scale every figure.
  */
 function TimescaleBar({ viewTimescale, setViewTimescale }) {
-  return <div style={{
+  return <div className={EMBED ? "embed-timescale" : undefined} style={{
     padding: "14px 56px 16px",
     borderBottom: `1px solid ${C.borderLight}`,
     background: C.bg,
@@ -385,16 +385,70 @@ function TimescaleBar({ viewTimescale, setViewTimescale }) {
  */
 function EmbedStyles() {
   return <style>{`
+    /* The embed scrolls like a normal web page (same as the Smart Match web
+       build). The app's outer container only sets a MINIMUM height, so an
+       earlier body{overflow:hidden} rule here left tall steps clipped with
+       no way to scroll at all — the inner .embed-scroll-area never gets a
+       constrained height to scroll within. Body-level scrolling also makes
+       position:sticky (header, step title, timescale bar) work as designed. */
+    html, body { margin: 0; padding: 0; }
+    #root { width: 100%; min-height: 100vh; }
+
+    /* CRITICAL for the sticky elements below: the inner scroll container's
+       overflow:auto would capture position:sticky descendants into a scroll
+       box that never actually scrolls (the body scrolls instead), so sticky
+       would never engage. Neutralise it in the embed. */
+    .embed-scroll-area { overflow: visible !important; }
+
+    /* Sticky progress header. The inline kiosk padding is replaced with a
+       tighter one so the pinned bar doesn't eat vertical space; the
+       StepIndicator's own margin-bottom is cancelled so the header's
+       background wraps it exactly. */
+    .embed-header-pad {
+      position: sticky; top: 0; z-index: 30;
+      background: ${C.bg};
+      padding: 16px 56px 12px !important;
+      box-shadow: 0 4px 14px -10px rgba(15,65,70,0.4);
+    }
+    .embed-header-pad > div { margin-bottom: 0 !important; }
+
+    /* Step title sticks just below the header. --embed-header-h is measured
+       at runtime (see App's header ResizeObserver) because the header's
+       height varies with breakpoint and label wrapping. */
+    .embed-step-title {
+      position: sticky; top: var(--embed-header-h, 74px); z-index: 25;
+      background: ${C.bg};
+      padding: 8px 0 10px;
+      margin-bottom: 18px !important;
+    }
+
+    /* Results timescale bar: pin below the sticky header instead of top:0,
+       and soften its kiosk-dark shadow for the light theme. */
+    .embed-timescale {
+      top: var(--embed-header-h, 74px) !important;
+      z-index: 25;
+      box-shadow: 0 4px 12px -4px rgba(15,65,70,0.18) !important;
+    }
+
+    /* Nav row: allow wrapping so the primary button can never overflow the
+       viewport edge. */
+    .embed-nav-row { flex-wrap: wrap; }
+
     /* Tablet / laptop: trim outer padding so content has more room */
     @media (max-width: 1200px) {
-      .embed-header-pad { padding: 32px 32px 0 !important; }
+      .embed-header-pad { padding: 12px 32px 10px !important; }
       .embed-scroll-area { padding: 0 32px 24px !important; }
+      .embed-nav-hint { margin: 16px 32px 0 !important; }
+      .embed-nav-row { padding: 14px 32px 28px !important; }
     }
 
     /* Phone landscape / small tablet: tighter still, single column KPI */
     @media (max-width: 900px) {
-      .embed-header-pad { padding: 24px 20px 0 !important; }
+      .embed-header-pad { padding: 10px 20px 8px !important; }
       .embed-scroll-area { padding: 0 20px 20px !important; }
+      .embed-nav-hint { margin: 14px 20px 0 !important; }
+      .embed-nav-row { padding: 12px 20px 24px !important; gap: 14px !important; }
+      .embed-nav-row button { padding: 18px 28px !important; }
       /* Collapse 2-col grids to single column. The kiosk's KpiCard
          grid uses inline gridTemplateColumns: "1fr 1fr" - overriding
          the inline style requires the more specific selector + !important. */
@@ -404,20 +458,15 @@ function EmbedStyles() {
       }
     }
 
-    /* Phone portrait: tightest layout, smallest paddings */
+    /* Phone portrait: tightest layout, smallest paddings + compact nav
+       buttons so Back / Start over / Next always fit on one row. */
     @media (max-width: 640px) {
-      .embed-header-pad { padding: 16px 14px 0 !important; }
+      .embed-header-pad { padding: 8px 14px 8px !important; }
       .embed-scroll-area { padding: 0 14px 16px !important; }
+      .embed-nav-hint { margin: 12px 14px 0 !important; }
+      .embed-nav-row { padding: 10px 14px 18px !important; gap: 8px !important; }
+      .embed-nav-row button { padding: 14px 18px !important; }
     }
-
-    /* The embed scrolls like a normal web page (same as the Smart Match web
-       build). The app's outer container only sets a MINIMUM height, so an
-       earlier body{overflow:hidden} rule here left tall steps clipped with
-       no way to scroll at all — the inner .embed-scroll-area never gets a
-       constrained height to scroll within. Body-level scrolling also makes
-       the results TimescaleBar's position:sticky work as designed. */
-    html, body { margin: 0; padding: 0; }
-    #root { width: 100%; min-height: 100vh; }
   `}</style>;
 }
 
@@ -472,6 +521,7 @@ function CalibratingScreen({ onDone }) {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const embedHeaderRef = useRef(null); // embed: sticky header height source (see --embed-header-h)
   const [kioskStep, setKioskStep] = useState(0);
   const [calibrating, setCalibrating] = useState(false);
   const [adminVisible, setAdminVisible] = useState(false);
@@ -680,6 +730,23 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [kioskStep, calibrating, showSplash]);
 
+  // Embed: publish the sticky header's height as a CSS variable so the
+  // sticky step title / timescale bar can pin themselves just below it.
+  // Measured (not hardcoded) because the header's height changes with
+  // breakpoint padding and step-label wrapping on narrow screens.
+  useEffect(() => {
+    if (!EMBED || showSplash) return;
+    const el = embedHeaderRef.current;
+    if (!el) return;
+    const publish = () => {
+      document.documentElement.style.setProperty('--embed-header-h', el.offsetHeight + 'px');
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [showSplash, calibrating]);
+
   if (showSplash) return <>
     <SplashScreen onStart={() => setShowSplash(false)} onAdminReveal={() => setAdminVisible(true)} />
     {adminVisible && <AdminOverlay onClose={() => setAdminVisible(false)} />}
@@ -703,7 +770,7 @@ export default function App() {
       : { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: W, minHeight: H, color: C.text, lineHeight: 1.55, display: "flex", flexDirection: "column", position: "relative", zIndex: 0 }}>
       {EMBED && <EmbedStyles />}
       {!EMBED && <BackgroundParticles />}
-      <div className={EMBED ? "embed-header-pad" : undefined} style={{ padding: "48px 56px 0" }}>
+      <div ref={embedHeaderRef} className={EMBED ? "embed-header-pad" : undefined} style={{ padding: "48px 56px 0" }}>
         <StepIndicator steps={KIOSK_STEPS} current={kioskStep} onJump={setKioskStep} />
       </div>
       {/* Timescale bar — rendered here (above the scroll container) instead
