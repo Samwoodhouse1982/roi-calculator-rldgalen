@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { C, F, fmtNum, fmtK, FACILITY_TYPES } from '../theme';
 import { Card, BigChoice, SectionTitle, TouchSlider, Stepper, SegmentedControl, InfoTip } from '../components';
 import { Icon } from '../components/Icons';
+
+// Build-time flag: '1' when built with `--mode embed`; sizing only.
+const EMBED = import.meta.env.VITE_EMBED === '1';
 import { KNOWN_SYSTEMS, systemCost } from '../calc/vendors';
 
 const TIER_TYPES = {
@@ -156,9 +159,9 @@ export function JourneyStep({ journey, onSelect }) {
         { key: "HAVE_EPR", label: "We have an enterprise EHR", desc: "Already on Epic, Oracle Health or similar. Looking to archive and decommission legacy systems.", iconKey: "check", focus: "Archiving + decommission savings" },
         { key: "EVALUATING", label: "We're evaluating enterprise EHRs", desc: "Assessing migration to a single EHR platform. Need the full case for migration and archiving.", iconKey: "search", focus: "Migration safety + archiving savings" },
       ].map(j => <button key={j.key} onClick={() => onSelect(j.key)} style={{
-        padding: "32px 30px", textAlign: "left", cursor: "pointer",
-        border: journey === j.key ? `3px solid ${C.accent}` : `1px solid ${C.border}`,
-        borderRadius: 22, background: journey === j.key ? C.accentPale : C.surface, transition: "all .2s"
+        padding: EMBED ? "clamp(18px, 2.6vw, 26px)" : "32px 30px", textAlign: "left", cursor: "pointer",
+        border: journey === j.key ? `${EMBED ? 2 : 3}px solid ${C.accent}` : `1px solid ${C.border}`,
+        borderRadius: EMBED ? 16 : 22, background: journey === j.key ? C.accentPale : C.surface, transition: "all .2s"
       }}>
         <div style={{ marginBottom: 12 }}><Icon name={j.iconKey} size={36} stroke={journey === j.key ? C.accent : C.textMid} /></div>
         <div style={{ fontSize: F.h3, fontWeight: 700, color: journey === j.key ? C.accent : C.text, marginBottom: 8 }}>{j.label}</div>
@@ -271,7 +274,7 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
       {tiers.map(t => {
         const tierSystems = KNOWN_SYSTEMS.filter(s => (TIER_TYPES[t.key] || []).includes(s.type));
         const tierFlagships = flagships.filter(f => f.tier === t.key);
-        return <Card key={t.key} style={{ border: `1px solid ${t.color}30`, padding: "24px 28px" }}>
+        return <Card key={t.key} style={{ border: `1px solid ${t.color}30`, ...(EMBED ? {} : { padding: "24px 28px" }) }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <div>
               <span style={{ fontSize: F.h3, fontWeight: 700, color: t.color }}>{t.label}</span>

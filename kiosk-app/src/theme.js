@@ -107,6 +107,9 @@ export const W = 1080, H = 1920;
 // Embed build content max width — a web-page column (the Smart Match web
 // build uses the same), narrower than the kiosk's 1080.
 export const MAXW = 900;
+// Embed build fluid horizontal gutter (ported from the Smart Match web
+// build); the kiosk uses fixed 56px paddings instead.
+export const GUTTER = "clamp(16px, 4vw, 44px)";
 export const fmt = n => typeof n === "number" ? n.toLocaleString("en-US") : n;
 export const fmtK = n => n >= 1e6 ? `$${(n/1e6).toFixed(1)}m` : n >= 1000 ? `$${Math.round(n/1000).toLocaleString("en-US")}k` : `$${fmt(n)}`;
 export const fmtNum = n => typeof n === "number" ? n.toLocaleString("en-US") : n;

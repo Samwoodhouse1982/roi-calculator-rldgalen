@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { C, F } from '../theme';
+import { C, F, GUTTER } from '../theme';
 import { Icon } from './Icons';
 
 // Build-time flag: '1' when built with `--mode embed` (see .env.embed).
@@ -7,7 +7,7 @@ import { Icon } from './Icons';
 const EMBED = import.meta.env.VITE_EMBED === '1';
 
 export function Card({ children, style }) {
-  return <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 24, padding: "36px 40px 32px", ...style }}>{children}</div>;
+  return <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: EMBED ? 20 : 24, padding: EMBED ? "clamp(18px, 3vw, 34px)" : "36px 40px 32px", ...style }}>{children}</div>;
 }
 
 export function StepIndicator({ steps, current, onJump }) {
@@ -39,15 +39,15 @@ export function NavButtons({ step, totalSteps, onBack, onNext, onCalculate, onSt
   if (step >= totalSteps - 1) return null;
   const ctx = STEP_CONTEXT[step];
   return <div style={{ borderTop: `1px solid ${C.border}` }}>
-    {ctx && <div className={EMBED ? "embed-nav-hint" : undefined} style={{ margin: "20px 56px 0", padding: "16px 20px", background: `${C.accent}08`, border: `1px solid ${C.accent}20`, borderRadius: 14, display: "flex", gap: 12, alignItems: "flex-start" }}>
+    {ctx && <div className={EMBED ? "embed-nav-hint" : undefined} style={{ margin: EMBED ? `18px ${GUTTER} 0` : "20px 56px 0", padding: EMBED ? "14px 18px" : "16px 20px", background: `${C.accent}08`, border: `1px solid ${C.accent}20`, borderRadius: 14, display: "flex", gap: 12, alignItems: "flex-start" }}>
       <span style={{ flexShrink: 0, marginTop: 1 }}><Icon name="lightbulb" size={20} stroke={C.accent} /></span>
       <div>
         <div style={{ fontSize: F.tiny, fontWeight: 700, color: C.accent, marginBottom: 4 }}>{ctx.title}</div>
         <div style={{ fontSize: F.tiny, color: C.textMid, lineHeight: 1.6 }}>{ctx.text}</div>
       </div>
     </div>}
-    <div className={EMBED ? "embed-nav-row" : undefined} style={{ padding: "16px 56px 40px", display: "flex", gap: 20, alignItems: "center" }}>
-      {step > 0 && <button onClick={onBack} style={{ padding: "24px 44px", borderRadius: 18, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: F.body, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>← Back</button>}
+    <div className={EMBED ? "embed-nav-row" : undefined} style={{ padding: EMBED ? `14px ${GUTTER} 36px` : "16px 56px 40px", display: "flex", gap: EMBED ? 12 : 20, alignItems: "center" }}>
+      {step > 0 && <button onClick={onBack} style={{ padding: EMBED ? "13px 26px" : "24px 44px", borderRadius: EMBED ? 14 : 18, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: F.body, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>← Back</button>}
       <div style={{ flex: 1 }} />
       {/* Subtle Start over button - sits centred between Back and Next/Calculate.
           Deliberately understated (no background, muted text colour, smaller
@@ -63,9 +63,9 @@ export function NavButtons({ step, totalSteps, onBack, onNext, onCalculate, onSt
       </button>}
       <div style={{ flex: 1 }} />
       {step < totalSteps - 2 ? (
-        <button onClick={onNext} style={{ padding: "24px 64px", borderRadius: 18, border: "none", background: C.accent, color: C.onAccent, fontSize: F.h3, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Next →</button>
+        <button onClick={onNext} style={{ padding: EMBED ? "14px 40px" : "24px 64px", borderRadius: EMBED ? 14 : 18, border: "none", background: C.accent, color: C.onAccent, fontSize: F.h3, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Next →</button>
       ) : (
-        <button onClick={onCalculate} style={{ padding: "24px 64px", borderRadius: 18, border: "none", background: C.ctaGrad, color: C.onAccent, fontSize: F.h2, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: C.ctaShadow }}>Calculate ROI →</button>
+        <button onClick={onCalculate} style={{ padding: EMBED ? "14px 40px" : "24px 64px", borderRadius: EMBED ? 14 : 18, border: "none", background: C.ctaGrad, color: C.onAccent, fontSize: EMBED ? F.h3 : F.h2, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: C.ctaShadow }}>Calculate ROI →</button>
       )}
     </div>
   </div>;
@@ -98,13 +98,13 @@ export function TouchSlider({ label, value, min, max, step = 1, onChange, format
 }
 
 export function Stepper({ label, value, min = 0, max = 999, step = 1, onChange, tip }) {
-  return <div className={EMBED ? "embed-stepper" : undefined} style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 20 }}>
-    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
+  return <div className={EMBED ? "embed-stepper" : undefined} style={{ display: "flex", alignItems: "center", gap: EMBED ? 14 : 20, marginBottom: 20, flexWrap: EMBED ? "wrap" : undefined }}>
+    <div style={{ flex: EMBED ? "1 1 200px" : 1, display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ fontSize: F.body, fontWeight: 600, color: C.textMid }}>{label}</span>
       {tip && <InfoTip text={tip} />}
     </div>
     <button className={EMBED ? "embed-stepper-btn" : undefined} onClick={() => onChange(Math.max(min, value - step))} style={{ width: 64, height: 64, borderRadius: 16, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 32, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>−</button>
-    <span className={EMBED ? "embed-stepper-val" : undefined} style={{ fontSize: F.h1, fontWeight: 800, color: C.accent, minWidth: 90, textAlign: "center" }}>{value}</span>
+    <span className={EMBED ? "embed-stepper-val" : undefined} style={{ fontSize: F.h1, fontWeight: 800, color: C.accent, minWidth: EMBED ? 64 : 90, textAlign: "center" }}>{value}</span>
     <button className={EMBED ? "embed-stepper-btn" : undefined} onClick={() => onChange(Math.min(max, value + step))} style={{ width: 64, height: 64, borderRadius: 16, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 32, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>+</button>
   </div>;
 }
@@ -146,7 +146,7 @@ export function InfoTip({ text }) {
   }, [show]);
 
   return <span ref={iconRef} style={{ position: "relative", display: "inline-flex" }}>
-    <span onClick={() => setShow(!show)} style={{ width: 30, height: 30, borderRadius: "50%", background: C.border, color: C.textMid, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: F.small, fontWeight: 700, cursor: "pointer" }}>i</span>
+    <span onClick={() => setShow(!show)} style={{ width: EMBED ? 28 : 30, height: EMBED ? 28 : 30, borderRadius: "50%", background: C.border, color: C.textMid, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: F.small, fontWeight: 700, cursor: "pointer" }}>i</span>
     {show && <>
       <div onClick={() => setShow(false)} style={{ position: "fixed", inset: 0, zIndex: 99996 }} />
       <span style={{
@@ -155,7 +155,7 @@ export function InfoTip({ text }) {
         transform: pos.placeAbove ? "translateY(-100%)" : "none",
         background: C.tooltipBg, color: C.text,
         fontSize: F.small, lineHeight: 1.6, padding: "20px 24px",
-        borderRadius: 18, width: 400, maxWidth: "calc(100vw - 40px)",
+        borderRadius: EMBED ? 16 : 18, width: 400, maxWidth: "calc(100vw - 40px)",
         boxShadow: C.tooltipShadow,
         zIndex: 99997, border: `1px solid ${C.border}`,
         animation: "kfade .2s ease-out"
@@ -170,13 +170,13 @@ export function BigChoice({ options, value, onChange }) {
       const isLastOdd = options.length % 2 === 1 && i === options.length - 1;
       return <button key={opt.key} onClick={() => onChange(opt.key)} style={{
         gridColumn: isLastOdd ? "1 / -1" : "auto",
-        padding: "32px 30px", textAlign: "left", cursor: "pointer",
-        border: value === opt.key ? `3px solid ${C.accent}` : `1px solid ${C.border}`,
-        borderRadius: 22, background: value === opt.key ? C.accentPale : C.surface,
+        padding: EMBED ? "clamp(18px, 2.6vw, 26px)" : "32px 30px", textAlign: "left", cursor: "pointer",
+        border: value === opt.key ? `${EMBED ? 2 : 3}px solid ${C.accent}` : `1px solid ${C.border}`,
+        borderRadius: EMBED ? 16 : 22, background: value === opt.key ? C.accentPale : C.surface,
         transition: "all .2s", display: "flex", flexDirection: "column", alignItems: "flex-start"
       }}>
-        <div style={{ marginBottom: 14 }}>
-          {opt.iconKey ? <Icon name={opt.iconKey} size={42} stroke={value === opt.key ? C.accent : C.textMid} /> : opt.icon && <span style={{ fontSize: 42 }}>{opt.icon}</span>}
+        <div style={{ marginBottom: EMBED ? 10 : 14 }}>
+          {opt.iconKey ? <Icon name={opt.iconKey} size={EMBED ? 34 : 42} stroke={value === opt.key ? C.accent : C.textMid} /> : opt.icon && <span style={{ fontSize: 42 }}>{opt.icon}</span>}
         </div>
         <div style={{ fontSize: F.h3, fontWeight: 700, color: value === opt.key ? C.accent : C.text, marginBottom: 8, lineHeight: 1.2 }}>{opt.label}</div>
         <div style={{ fontSize: F.small, color: C.textMuted, lineHeight: 1.5 }}>{opt.desc}</div>
@@ -186,8 +186,8 @@ export function BigChoice({ options, value, onChange }) {
 }
 
 export function SectionTitle({ number, children }) {
-  return <div className={EMBED ? "embed-step-title" : undefined} style={{ fontSize: F.h2, fontWeight: 700, color: C.textMid, marginBottom: 28, display: "flex", alignItems: "center", gap: 16 }}>
-    <span style={{ width: 52, height: 52, borderRadius: "50%", background: C.accent, color: C.onAccent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: F.h3, fontWeight: 800, flexShrink: 0 }}>{number}</span>
+  return <div className={EMBED ? "embed-step-title" : undefined} style={{ fontSize: F.h2, fontWeight: 700, color: C.textMid, marginBottom: EMBED ? 22 : 28, display: "flex", alignItems: "center", gap: EMBED ? 14 : 16 }}>
+    <span style={{ width: EMBED ? 40 : 52, height: EMBED ? 40 : 52, borderRadius: "50%", background: C.accent, color: C.onAccent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: F.h3, fontWeight: 800, flexShrink: 0 }}>{number}</span>
     {children}
   </div>;
 }
@@ -199,7 +199,7 @@ export function SegmentedControl({ options, value, onChange, label, info }) {
       {info && <InfoTip text={info} />}
     </div>}
     <div style={{ display: "flex", gap: 10 }}>
-      {options.map(opt => <button key={opt.key} onClick={() => onChange(opt.key)} style={{ flex: 1, padding: "18px", borderRadius: 16, cursor: "pointer", border: value === opt.key ? `2px solid ${C.accent}` : `1px solid ${C.border}`, background: value === opt.key ? C.accentPale : C.surface, color: value === opt.key ? C.accent : C.textMid, fontSize: F.body, fontWeight: 600, fontFamily: "inherit" }}>{opt.label}</button>)}
+      {options.map(opt => <button key={opt.key} onClick={() => onChange(opt.key)} style={{ flex: 1, padding: EMBED ? "12px 14px" : "18px", borderRadius: EMBED ? 12 : 16, cursor: "pointer", border: value === opt.key ? `2px solid ${C.accent}` : `1px solid ${C.border}`, background: value === opt.key ? C.accentPale : C.surface, color: value === opt.key ? C.accent : C.textMid, fontSize: F.body, fontWeight: 600, fontFamily: "inherit" }}>{opt.label}</button>)}
     </div>
   </div>;
 }

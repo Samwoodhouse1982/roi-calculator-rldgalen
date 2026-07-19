@@ -400,17 +400,20 @@ function EmbedStyles() {
        would never engage. Neutralise it in the embed. */
     .embed-scroll-area { overflow: visible !important; }
 
-    /* Sticky progress header. The inline kiosk padding is replaced with a
-       tighter one so the pinned bar doesn't eat vertical space; the
-       StepIndicator's own margin-bottom is cancelled so the header's
-       background wraps it exactly. */
+    /* Sticky progress header. The inline kiosk padding is replaced with the
+       Smart Match web build's fluid gutter so the pinned bar doesn't eat
+       vertical space; the StepIndicator's own margin-bottom is cancelled so
+       the header's background wraps it exactly. */
     .embed-header-pad {
       position: sticky; top: 0; z-index: 30;
       background: ${C.bg};
-      padding: 16px 56px 12px !important;
+      padding: 12px clamp(16px, 4vw, 44px) 10px !important;
       box-shadow: 0 4px 14px -10px rgba(15,65,70,0.4);
     }
     .embed-header-pad > div { margin-bottom: 0 !important; }
+
+    /* Content column: same fluid gutter (replaces the kiosk's fixed 56px). */
+    .embed-scroll-area { padding: 0 clamp(16px, 4vw, 44px) 12px !important; }
 
     /* Step title sticks just below the header. --embed-header-h is measured
        at runtime (see App's header ResizeObserver) because the header's
@@ -423,17 +426,20 @@ function EmbedStyles() {
     }
 
     /* Results timescale bar: pin below the sticky header instead of top:0,
-       and soften its kiosk-dark shadow for the light theme. */
+       web-scale padding, and soften its kiosk-dark shadow for the light
+       theme. */
     .embed-timescale {
       top: var(--embed-header-h, 74px) !important;
       z-index: 25;
+      padding: 10px clamp(16px, 4vw, 44px) 12px !important;
       box-shadow: 0 4px 12px -4px rgba(15,65,70,0.18) !important;
     }
     /* Constant border width on the timescale buttons: the active button's
        2px-vs-1px border made every button grow/shrink as the selection
        moved, and because the bar is sticky the whole page shivered by 2px
-       on each switch. Border colour still shows the selection. */
-    .embed-timescale button { border-width: 2px !important; }
+       on each switch. Border colour still shows the selection. Web-scale
+       padding replaces the kiosk's 12px 22px / 120px min-width. */
+    .embed-timescale button { border-width: 2px !important; padding: 9px 18px !important; min-width: 0 !important; }
 
     /* Composition legend: structurally stable at EVERY width. As the
        count-up animation runs, item widths change; with centered flex-wrap
@@ -455,21 +461,13 @@ function EmbedStyles() {
        viewport edge. */
     .embed-nav-row { flex-wrap: wrap; }
 
-    /* Tablet / laptop: trim outer padding so content has more room */
-    @media (max-width: 1200px) {
-      .embed-header-pad { padding: 12px 32px 10px !important; }
-      .embed-scroll-area { padding: 0 32px 24px !important; }
-      .embed-nav-hint { margin: 16px 32px 0 !important; }
-      .embed-nav-row { padding: 14px 32px 28px !important; }
-    }
+    /* Component chrome (Card padding, buttons, steppers, section titles,
+       gutters) is sized via EMBED ternaries in the components themselves,
+       ported 1:1 from the Smart Match web build — media queries below only
+       handle structural changes that fluid values can't express. */
 
-    /* Phone landscape / small tablet: tighter still, single column KPI */
+    /* Phone landscape / small tablet: single column KPI */
     @media (max-width: 900px) {
-      .embed-header-pad { padding: 10px 20px 8px !important; }
-      .embed-scroll-area { padding: 0 20px 20px !important; }
-      .embed-nav-hint { margin: 14px 20px 0 !important; }
-      .embed-nav-row { padding: 12px 20px 24px !important; gap: 14px !important; }
-      .embed-nav-row button { padding: 18px 28px !important; }
       /* Collapse 2-col grids to single column. The kiosk's KpiCard
          grid uses inline gridTemplateColumns: "1fr 1fr" - overriding
          the inline style requires the more specific selector + !important. */
@@ -479,13 +477,10 @@ function EmbedStyles() {
       }
     }
 
-    /* Phone portrait: tightest layout, smallest paddings + compact nav. */
+    /* Phone portrait: compact nav structure. */
     @media (max-width: 640px) {
-      .embed-header-pad { padding: 8px 14px 8px !important; }
-      .embed-scroll-area { padding: 0 14px 16px !important; }
-      .embed-nav-hint { margin: 12px 14px 0 !important; }
-      .embed-nav-row { padding: 10px 14px 18px !important; gap: 8px !important; justify-content: space-between; }
-      .embed-nav-row button { padding: 14px 18px !important; }
+      .embed-nav-row { gap: 8px !important; justify-content: space-between; }
+      .embed-nav-row button { padding: 13px 18px !important; }
       /* The primary action (Next / Calculate ROI) gets its own full-width
          row - a proper thumb target - instead of wrapping raggedly when the
          three buttons don't fit side by side. The flex-spacer divs between
@@ -493,16 +488,8 @@ function EmbedStyles() {
       .embed-nav-row > div { display: none; }
       .embed-nav-row > button:last-child { flex: 1 1 100%; margin-top: 2px; }
 
-      /* Compact the +/- stepper rows (kiosk-sized 64px buttons crowd the
-         labels into 3-line wraps on facility cards). */
-      .embed-stepper { gap: 12px !important; }
-      .embed-stepper-btn { width: 46px !important; height: 46px !important; font-size: 24px !important; border-radius: 12px !important; }
-      .embed-stepper-val { min-width: 52px !important; }
-
-      /* Compact the sticky timescale bar on results - at kiosk sizes the
-         pinned header+bar stack ate a quarter of a phone screen. */
-      .embed-timescale { padding: 8px 12px 10px !important; }
-      .embed-timescale button { min-width: 0 !important; padding: 8px 12px !important; }
+      /* Compact the sticky timescale bar further on phones. */
+      .embed-timescale button { padding: 8px 12px !important; }
 
       /* Methodology bento: the 75/25 absolutely-positioned grid cannot work
          at phone width (right-column tiles become unreadable slivers and the

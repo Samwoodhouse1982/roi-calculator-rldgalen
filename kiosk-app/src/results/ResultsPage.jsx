@@ -454,7 +454,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
     </div>}
 
     {/* Galen */}
-    {hasGalen && <div style={{ marginBottom: 24, padding: "32px 36px", borderRadius: 24, background: `linear-gradient(135deg, ${C.accentPale}, ${C.surface})`, border: `1px solid ${C.accent}30` }}>
+    {hasGalen && <div style={{ marginBottom: 24, padding: EMBED ? "clamp(18px, 3vw, 30px)" : "32px 36px", borderRadius: EMBED ? 18 : 24, background: `linear-gradient(135deg, ${C.accentPale}, ${C.surface})`, border: `1px solid ${C.accent}30` }}>
       <div style={{ fontSize: F.h3, fontWeight: 700, color: C.accent, marginBottom: 18 }}>Galen Clinical Archive: investment case</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <Met label="Migration cost" value={fmtK(galenMigrationCost)} />
@@ -558,12 +558,12 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
     {/* Actions */}
     <div style={{ display: "flex", gap: 16, justifyContent: "center", padding: "16px 0 24px" }}>
       <button onClick={onAdjust} style={{
-        padding: "22px 44px", borderRadius: 18, border: `2px solid ${C.accent}`,
+        padding: EMBED ? "14px 32px" : "22px 44px", borderRadius: EMBED ? 14 : 18, border: `2px solid ${C.accent}`,
         background: "transparent", color: C.accent, fontSize: F.body, fontWeight: 700,
         cursor: "pointer", fontFamily: "inherit"
       }}>← Adjust inputs</button>
       <button onClick={onStartOver} style={{
-        padding: "22px 44px", borderRadius: 18, border: `1px solid ${C.border}`,
+        padding: EMBED ? "14px 32px" : "22px 44px", borderRadius: EMBED ? 14 : 18, border: `1px solid ${C.border}`,
         background: C.surface, color: C.textMid, fontSize: F.body, fontWeight: 600,
         cursor: "pointer", fontFamily: "inherit"
       }}>New case ↻</button>
