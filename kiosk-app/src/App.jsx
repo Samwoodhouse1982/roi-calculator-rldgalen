@@ -458,14 +458,39 @@ function EmbedStyles() {
       }
     }
 
-    /* Phone portrait: tightest layout, smallest paddings + compact nav
-       buttons so Back / Start over / Next always fit on one row. */
+    /* Phone portrait: tightest layout, smallest paddings + compact nav. */
     @media (max-width: 640px) {
       .embed-header-pad { padding: 8px 14px 8px !important; }
       .embed-scroll-area { padding: 0 14px 16px !important; }
       .embed-nav-hint { margin: 12px 14px 0 !important; }
-      .embed-nav-row { padding: 10px 14px 18px !important; gap: 8px !important; }
+      .embed-nav-row { padding: 10px 14px 18px !important; gap: 8px !important; justify-content: space-between; }
       .embed-nav-row button { padding: 14px 18px !important; }
+      /* The primary action (Next / Calculate ROI) gets its own full-width
+         row - a proper thumb target - instead of wrapping raggedly when the
+         three buttons don't fit side by side. The flex-spacer divs between
+         the buttons are dropped so Back and Start over split the first row. */
+      .embed-nav-row > div { display: none; }
+      .embed-nav-row > button:last-child { flex: 1 1 100%; margin-top: 2px; }
+
+      /* Compact the +/- stepper rows (kiosk-sized 64px buttons crowd the
+         labels into 3-line wraps on facility cards). */
+      .embed-stepper { gap: 12px !important; }
+      .embed-stepper-btn { width: 46px !important; height: 46px !important; font-size: 24px !important; border-radius: 12px !important; }
+      .embed-stepper-val { min-width: 52px !important; }
+
+      /* Compact the sticky timescale bar on results - at kiosk sizes the
+         pinned header+bar stack ate a quarter of a phone screen. */
+      .embed-timescale { padding: 8px 12px 10px !important; }
+      .embed-timescale button { min-width: 0 !important; padding: 8px 12px !important; }
+
+      /* Methodology bento: the 75/25 absolutely-positioned grid cannot work
+         at phone width (right-column tiles become unreadable slivers and the
+         large tile clips its text). Collapse to a vertical accordion: every
+         tile full-width and auto-height, selected tile shows its body,
+         unselected tiles are just their tappable header row. */
+      .embed-bento { height: auto !important; display: flex; flex-direction: column; gap: 12px; }
+      .embed-bento-tile { position: static !important; width: 100% !important; height: auto !important; }
+      .embed-bento-tile:not(.embed-bento-large) .embed-bento-body { display: none; }
     }
   `}</style>;
 }

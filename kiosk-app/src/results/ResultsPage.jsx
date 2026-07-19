@@ -3,6 +3,10 @@ import { C, F, fmtK, fmtNum } from '../theme';
 import { Icon } from '../components/Icons';
 import { Card } from '../components';
 
+// Build-time flag: '1' when built with `--mode embed`. Used only to attach
+// embed-specific classNames; kiosk DOM is unchanged.
+const EMBED = import.meta.env.VITE_EMBED === '1';
+
 /**
  * Animates a numeric value to a target over `duration` ms with ease-out cubic.
  *
@@ -703,13 +707,14 @@ function MethodologyBento({ tiles, selectedIdx, onSelect }) {
   // is intentionally avoided so the layout stays predictable in dense reports).
   const TRANSITION = "top 0.45s cubic-bezier(0.65,0,0.25,1), left 0.45s cubic-bezier(0.65,0,0.25,1), width 0.45s cubic-bezier(0.65,0,0.25,1), height 0.45s cubic-bezier(0.65,0,0.25,1), border-color 0.3s ease, box-shadow 0.3s ease";
 
-  return <div style={{ position: 'relative', width: '100%', height: TOTAL_H }}>
+  return <div className={EMBED ? 'embed-bento' : undefined} style={{ position: 'relative', width: '100%', height: TOTAL_H }}>
     {tiles.map((tile, idx) => {
       const slot = slotForTile(idx);
       const isLarge = slot === -1;
       const pos = styleForSlot(slot);
       return <div
         key={idx}
+        className={EMBED ? ('embed-bento-tile' + (isLarge ? ' embed-bento-large' : '')) : undefined}
         onClick={isLarge ? undefined : () => onSelect(idx)}
         style={{
           position: 'absolute',
@@ -758,7 +763,7 @@ function MethodologyBento({ tiles, selectedIdx, onSelect }) {
         {/* Body — fades in only when the tile is large. Slight delay so the
             text appears once the tile has finished growing, avoiding cramped
             text mid-animation. */}
-        <div style={{
+        <div className={EMBED ? 'embed-bento-body' : undefined} style={{
           fontSize: F.small,
           color: C.textMid,
           lineHeight: 1.7,

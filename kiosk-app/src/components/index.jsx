@@ -98,14 +98,14 @@ export function TouchSlider({ label, value, min, max, step = 1, onChange, format
 }
 
 export function Stepper({ label, value, min = 0, max = 999, step = 1, onChange, tip }) {
-  return <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 20 }}>
+  return <div className={EMBED ? "embed-stepper" : undefined} style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 20 }}>
     <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ fontSize: F.body, fontWeight: 600, color: C.textMid }}>{label}</span>
       {tip && <InfoTip text={tip} />}
     </div>
-    <button onClick={() => onChange(Math.max(min, value - step))} style={{ width: 64, height: 64, borderRadius: 16, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 32, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>−</button>
-    <span style={{ fontSize: F.h1, fontWeight: 800, color: C.accent, minWidth: 90, textAlign: "center" }}>{value}</span>
-    <button onClick={() => onChange(Math.min(max, value + step))} style={{ width: 64, height: 64, borderRadius: 16, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 32, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>+</button>
+    <button className={EMBED ? "embed-stepper-btn" : undefined} onClick={() => onChange(Math.max(min, value - step))} style={{ width: 64, height: 64, borderRadius: 16, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 32, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>−</button>
+    <span className={EMBED ? "embed-stepper-val" : undefined} style={{ fontSize: F.h1, fontWeight: 800, color: C.accent, minWidth: 90, textAlign: "center" }}>{value}</span>
+    <button className={EMBED ? "embed-stepper-btn" : undefined} onClick={() => onChange(Math.min(max, value + step))} style={{ width: 64, height: 64, borderRadius: 16, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 32, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>+</button>
   </div>;
 }
 
