@@ -14,3 +14,5 @@ a touchscreen build (default) and this embed build (`--mode embed` /
 
 Requires the project's "Include source files outside of the Root
 Directory" setting to be enabled — it is by default.
+
+<!-- deploy: 2026-07-19 scroll-fix rollout -->
