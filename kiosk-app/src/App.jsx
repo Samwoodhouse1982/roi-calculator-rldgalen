@@ -5,6 +5,7 @@ import { C, F, W, H, MAXW, KIOSK_STEPS } from './theme';
 // Selects the responsive/iframe variant; default is the fixed 1080×1920 kiosk.
 const EMBED = import.meta.env.VITE_EMBED === '1';
 import { SplashScreen } from './components/SplashScreen';
+import { AdminLeads } from './components/LeadCapture';
 import { BackgroundParticles } from './components/BackgroundParticles';
 import { calc } from './calc/engine';
 import { PRESETS, PROVIDER_PRESET_MAP, PROVIDER_MULTIPLIERS, REIMBURSE_MULTIPLIERS } from './calc/presets';
@@ -569,6 +570,9 @@ function CalibratingScreen({ onDone }) {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+  // Embed: #admin-leads reviews locally stored lead-form submissions
+  // (ported from the Smart Match web build). Hash-driven, no UI affordance.
+  const [adminLeads, setAdminLeads] = useState(EMBED && typeof window !== 'undefined' && window.location.hash === '#admin-leads');
   const embedHeaderRef = useRef(null); // embed: sticky header height source (see --embed-header-h)
   const [kioskStep, setKioskStep] = useState(0);
   const [calibrating, setCalibrating] = useState(false);
@@ -726,7 +730,7 @@ export default function App() {
       case 2: return <FacilitiesStep inputs={inputs} update={update} facilities={facilities} setFacility={setFacility} />;
       case 3: return <SystemsStep inputs={inputs} updateTier={updateTier} flagships={flagships} addFlagship={addFlagship} removeFlagship={removeFlagship} updateFlagshipCost={updateFlagshipCost} updateFlagshipInstances={updateFlagshipInstances} costMode={costMode} setCostMode={setCostMode} knownSpend={knownSpend} setKnownSpend={setKnownSpend} />;
       case 4: return <FineTuneStep inputs={inputs} update={update} galenMigrationCost={galenMigrationCost} setGalenMigrationCost={setGalenMigrationCost} galenAnnualCost={galenAnnualCost} setGalenAnnualCost={setGalenAnnualCost} occupancyRate={occupancyRate} setOccupancyRate={setOccupancyRate} />;
-      case 5: return <ResultsPage r={r} galenMigrationCost={galenMigrationCost} galenAnnualCost={galenAnnualCost} viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} onAdjust={handleAdjust} onStartOver={handleStartOver} />;
+      case 5: return <ResultsPage r={r} galenMigrationCost={galenMigrationCost} galenAnnualCost={galenAnnualCost} viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} onAdjust={handleAdjust} onStartOver={handleStartOver} leadContext={{ providerType, beds: inputs.bed_count, orgs: inputs.org_count, reimbursementModel }} />;
       default: return null;
     }
   };
@@ -770,6 +774,13 @@ export default function App() {
     };
   }, [showSplash]);
 
+  useEffect(() => {
+    if (!EMBED) return;
+    const onHash = () => setAdminLeads(window.location.hash === '#admin-leads');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
   // Embed: the page scrolls at body level, so jump back to the top when the
   // step changes — otherwise tapping Next leaves the user mid-page on the
   // next step. (Kiosk scrolls inside its fixed-height container instead.)
@@ -794,6 +805,12 @@ export default function App() {
     ro.observe(el);
     return () => ro.disconnect();
   }, [showSplash, calibrating]);
+
+  if (EMBED && adminLeads) {
+    return <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: '100vh', color: C.text }}>
+      <AdminLeads onClose={() => { window.location.hash = ''; }} />
+    </div>;
+  }
 
   if (showSplash) return <>
     <SplashScreen onStart={() => setShowSplash(false)} onAdminReveal={() => setAdminVisible(true)} />

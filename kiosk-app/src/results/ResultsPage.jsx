@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { LeadCapture } from '../components/LeadCapture';
 import { C, F, fmtK, fmtNum } from '../theme';
 import { Icon } from '../components/Icons';
 import { Card } from '../components';
@@ -94,7 +95,7 @@ function JumpLink({ label, onClick }) {
   return <div onClick={onClick} style={{ fontSize: F.tiny, color: C.accent, cursor: "pointer", fontWeight: 600, marginTop: 8, textAlign: "center" }}>{label} ↓</div>;
 }
 
-export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimescale, setViewTimescale, onAdjust, onStartOver }) {
+export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimescale, setViewTimescale, onAdjust, onStartOver, leadContext }) {
   if (!r) return null;
   // viewTimescale is controlled by the TimescaleBar in App.jsx and received
   // as a prop, so the bar can be rendered above the scroll container (where
@@ -209,6 +210,10 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
       {seg.network > 0 && <KpiCard label="Network consolidation" amount={Math.round(seg.network * ts.mult)} sub={`${r.duplicateSystems} duplicate systems across ${r.org_count || ""} facilities`} color="#8e44ad" iconKey="network" onClick={() => scrollTo(networkRef)} />}
       {seg.academic > 0 && <KpiCard label="Academic program" amount={Math.round(seg.academic * ts.mult)} sub="Research + GME + teaching" color="#e67e22" iconKey="graduation" onClick={() => scrollTo(academicRef)} />}
     </div>
+
+    {/* Lead capture - web/embed only; the kiosk is an attended sales surface
+        with its own follow-up flow, so it never shows a form. */}
+    {EMBED && <LeadCapture r={r} leadContext={leadContext} />}
 
 
 
