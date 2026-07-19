@@ -72,7 +72,7 @@ export function SplashScreen({ onStart, onAdminReveal }) {
           WebkitMaskSize: 'contain', maskSize: 'contain',
           WebkitMaskPosition: 'center', maskPosition: 'center',
         }} />
-        <div style={{ fontSize: F.tiny, color: C.textMuted, marginTop: 10 }}>v3.1 · Updated July 19, 2026</div>
+        <div style={{ fontSize: F.tiny, color: C.textMuted, marginTop: 10 }}>v3.2 · Updated July 19, 2026</div>
       </div>
     </div>
   );
