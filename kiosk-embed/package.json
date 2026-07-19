@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "npm --prefix ../kiosk-app ci && npm --prefix ../kiosk-app run build:embed && rm -rf dist && cp -r ../kiosk-app/dist dist"
+    "build": "test -f ../kiosk-app/package.json || { echo 'ERROR: ../kiosk-app missing. Enable \"Include source files outside of the Root Directory\" in the Vercel project settings (under Root Directory).'; exit 1; }; npm --prefix ../kiosk-app ci && npm --prefix ../kiosk-app run build:embed && rm -rf dist && cp -r ../kiosk-app/dist dist"
   }
 }
