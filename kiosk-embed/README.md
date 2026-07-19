@@ -15,4 +15,4 @@ a touchscreen build (default) and this embed build (`--mode embed` /
 Requires the project's "Include source files outside of the Root
 Directory" setting to be enabled — it is by default.
 
-<!-- deploy: 2026-07-19 after enabling outside-root files -->
+<!-- deploy: 2026-07-19 v3.2 rollout -->
