@@ -429,6 +429,15 @@ function EmbedStyles() {
       z-index: 25;
       box-shadow: 0 4px 12px -4px rgba(15,65,70,0.18) !important;
     }
+    /* Constant border width on the timescale buttons: the active button's
+       2px-vs-1px border made every button grow/shrink as the selection
+       moved, and because the bar is sticky the whole page shivered by 2px
+       on each switch. Border colour still shows the selection. */
+    .embed-timescale button { border-width: 2px !important; }
+
+    /* Tabular figures in the composition legend so amounts keep constant
+       digit widths while the count-up animation runs. */
+    .embed-comp-legend { font-variant-numeric: tabular-nums; }
 
     /* Nav row: allow wrapping so the primary button can never overflow the
        viewport edge. */
@@ -491,6 +500,21 @@ function EmbedStyles() {
       .embed-bento { height: auto !important; display: flex; flex-direction: column; gap: 12px; }
       .embed-bento-tile { position: static !important; width: 100% !important; height: auto !important; }
       .embed-bento-tile:not(.embed-bento-large) .embed-bento-body { display: none; }
+
+      /* Report stability on timescale switches: the longest eyebrow label
+         ("Estimated 3-year cumulative savings") wrapped to a second line at
+         phone width, so the whole report jumped ~23px on every switch.
+         Sized to keep every label variant on one line. */
+      .embed-hero-eyebrow { font-size: 12px !important; letter-spacing: 2px !important; }
+
+      /* Legend as a fixed 2-column grid: centered flex-wrap re-wraps as the
+         animating amounts change width; grid cells hold still. */
+      .embed-comp-legend { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-items: start; gap: 8px 12px !important; }
+    }
+
+    /* Very narrow phones: keep the eyebrow on one line. */
+    @media (max-width: 374px) {
+      .embed-hero-eyebrow { font-size: 10.5px !important; letter-spacing: 1.5px !important; }
     }
   `}</style>;
 }

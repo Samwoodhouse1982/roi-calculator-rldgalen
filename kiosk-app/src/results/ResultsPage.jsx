@@ -165,7 +165,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
 
     {/* Hero */}
     <div style={{ textAlign: "center", marginBottom: 20, padding: "24px 0" }}>
-      <div style={{ fontSize: F.body, fontWeight: 600, color: C.textMuted, letterSpacing: 4, textTransform: "uppercase", marginBottom: 16 }}>
+      <div className={EMBED ? "embed-hero-eyebrow" : undefined} style={{ fontSize: F.body, fontWeight: 600, color: C.textMuted, letterSpacing: 4, textTransform: "uppercase", marginBottom: 16 }}>
         {viewTimescale === 'annual' ? 'Estimated annual savings'
           : viewTimescale === 'year1' ? 'Estimated Year 1 savings'
           : viewTimescale === 'total3' ? 'Estimated 3-year cumulative savings'
@@ -190,7 +190,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         {seg.academic > 0 && <div style={{ flex: seg.academic, background: C.chart.academic }} />}
         {seg.network > 0 && <div style={{ flex: seg.network, background: C.chart.network }} />}
       </div>
-      <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+      <div className={EMBED ? "embed-comp-legend" : undefined} style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
         <CompositionItem color={C.accent} dotColor={C.chart.decom} label="Decommission" amount={Math.round(seg.decom * ts.mult)} pct={Math.round(seg.decom / Math.max(1, totalAnnual) * 100)} />
         <CompositionItem color={C.amber} dotColor={C.chart.capacity} label="Capacity" amount={Math.round(seg.capacity * ts.mult)} pct={Math.round(seg.capacity / Math.max(1, totalAnnual) * 100)} />
         {seg.reimb > 0 && <CompositionItem color={C.blue} dotColor={C.chart.reimb} label="Reimbursement" amount={Math.round(seg.reimb * ts.mult)} pct={Math.round(seg.reimb / Math.max(1, totalAnnual) * 100)} />}
