@@ -148,7 +148,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
   // freed across 3 years (e.g. 5.2 FTE/yr steady state × 2.20 ramp factor =
   // 11.4 FTE-years cumulative). For Year 1, it's first-year FTE during ramp
   // (5.2 × 0.40 = 2.08 FTE).
-  const fteRaw = r.hrsSaved ? r.hrsSaved * (r.realization || 0.3) / 1824 : 0;
+  const fteRaw = r.hrsSaved ? r.hrsSaved * (r.realization || 0.3) / 2080 : 0; // 2080 hrs/yr - matches the engine's fteEquivalent basis
   const fteScaled = fteRaw * ts.mult;
   const fte = fteScaled >= 1 ? Math.round(fteScaled) : Math.round(fteScaled * 10) / 10;
   const fmtFte = v => v < 1 ? v.toFixed(1) : fmtNum(v);

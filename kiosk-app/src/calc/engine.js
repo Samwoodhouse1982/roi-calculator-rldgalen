@@ -78,7 +78,7 @@ export const DUPLICATE_SYSTEM_RATE = 0.30;             // 30% of systems are dup
 export const DUPLICATE_INFRA_COST_PER_FACILITY = 250000;
 
 // Fragmentation attribution factors
-export const DENIAL_FRAGMENTATION_ATTRIBUTION = 0.35;  // 35% of denials attributable to legacy system fragmentation
+export const DENIAL_FRAGMENTATION_ATTRIBUTION = 0.30;  // 30% of denials are documentation/fragmentation-related (HFMA denial reason analysis)
                                                          // Remaining 65%: coding errors, clinical documentation, payer rules
                                                          // Advisory Board 2024: documentation gaps from fragmented systems
                                                          // are the #2 root cause of denials after authorization issues

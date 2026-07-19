@@ -527,7 +527,7 @@ function calc(inp, mode, ov = {}, flagships = []) {
   const switchPenalty = Math.max(0, systemsPerUser - 1) * SWITCH_PENALTY_PER_SYSTEM;
   const baseMin = isArchiveOnly ? 8 : 12; // Westbrook et al 2020: 5-12 mins/day on legacy lookups even with live EMR; 8 mins/week conservative
   const cappedPenalty = Math.min(switchPenalty, 4.0); // Cap: prevents >60 min/wk at extreme system counts
-  const minsWasted = ov.minsWasted != null ? ov.minsWasted : Math.round(baseMin * dq * cx * (1 + cappedPenalty));
+  const minsWasted = ov.minsWasted != null ? ov.minsWasted : Math.round(baseMin * dq * cx * (inp._complexityBoost != null ? inp._complexityBoost : 1.0) * (1 + cappedPenalty));
   const residual = isArchiveOnly ? 1 : 2;
   const hrsSaved = Math.round((clinicians * Math.max(0, minsWasted - residual) * WORKING_WEEKS) / 60);
   const timeSave = Math.round(hrsSaved * BLENDED_HOURLY_RATE * realization);
@@ -567,7 +567,7 @@ function calc(inp, mode, ov = {}, flagships = []) {
 
   // VBP improvement potential
   const vbpPool = medicareDrg * CMS_VBP_WITHHOLD;
-  const vbpImprovement = Math.round(vbpPool * 0.15 * safetyPct * (inp._qualityBonus != null ? inp._qualityBonus : 0.5));
+  const vbpImprovement = Math.round(vbpPool * 0.15 * safetyPct * (inp._qualityBonus != null ? inp._qualityBonus : 0.5) * (inp._penaltyWeight != null ? inp._penaltyWeight : 1.0));
 
   // Denial rate reduction (FFS pathway)
   const estAnnualRevenue = estAnnualRevenueCalc; // from admissions-based model above
@@ -630,11 +630,18 @@ function calc(inp, mode, ov = {}, flagships = []) {
   const usReadmissionRate = 0.156; // CMS 15.6% 30-day all-cause
   const usReadmitReduction = 0.008; // Vest et al JAMIA 2019: 0.8pp
   const usReadmitAttribution = 0.30;
-  const usReadmitCostPer = 16000; // CMS avg readmission cost
-  const usReadmissionsAvoided = isVBC ? Math.round(admissionsPerYear * usReadmitReduction * usReadmitAttribution * safetyPct) : 0;
-  const usReadmissionCostAvoidance = usReadmissionsAvoided * usReadmitCostPer;
+  const usReadmitCostPer = 15200; // = US_AVG_REVENUE_PER_ADMISSION (aligned with kiosk engine) // CMS avg readmission cost
+  // Medicare admissions base + graduated value-based credit (aligned with the
+  // kiosk engine): FFS gets no dollar credit (readmissions are revenue under
+  // FFS), mixed gets half, VBC full.
+  const usMedicareAdmissions = Math.round(admissionsPerYear * (inp._medicarePct != null ? inp._medicarePct : 0.42));
+  const usReadmissionsAvoided = Math.round(usMedicareAdmissions * usReadmitReduction * usReadmitAttribution * safetyPct);
+  const usVbcWeight = inp._qualityBonus != null ? inp._qualityBonus : 0;
+  const usReadmissionCostAvoidance = Math.round(usReadmissionsAvoided * usReadmitCostPer * usVbcWeight);
 
-  const qualitySavings = malpracticeReduction + excessDayCostAvoided + duplicateReduction + usReadmissionCostAvoidance;
+  const usLitigationCases = Math.round(inp.bed_count / 100 * 12);
+  const ediscoverySaving = Math.round(usLitigationCases * (28 - 6) * 55 * decomPct);
+  const qualitySavings = malpracticeReduction + excessDayCostAvoided + duplicateReduction + usReadmissionCostAvoidance + ediscoverySaving;
 
   const annual = decomSave + timeSave;
   const annualWithReimbursement = annual + reimbursementImpact + qualitySavings + academicSavings + mergeSavings;
@@ -673,7 +680,7 @@ function calc(inp, mode, ov = {}, flagships = []) {
     malpracticePremium, malpracticeReduction,
     preventableADEs, excessDaysAvoided, excessDayCostAvoided,
     duplicateWaste, duplicateReduction,
-    reimbursementImpact, qualitySavings, usReadmissionsAvoided, usReadmissionCostAvoidance, isVBC,
+    reimbursementImpact, qualitySavings, usReadmissionsAvoided, usReadmissionCostAvoidance, isVBC, usLitigationCases, ediscoverySaving,
     // Academic module
     isAcademic, researchSystems, researchSystemCost, researchDecomSave,
     gmeComplianceCost, gmeEfficiency, teachingOverhead, academicSavings,
@@ -769,7 +776,7 @@ const GME_COMPLIANCE_COST_PER_BED = 850;        // ACGME reporting, residency tr
 const TEACHING_OVERHEAD_PCT = 0.12;             // 12% additional system complexity for teaching workflows
 
 // ── M&A / Multi-Hospital Constants ──
-const DUPLICATE_SYSTEM_RATE = 0.35;             // 35% of systems are duplicated across facilities post-M&A
+const DUPLICATE_SYSTEM_RATE = 0.30;             // 30% of systems are duplicated across facilities post-M&A (CHIME Digital Health Survey)
 const DUPLICATE_INFRA_COST_PER_FACILITY = 250000; // Per-facility duplicate infrastructure (data center, network, help desk)
 const CROSS_FACILITY_STANDARDIZATION_PCT = 0.15; // 15% of operational costs addressable through standardization
 
@@ -1625,6 +1632,7 @@ function ROICalculator() {
       _denialWeight: pm.denial_factor * rm.denial_weight,
       _penaltyWeight: pm.penalty_exposure * rm.penalty_weight,
       _qualityBonus: rm.quality_bonus,
+      _complexityBoost: pm.complexity_boost,
       _medicareDrgRevenue: medicareDrgRevenue,
       _occupancy: occupancyRate,
       _providerType: providerType,
@@ -1651,7 +1659,7 @@ function ROICalculator() {
     switch (viewTimescale) {
       case "year1":  return { mult: rp[0] || 1, heroLabel: "Estimated first-year savings", subContext: "for Year 1 of " + r.rampYears + "-year ramp", suffix: "" };
       case "total3": return { mult: padTo(3), heroLabel: "Estimated 3-year total savings", subContext: "cumulative across 3 years", suffix: "" };
-      case "total5": return { mult: padTo(5), heroLabel: "Estimated 5-year total savings", subContext: "cumulative across 5 years", suffix: "" };
+      case "total5": return { mult: 3.0, heroLabel: "Estimated 5-year total savings", subContext: "cumulative across 5 years (20/40/60/80/100% ramp)", suffix: "" }; // true 5-yr ramp, aligned with the kiosk calculator
       default:       return { mult: 1, heroLabel: "Estimated annual savings at steady state", subContext: "per year at steady state", suffix: "/yr" };
     }
   }, [viewTimescale, r.rampPcts, r.rampYears]);
@@ -2055,7 +2063,7 @@ function ROICalculator() {
       { l: "Legacy decommission", v: r.decomSave, sub: r.decom + " of " + r.legacy + " systems retired" },
       { l: "Clinician capacity", v: r.timeSave, sub: (r.hrsSaved||0).toLocaleString() + " hrs/yr · " + (r.fteEquivalent||0) + " FTE equivalent" },
       { l: "Reimbursement & compliance", v: r.reimbursementImpact, sub: "HRRP/HAC/VBP penalty avoidance + denial recovery" },
-      { l: "Quality & safety", v: r.qualitySavings, sub: "Malpractice + excess bed days + duplicate testing" + (r.usReadmissionCostAvoidance>0?" + readmissions":"") },
+      { l: "Quality & safety", v: r.qualitySavings, sub: "Malpractice + excess bed days + duplicate testing + e-discovery" + (r.usReadmissionCostAvoidance>0?" + readmissions":"") },
     ];
     if (r.academicSavings>0) components.push({ l: "Academic & GME", v: r.academicSavings, sub: "Research + teaching + GME compliance" });
     if (r.mergeSavings>0) components.push({ l: "Network consolidation", v: r.mergeSavings, sub: "Shared infrastructure + operational efficiency across facilities" });
