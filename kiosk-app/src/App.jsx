@@ -730,7 +730,7 @@ export default function App() {
       case 2: return <FacilitiesStep inputs={inputs} update={update} facilities={facilities} setFacility={setFacility} />;
       case 3: return <SystemsStep inputs={inputs} updateTier={updateTier} flagships={flagships} addFlagship={addFlagship} removeFlagship={removeFlagship} updateFlagshipCost={updateFlagshipCost} updateFlagshipInstances={updateFlagshipInstances} costMode={costMode} setCostMode={setCostMode} knownSpend={knownSpend} setKnownSpend={setKnownSpend} />;
       case 4: return <FineTuneStep inputs={inputs} update={update} galenMigrationCost={galenMigrationCost} setGalenMigrationCost={setGalenMigrationCost} galenAnnualCost={galenAnnualCost} setGalenAnnualCost={setGalenAnnualCost} occupancyRate={occupancyRate} setOccupancyRate={setOccupancyRate} />;
-      case 5: return <ResultsPage r={r} galenMigrationCost={galenMigrationCost} galenAnnualCost={galenAnnualCost} viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} onAdjust={handleAdjust} onStartOver={handleStartOver} leadContext={{ providerType, beds: inputs.bed_count, orgs: inputs.org_count, reimbursementModel }} />;
+      case 5: return <ResultsPage r={r} galenMigrationCost={galenMigrationCost} galenAnnualCost={galenAnnualCost} viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} onAdjust={handleAdjust} onStartOver={handleStartOver} leadContext={{ providerType, beds: inputs.bed_count, orgs: inputs.org_count, reimbursementModel, calcInputs, flagships }} />;
       default: return null;
     }
   };

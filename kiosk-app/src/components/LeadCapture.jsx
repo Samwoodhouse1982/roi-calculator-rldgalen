@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { C, F, fmtK, fmtNum } from '../theme';
 import rldatixLogo from '../assets/rldatix-logo.png';
+import { calc } from '../calc/engine';
 
 /* ────────────────────────────────────────────────────────────────────────
    Lead capture — ported from the Smart Match web build's LeadCapture and
@@ -144,35 +145,66 @@ async function generatePDF(r, lead, ctx) {
   });
   y += kH + 7;
 
-  // ── Savings ramp: three year tiles + totals ──
-  doc.setTextColor(...MUTED); doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
-  doc.text("SAVINGS RAMP (3-YEAR ADOPTION CURVE: 40 / 80 / 100%)", M, y); y += 3;
-  const sW = (W - 8) / 3, sH = 30;
-  const years = [
-    ["Year 1", "40% of steady state", r.yr1R],
-    ["Year 2", "80% of steady state", r.yr2R],
-    ["Year 3", "100% of steady state", r.yr3R],
-  ];
-  let cum = 0;
-  years.forEach(([label, sub, val], i) => {
-    cum += val || 0;
-    const x = M + i * (sW + 4);
-    const last = i === 2;
-    if (last) { doc.setFillColor(...PALE_SEA); doc.setDrawColor(...TEAL); doc.setLineWidth(0.7); }
-    else { doc.setFillColor(255, 255, 255); doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); }
-    doc.roundedRect(x, y, sW, sH, 2.5, 2.5, "FD");
-    doc.setLineWidth(0.2);
-    doc.setTextColor(...NAVY); doc.setFont("helvetica", "bold"); doc.setFontSize(9.5);
-    doc.text(label, x + 4, y + 8);
-    doc.setTextColor(...MID); doc.setFont("helvetica", "normal"); doc.setFontSize(7);
-    doc.text(sub, x + 4, y + 12.5);
-    doc.setTextColor(...TEAL); doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-    doc.text(usd(val), x + 4, y + 21);
-    doc.setTextColor(...MID); doc.setFont("helvetica", "normal"); doc.setFontSize(6.5);
-    doc.text("cumulative: " + usd(cum), x + 4, y + 26);
-  });
-  y += sH + 4;
+  // ── Confidence scenarios: every level modeled, the calculator's Expected
+  //    estimate flagged (same treatment as the Smart Match report). Each tile
+  //    recomputes the whole model at that confidence level. ──
+  let scenarios = null;
+  if (ctx.calcInputs) {
+    try {
+      scenarios = [
+        ["Conservative", "85% decom · 20% capacity · 15% safety capture", calc(ctx.calcInputs, "CONSERVATIVE", {}, ctx.flagships || [])],
+        ["Expected", "100% decom · 30% capacity · 25% safety capture", r],
+        ["Stretch", "110% decom · 40% capacity · 35% safety capture", calc(ctx.calcInputs, "STRETCH", {}, ctx.flagships || [])],
+      ];
+    } catch (e) { scenarios = null; }
+  }
+  if (scenarios) {
+    doc.setTextColor(...MUTED); doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+    doc.text("SAVING BY CONFIDENCE LEVEL", M, y); y += 3;
+    const sW = (W - 8) / 3, sH = 44;
+    scenarios.forEach(([key, factors, rr], i) => {
+      const x = M + i * (sW + 4);
+      const selected = key === "Expected";
+      if (selected) { doc.setFillColor(...PALE_SEA); doc.setDrawColor(...TEAL); doc.setLineWidth(0.7); }
+      else { doc.setFillColor(255, 255, 255); doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); }
+      doc.roundedRect(x, y, sW, sH, 2.5, 2.5, "FD");
+      doc.setLineWidth(0.2);
+      doc.setTextColor(...NAVY); doc.setFont("helvetica", "bold"); doc.setFontSize(9.5);
+      doc.text(key, x + 4, y + 8);
+      doc.setTextColor(...MID); doc.setFont("helvetica", "normal"); doc.setFontSize(5.8);
+      doc.text(factors, x + 4, y + 12);
+      if (selected) {
+        doc.setFillColor(...TEAL); doc.roundedRect(x + sW - 29, y + 3.5, 25, 5.5, 2.75, 2.75, "F");
+        doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(6);
+        doc.text("YOUR ESTIMATE", x + sW - 16.5, y + 7.2, { align: "center" });
+      }
+      doc.setTextColor(...TEAL); doc.setFont("helvetica", "bold"); doc.setFontSize(13.5);
+      doc.text(usd(rr.annualWithReimbursement), x + 4, y + 19.5);
+      doc.setTextColor(...MID); doc.setFont("helvetica", "normal"); doc.setFontSize(6.5);
+      doc.text("per year at steady state", x + 4, y + 23.5);
+      doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); doc.line(x + 4, y + 25.5, x + sW - 4, y + 25.5);
+      const stats = [
+        ["Decommission", fmtK(rr.decomSave)],
+        ["Clinical capacity", fmtK(rr.timeSave)],
+        ["Reimbursement", fmtK(rr.reimbursementImpact)],
+        ["Patient safety", fmtK(rr.qualitySavings)],
+      ];
+      let sy = y + 29.5;
+      stats.forEach(([k2, v2]) => {
+        doc.setFont("helvetica", "normal"); doc.setFontSize(6.8); doc.setTextColor(...MID);
+        doc.text(k2, x + 4, sy);
+        doc.setFont("helvetica", "bold"); doc.setTextColor(...NAVY);
+        doc.text(String(v2), x + sW - 4, sy, { align: "right" });
+        sy += 4.1;
+      });
+    });
+    y += sH + 4;
+  }
+
+  // ── Ramp summary (compressed to one strip so the page stays a one-pager) ──
   doc.setTextColor(...MID); doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+  doc.text(`Adoption ramp: Year 1 ${usd(r.yr1R)} (40%)  ·  Year 2 ${usd(r.yr2R)} (80%)  ·  Year 3 ${usd(r.yr3R)} (100%)`, M, y); y += 4.5;
+  doc.setFont("helvetica", "normal"); doc.setTextColor(...MUTED); doc.setFontSize(7.5);
   doc.text(`3-year total: ${usd(r.total3WithReimbursement)}   ·   5-year total (20/40/60/80/100% ramp): ${usd(r.total5WithReimbursement)}`, M, y);
   y += 6;
 
