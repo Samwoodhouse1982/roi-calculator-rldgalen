@@ -435,9 +435,21 @@ function EmbedStyles() {
        on each switch. Border colour still shows the selection. */
     .embed-timescale button { border-width: 2px !important; }
 
-    /* Tabular figures in the composition legend so amounts keep constant
-       digit widths while the count-up animation runs. */
-    .embed-comp-legend { font-variant-numeric: tabular-nums; }
+    /* Composition legend: structurally stable at EVERY width. As the
+       count-up animation runs, item widths change; with centered flex-wrap
+       the last item hopped between one and two lines mid-animation and
+       bounced the whole report (seen in a desktop screen recording). A
+       2-column grid has a row count that depends only on the item count,
+       never on the animating text widths, and tabular figures keep digit
+       widths constant while counting. */
+    .embed-comp-legend {
+      font-variant-numeric: tabular-nums;
+      display: grid !important;
+      grid-template-columns: repeat(2, auto);
+      justify-items: start;
+      column-gap: 40px !important;
+      row-gap: 8px !important;
+    }
 
     /* Nav row: allow wrapping so the primary button can never overflow the
        viewport edge. */
@@ -507,9 +519,9 @@ function EmbedStyles() {
          Sized to keep every label variant on one line. */
       .embed-hero-eyebrow { font-size: 12px !important; letter-spacing: 2px !important; }
 
-      /* Legend as a fixed 2-column grid: centered flex-wrap re-wraps as the
-         animating amounts change width; grid cells hold still. */
-      .embed-comp-legend { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-items: start; gap: 8px 12px !important; }
+      /* Narrow screens: equal-width columns so long items can't push the
+         pair off-center. */
+      .embed-comp-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px !important; }
     }
 
     /* Very narrow phones: keep the eyebrow on one line. */
