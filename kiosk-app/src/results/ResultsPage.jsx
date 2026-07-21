@@ -151,8 +151,13 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
   // (5.2 × 0.40 = 2.08 FTE).
   const fteRaw = r.hrsSaved ? r.hrsSaved * (r.realization || 0.3) / (UKI ? 1820 : 2080) : 0; // hrs/yr FTE basis - matches each engine's fteEquivalent (NHS 1820, US 2080)
   const fteScaled = fteRaw * ts.mult;
-  const fte = fteScaled >= 1 ? Math.round(fteScaled) : Math.round(fteScaled * 10) / 10;
-  const fmtFte = v => v < 1 ? v.toFixed(1) : fmtNum(v);
+  // UKI keeps one decimal at any magnitude to line up with the full web
+  // calculator's "FTE equivalent" stat (e.g. 2.4); US rounds to whole FTE
+  // once >= 1, as it always has.
+  const fte = UKI ? Math.round(fteScaled * 10) / 10 : fteScaled >= 1 ? Math.round(fteScaled) : Math.round(fteScaled * 10) / 10;
+  const fmtFte = UKI
+    ? (v => Number.isInteger(v) ? fmtNum(v) : v.toFixed(1))
+    : (v => v < 1 ? v.toFixed(1) : fmtNum(v));
   const hasGalen = galenMigrationCost > 0;
   const payback = hasGalen ? galenMigrationCost / Math.max(1, r.decomSave - galenAnnualCost) : 0;
 
