@@ -18,3 +18,5 @@ the US builds are byte-for-byte unaffected.
 
 Requires the project's "Include source files outside of the Root
 Directory" setting to be enabled — it is by default.
+
+<!-- deploy: 2026-07-21 UKI embed v1.0 rollout -->
