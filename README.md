@@ -11,6 +11,7 @@ branch.
 | `web/au/` | Australia web (EMR, ACSQHC, AUD, `en-AU`) | Self-contained HTML | `roi-calculator.html` — no build step |
 | `kiosk-app/` | US conference kiosk — **touchscreen** (fixed 1080×1920 portrait) | Vite + React | `npm run build` |
 | `kiosk-app/` | US kiosk — **embed** (responsive / iframe-friendly) | Vite + React (same app, build flag) | `npm run build:embed` |
+| `kiosk-app/` | UK & Ireland — **embed** (short interactive web flow, NHS model, GBP) | Vite + React (same app, market flag) | `npm run build:embed:uki` |
 
 ## The two codebases
 
@@ -21,11 +22,16 @@ folder also carries its own `vercel.json` routing and embed snippet. See
 the README inside each folder for market-specific editing notes and
 evidence-sourcing rules.
 
-**Kiosk app** (`kiosk-app/`): one Vite/React app with two build modes —
-the fixed 1080×1920 touchscreen build (default) and the responsive embed
-build (`--mode embed`, driven by `VITE_EMBED=1` from `.env.embed`). The
-calculation engine, input flow and results are shared; only sizing/layout
-variants differ. See `kiosk-app/README.md` and `kiosk-app/README-EMBED.md`.
+**Kiosk app** (`kiosk-app/`): one Vite/React app with two build
+dimensions — surface (`VITE_EMBED=1` picks the responsive embed over the
+fixed 1080×1920 touchscreen) and market (`VITE_MARKET=uki` picks the
+NHS/Ireland engine, UK system catalogue, £ formatting and UK report
+content over the US defaults). Three shipped combinations: US touchscreen
+(`npm run build`), US embed (`npm run build:embed`), UKI embed
+(`npm run build:embed:uki`). The UKI engine is a verbatim port of
+`web/uki/roi-calculator.html`'s model (numeric parity verified); the US
+builds are byte-for-byte unaffected by the UKI market code. See
+`kiosk-app/README.md` and `kiosk-app/README-EMBED.md`.
 
 ## Deploys
 
@@ -39,6 +45,7 @@ folder (Root Directory setting), all from this branch:
 | AU web | `web/au` | — (static) |
 | US touchscreen | `kiosk-app` | — (auto: `npm run build`) |
 | US embed | `kiosk-embed` | — (auto: builds `kiosk-app` in embed mode) |
+| UKI embed | `kiosk-embed-uki` | — (auto: builds `kiosk-app` in UKI embed mode) |
 
 ## History
 

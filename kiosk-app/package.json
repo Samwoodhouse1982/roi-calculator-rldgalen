@@ -7,7 +7,9 @@
     "dev:embed": "vite --mode embed",
     "build": "vite build",
     "build:embed": "vite build --mode embed",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:embed:uki": "vite --mode embed-uki",
+    "build:embed:uki": "vite build --mode embed-uki"
   },
   "dependencies": {
     "jspdf": "^4.2.1",

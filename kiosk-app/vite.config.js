@@ -45,7 +45,7 @@ const embedHtmlEntry = () => {
 };
 
 export default defineConfig(({ mode }) => {
-  const embed = mode === 'embed' || process.env.VITE_EMBED === '1';
+  const embed = mode.startsWith('embed') || process.env.VITE_EMBED === '1';
   return {
     plugins: [react(), ...(embed ? [embedHtmlEntry()] : [])],
     build: {

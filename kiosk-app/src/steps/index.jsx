@@ -5,7 +5,9 @@ import { Icon } from '../components/Icons';
 
 // Build-time flag: '1' when built with `--mode embed`; sizing only.
 const EMBED = import.meta.env.VITE_EMBED === '1';
-import { KNOWN_SYSTEMS, systemCost } from '../calc/vendors';
+import { KNOWN_SYSTEMS, systemCost } from '../calc/vendors.index.js';
+import { UKI } from '../market';
+import { PRESETS as PRESETS_UKI, ORG_TYPES } from '../calc/presets.uki';
 
 const TIER_TYPES = {
   enterprise: ["EHR","Legacy EHR","EHR/Integration","Ambulatory EHR","Ambulatory EHR/RCM","Revenue Cycle"],
@@ -153,12 +155,15 @@ export function ProviderStep({ providerType, onSelect, reimbursementModel, setRe
 // STEP 2: Journey
 export function JourneyStep({ journey, onSelect }) {
   return <div>
-    <SectionTitle number="2">Where are you on your EHR journey?</SectionTitle>
+    <SectionTitle number="2">{UKI ? "Where are you on your EPR journey?" : "Where are you on your EHR journey?"}</SectionTitle>
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {[
+      {(UKI ? [
+        { key: "HAVE_EPR", label: "We want to decommission systems", desc: "You have (or are keeping) your EPR. Retire and archive the legacy estate around it.", iconKey: "check", focus: "Archiving + decommission savings" },
+        { key: "EVALUATING", label: "We're evaluating enterprise EPRs", desc: "Assessing migration to a single EPR platform. Need the full case for migration and archiving.", iconKey: "search", focus: "Migration safety + archiving savings" },
+      ] : [
         { key: "HAVE_EPR", label: "We have an enterprise EHR", desc: "Already on Epic, Oracle Health or similar. Looking to archive and decommission legacy systems.", iconKey: "check", focus: "Archiving + decommission savings" },
         { key: "EVALUATING", label: "We're evaluating enterprise EHRs", desc: "Assessing migration to a single EHR platform. Need the full case for migration and archiving.", iconKey: "search", focus: "Migration safety + archiving savings" },
-      ].map(j => <button key={j.key} onClick={() => onSelect(j.key)} style={{
+      ]).map(j => <button key={j.key} onClick={() => onSelect(j.key)} style={{
         padding: EMBED ? "clamp(18px, 2.6vw, 26px)" : "32px 30px", textAlign: "left", cursor: "pointer",
         border: journey === j.key ? `${EMBED ? 2 : 3}px solid ${C.accent}` : `1px solid ${C.border}`,
         borderRadius: EMBED ? 16 : 22, background: journey === j.key ? C.accentPale : C.surface, transition: "all .2s"
@@ -242,9 +247,9 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
   const [selected, setSelected] = useState([]);
   const [customTier, setCustomTier] = useState(null); // when set, modal is open for that tier
   const tiers = [
-    { key: "enterprise", label: "Enterprise", color: C.accent, hint: "Including legacy EHR, ERP, RCM", max: Math.max(10, inputs.tiers.enterprise + 3) },
-    { key: "departmental", label: "Departmental", color: C.blue, hint: "Including laboratory, pharmacy, perinatal, imaging/PACS, cardiology, and radiology", max: Math.max(30, inputs.tiers.departmental + 5) },
-    { key: "niche", label: "Standalone", color: C.purple, hint: "Including document stores, data warehouses, scanned notes", max: Math.max(100, inputs.tiers.niche + 10) },
+    { key: "enterprise", label: "Enterprise", color: C.accent, hint: UKI ? "Including legacy EPR / PAS" : "Including legacy EHR, ERP, RCM", max: Math.max(10, inputs.tiers.enterprise + 3) },
+    { key: "departmental", label: "Departmental", color: C.blue, hint: UKI ? "Including LIMS, PACS, pharmacy, maternity, theatres, e-obs" : "Including laboratory, pharmacy, perinatal, imaging/PACS, cardiology, and radiology", max: Math.max(30, inputs.tiers.departmental + 5) },
+    { key: "niche", label: "Standalone", color: C.purple, hint: UKI ? "Including document stores, ECM, scanned notes, rostering" : "Including document stores, data warehouses, scanned notes", max: Math.max(100, inputs.tiers.niche + 10) },
   ];
   const sliderTotal = inputs.tiers.enterprise + inputs.tiers.departmental + inputs.tiers.niche;
   // Count each flagship by its instances (default 1) so the totals reflect
@@ -409,7 +414,7 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
         </div>
       </div>
       <TouchSlider label="Decommission target" value={inputs.decom_retire_rate} min={0} max={1} step={0.05} onChange={v => update("decom_retire_rate", v)} format={v => `${Math.round(v * 100)}%`} tip="What % of legacy systems will be retired?" />
-      <TouchSlider label="Bed occupancy" value={occupancyRate} min={0.3} max={1.0} step={0.01} onChange={setOccupancyRate} format={v => `${Math.round(v * 100)}%`} tip="Drives admission volume, revenue, and safety metrics." />
+      {!UKI && <TouchSlider label="Bed occupancy" value={occupancyRate} min={0.3} max={1.0} step={0.01} onChange={setOccupancyRate} format={v => `${Math.round(v * 100)}%`} tip="Drives admission volume, revenue, and safety metrics." />}
     </Card>
     <Card style={{ marginTop: 16 }}>
       <div style={{ fontSize: F.body, fontWeight: 700, color: C.textMid, marginBottom: 16 }}>Galen Clinical Archive costs <span style={{ fontWeight: 400, color: C.textMuted }}>(optional)</span></div>
@@ -423,7 +428,7 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
           style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
         <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
           <button onClick={() => setGalenMigrationCost(Math.max(0, galenMigrationCost - 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>±$25k</div>
+          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1\u00a325k" : "\u00b1$25k"}</div>
           <button onClick={() => setGalenMigrationCost(Math.min(20000000, galenMigrationCost + 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
         </div>
       </div>
@@ -437,10 +442,40 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
           style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
         <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
           <button onClick={() => setGalenAnnualCost(Math.max(0, galenAnnualCost - 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>±$25k</div>
+          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1\u00a325k" : "\u00b1$25k"}</div>
           <button onClick={() => setGalenAnnualCost(Math.min(15000000, galenAnnualCost + 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
         </div>
       </div>
+    </Card>
+  </div>;
+}
+
+
+/* ── UKI STEP 1: organisation type (scope) ─────────────────────────────── */
+export function OrgTypeStep({ orgType, onSelect }) {
+  return <div>
+    <SectionTitle number="1">What type of organisation are you?</SectionTitle>
+    <BigChoice options={ORG_TYPES.map(o => ({
+      key: o.key, label: PRESETS_UKI[o.key].label, desc: PRESETS_UKI[o.key].desc, iconKey: o.iconKey,
+    }))} value={orgType} onChange={onSelect} />
+  </div>;
+}
+
+/* ── UKI STEP 3: organisation scale ────────────────────────────────────── */
+export function ScaleStep({ inputs, update }) {
+  const avg = Math.round(inputs.bed_count / Math.max(1, inputs.org_count));
+  return <div>
+    <SectionTitle number="3">Organisation scale</SectionTitle>
+    <Card>
+      <Stepper label="Trusts / organisations in scope" value={inputs.org_count} min={1} max={10}
+        onChange={v => update("org_count", v)}
+        tip="A single Trust, or the number of organisations in a multi-Trust or ICS-wide programme." />
+      <TouchSlider label="Total acute beds" value={inputs.bed_count} min={50} max={Math.max(8000, inputs.bed_count + 500)} step={10}
+        onChange={v => update("bed_count", v)} format={fmtNum}
+        tip="Bed count is the primary scaling factor: it drives staffing levels, clinical time at risk, and harm exposure." />
+      {inputs.org_count > 1 && <div style={{ fontSize: F.small, color: C.textMuted, background: C.bg, padding: "10px 14px", borderRadius: 10 }}>
+        Average: {fmtNum(avg)} beds per organisation
+      </div>}
     </Card>
   </div>;
 }

@@ -110,10 +110,21 @@ export const MAXW = 900;
 // Embed build fluid horizontal gutter (ported from the Smart Match web
 // build); the kiosk uses fixed 56px paddings instead.
 export const GUTTER = "clamp(16px, 4vw, 44px)";
-export const fmt = n => typeof n === "number" ? n.toLocaleString("en-US") : n;
-export const fmtK = n => n >= 1e6 ? `$${(n/1e6).toFixed(1)}m` : n >= 1000 ? `$${Math.round(n/1000).toLocaleString("en-US")}k` : `$${fmt(n)}`;
-export const fmtNum = n => typeof n === "number" ? n.toLocaleString("en-US") : n;
-export const KIOSK_STEPS = ["Scope", "Journey", "Facilities", "Systems", "Fine-tune", "Results"];
+// Market formatters: US ($, en-US) is the default and the only set the
+// touchscreen build uses; UKI gets £/en-GB.
+const MARKET_UKI = import.meta.env.VITE_MARKET === 'uki';
+export const fmt = MARKET_UKI
+  ? (n => typeof n === "number" ? n.toLocaleString("en-GB") : n)
+  : (n => typeof n === "number" ? n.toLocaleString("en-US") : n);
+export const fmtK = MARKET_UKI
+  ? (n => n >= 1e6 ? `\u00a3${(n/1e6).toFixed(1)}m` : n >= 1000 ? `\u00a3${Math.round(n/1000).toLocaleString("en-GB")}k` : `\u00a3${fmt(n)}`)
+  : (n => n >= 1e6 ? `$${(n/1e6).toFixed(1)}m` : n >= 1000 ? `$${Math.round(n/1000).toLocaleString("en-US")}k` : `$${fmt(n)}`);
+export const fmtNum = MARKET_UKI
+  ? (n => typeof n === "number" ? n.toLocaleString("en-GB") : n)
+  : (n => typeof n === "number" ? n.toLocaleString("en-US") : n);
+export const KIOSK_STEPS = MARKET_UKI
+  ? ["Scope", "Journey", "Scale", "Systems", "Fine-tune", "Results"]
+  : ["Scope", "Journey", "Facilities", "Systems", "Fine-tune", "Results"];
 
 // `group` drives the embed's sectioned facility list (Ambulatory /
 // Post-acute / Ancillary & specialty); the kiosk renders the flat list and

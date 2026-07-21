@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { C, F, fmtK, fmtNum } from '../theme';
+import { UKI } from '../market';
 import rldatixLogo from '../assets/rldatix-logo.png';
-import { calc } from '../calc/engine';
+import { calc } from '../calc';
 
 /* ────────────────────────────────────────────────────────────────────────
    Lead capture — ported from the Smart Match web build's LeadCapture and
@@ -27,10 +28,20 @@ const HUBSPOT_PORTAL_ID = "27174408";
 const HUBSPOT_FORM_GUID = "3f860858-5a58-4f1b-8419-a561af17adbe";   // interim: shared RLDatix calculator form — replace with a Galen US form GUID when available
 const HUBSPOT_REGION = "eu1";
 
-const STORAGE_KEY = "galen-roi-embed-submissions";
+// Market-suffixed storage key so UKI and US leads never mix if both builds
+// are ever served from the same origin.
+const STORAGE_KEY = UKI ? "galen-roi-uki-embed-submissions" : "galen-roi-embed-submissions";
 const MAX_RECORDS = 200;
 
-const ROLE_OPTIONS = [
+const ROLE_OPTIONS = UKI ? [
+  "CIO / Digital leadership",
+  "CCIO / Clinical informatics",
+  "Health records / IG",
+  "Finance / Business case",
+  "EPR / Applications team",
+  "Consultant / Advisory",
+  "Other",
+] : [
   "CIO / IT leadership",
   "CMIO / Clinical informatics",
   "HIM / Health records",
@@ -40,7 +51,13 @@ const ROLE_OPTIONS = [
   "Other",
 ];
 
-const PROVIDER_LABELS = {
+// UKI leadContext carries orgType (preset key); US carries providerType.
+const PROVIDER_LABELS = UKI ? {
+  SMALL: "Specialist / Smaller Trust",
+  TYPICAL: "Typical Acute Trust",
+  LARGE: "Large Acute Trust",
+  REGIONAL: "Integrated Care System / Multi-Trust",
+} : {
   critical_access: "Critical Access / Rural",
   community: "Community Hospital",
   regional: "Regional Medical Center",
@@ -86,12 +103,10 @@ async function generatePDF(r, lead, ctx) {
         PALE = [238, 247, 242], PALE_SEA = [232, 250, 246], BORDER = [212, 224, 221],
         TEXT = [15, 65, 70], MID = [61, 90, 94], MUTED = [120, 130, 150];
   const M = 14, W = 210 - 2 * M;
-  const usd = n => "$" + Math.round(n || 0).toLocaleString("en-US");
-  const PROVIDERS = {
-    critical_access: "Critical Access / Rural", community: "Community Hospital",
-    regional: "Regional Medical Center", academic: "Academic Medical Center",
-    multi_hospital: "IDN / Health System",
-  };
+  // jsPDF's built-in helvetica has no £ glyph mapping issue in WinAnsi, so a
+  // plain string works for both currencies.
+  const usd = n => (UKI ? "£" : "$") + Math.round(n || 0).toLocaleString(UKI ? "en-GB" : "en-US");
+  const PROVIDERS = PROVIDER_LABELS;
   const REIMB = { ffs: "Fee-for-Service", vbc: "Value-Based", mixed: "Mixed" };
   const total = r.annualWithReimbursement || r.annual || 0;
 
@@ -101,7 +116,7 @@ async function generatePDF(r, lead, ctx) {
   doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(17);
   doc.text("Galen Clinical Archive: ROI Estimate", M, 16);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...SEAFOAM);
-  doc.text("RLDatix · " + new Date().toLocaleDateString("en-US") + (lead.org ? " · " + lead.org : ""), M, 24);
+  doc.text("RLDatix" + (UKI ? " · UK & Ireland" : "") + " · " + new Date().toLocaleDateString(UKI ? "en-GB" : "en-US") + (lead.org ? " · " + lead.org : ""), M, 24);
   const logo = await logoDataUrl();
   if (logo) { try { doc.addImage(logo, "PNG", 210 - M - 38, 9, 38, 7.3); } catch (e) { /* header still fine without it */ } }
 
@@ -126,7 +141,12 @@ async function generatePDF(r, lead, ctx) {
 
   // ── KPI row ──
   const kW = (W - 9) / 4, kH = 21;
-  const kpis = [
+  const kpis = UKI ? [
+    ["DECOMMISSION SAVINGS", usd(r.decomSave), "licensing, support and infrastructure retired"],
+    ["CLINICAL CAPACITY", (r.fteEquivalent || 0) + " FTE", usd(r.timeSave) + "/yr clinician time value"],
+    ["PATIENT SAFETY", usd(r.qualitySavings), "cost avoidance from harm prevented"],
+    ["SAR TURNAROUND", (r.sarReductionPct || 0) + "% faster", (r.sarDaysBefore || 0) + " days to " + (r.sarDaysAfter || 0) + " days per subject access request"],
+  ] : [
     ["DECOMMISSION SAVINGS", usd(r.decomSave), "licensing, support and infrastructure retired"],
     ["CLINICAL CAPACITY", (r.fteEquivalent || 0) + " FTE", usd(r.timeSave) + "/yr clinician time value"],
     ["REIMBURSEMENT", usd(r.reimbursementImpact), "CMS penalties + denial recovery"],
@@ -149,22 +169,28 @@ async function generatePDF(r, lead, ctx) {
   //    estimate flagged (same treatment as the Smart Match report). Each tile
   //    recomputes the whole model at that confidence level. ──
   let scenarios = null;
+  // The UKI report has an on-screen confidence toggle, so `r` may already be
+  // a Conservative or Optimistic run; each tile uses `r` when it matches the
+  // user's current selection and recomputes otherwise. The US embed has no
+  // toggle (ctx.scenarioMode undefined), so Moderate keeps using `r` as before.
+  const activeMode = ctx.scenarioMode || "EXPECTED";
   if (ctx.calcInputs) {
     try {
       scenarios = [
-        ["Conservative", "85% decom · 20% capacity · 15% safety capture", calc(ctx.calcInputs, "CONSERVATIVE", {}, ctx.flagships || [])],
-        ["Moderate", "100% decom · 30% capacity · 25% safety capture", r],
-        ["Optimistic", "110% decom · 40% capacity · 35% safety capture", calc(ctx.calcInputs, "STRETCH", {}, ctx.flagships || [])],
+        ["Conservative", "85% decom · 20% capacity · 15% safety capture", activeMode === "CONSERVATIVE" ? r : calc(ctx.calcInputs, "CONSERVATIVE", {}, ctx.flagships || [])],
+        ["Moderate", "100% decom · 30% capacity · 25% safety capture", activeMode === "EXPECTED" ? r : calc(ctx.calcInputs, "EXPECTED", {}, ctx.flagships || [])],
+        ["Optimistic", "110% decom · 40% capacity · 35% safety capture", activeMode === "STRETCH" ? r : calc(ctx.calcInputs, "STRETCH", {}, ctx.flagships || [])],
       ];
     } catch (e) { scenarios = null; }
   }
+  const activeLabel = activeMode === "CONSERVATIVE" ? "Conservative" : activeMode === "STRETCH" ? "Optimistic" : "Moderate";
   if (scenarios) {
     doc.setTextColor(...MUTED); doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
     doc.text("SAVING BY CONFIDENCE LEVEL", M, y); y += 3;
     const sW = (W - 8) / 3, sH = 44;
     scenarios.forEach(([key, factors, rr], i) => {
       const x = M + i * (sW + 4);
-      const selected = key === "Moderate";
+      const selected = key === activeLabel;
       if (selected) { doc.setFillColor(...PALE_SEA); doc.setDrawColor(...TEAL); doc.setLineWidth(0.7); }
       else { doc.setFillColor(255, 255, 255); doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); }
       doc.roundedRect(x, y, sW, sH, 2.5, 2.5, "FD");
@@ -183,7 +209,11 @@ async function generatePDF(r, lead, ctx) {
       doc.setTextColor(...MID); doc.setFont("helvetica", "normal"); doc.setFontSize(6.5);
       doc.text("per year at steady state", x + 4, y + 23.5);
       doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); doc.line(x + 4, y + 25.5, x + sW - 4, y + 25.5);
-      const stats = [
+      const stats = UKI ? [
+        ["Decommission", fmtK(rr.decomSave)],
+        ["Clinical capacity", fmtK(rr.timeSave)],
+        ["Patient safety", fmtK(rr.qualitySavings)],
+      ] : [
         ["Decommission", fmtK(rr.decomSave)],
         ["Clinical capacity", fmtK(rr.timeSave)],
         ["Reimbursement", fmtK(rr.reimbursementImpact)],
@@ -226,7 +256,13 @@ async function generatePDF(r, lead, ctx) {
     });
     if (note) { doc.setTextColor(...MUTED); doc.setFont("helvetica", "italic"); doc.setFontSize(6.5); doc.text(note, x + 4, y + colH - 3.5); }
   };
-  colBox(M, "Your inputs", [
+  colBox(M, "Your inputs", UKI ? [
+    ["Organisation type", PROVIDERS[ctx.orgType] || ctx.orgType || "-"],
+    ["Total acute beds", fmtNum(ctx.beds || 0)],
+    ["Trusts / organisations", fmtNum(ctx.orgs || 1)],
+    ["EPR journey", ctx.journey === "HAVE_EPR" ? "Archive-only (EPR live)" : "Migrating to a new EPR"],
+    ["Legacy systems in scope", fmtNum(r.legacy || 0)],
+  ] : [
     ["Provider type", PROVIDERS[ctx.providerType] || ctx.providerType || "-"],
     ["Total acute beds", fmtNum(ctx.beds || 0)],
     ["Hospitals / facilities", fmtNum(ctx.orgs || 1)],
@@ -236,9 +272,9 @@ async function generatePDF(r, lead, ctx) {
   const comp = [
     ["Legacy decommission", fmtK(r.decomSave)],
     ["Clinical capacity", fmtK(r.timeSave)],
-    ["Reimbursement impact", fmtK(r.reimbursementImpact)],
-    ["Patient safety", fmtK(r.qualitySavings)],
   ];
+  if (!UKI) comp.push(["Reimbursement impact", fmtK(r.reimbursementImpact)]);
+  comp.push(["Patient safety", fmtK(r.qualitySavings)]);
   if (r.academicSavings > 0) comp.push(["Academic program", fmtK(r.academicSavings)]);
   if (r.mergeSavings > 0) comp.push(["Network consolidation", fmtK(r.mergeSavings)]);
   while (comp.length < 5) comp.push(["", ""]);
@@ -253,7 +289,9 @@ async function generatePDF(r, lead, ctx) {
   doc.text("How the annual total is built", M + 4, y + 7);
   doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(...MID);
   const extras = (r.academicSavings > 0 ? `  +  ${usd(r.academicSavings)} academic` : "") + (r.mergeSavings > 0 ? `  +  ${usd(r.mergeSavings)} network` : "");
-  doc.text(`${usd(r.decomSave)} decommission  +  ${usd(r.timeSave)} capacity  +  ${usd(r.reimbursementImpact)} reimbursement  +  ${usd(r.qualitySavings)} safety${extras}`, M + 4, y + 12.5);
+  doc.text(UKI
+    ? `${usd(r.decomSave)} decommission  +  ${usd(r.timeSave)} capacity  +  ${usd(r.qualitySavings)} safety`
+    : `${usd(r.decomSave)} decommission  +  ${usd(r.timeSave)} capacity  +  ${usd(r.reimbursementImpact)} reimbursement  +  ${usd(r.qualitySavings)} safety${extras}`, M + 4, y + 12.5);
   doc.setFont("helvetica", "bold"); doc.setTextColor(...TEAL);
   doc.text(`=  ${usd(total)} per year at steady state`, M + 4, y + 17.5);
   y += 20 + 6;
@@ -262,7 +300,11 @@ async function generatePDF(r, lead, ctx) {
   doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); doc.line(M, y, M + W, y); y += 5;
   doc.setTextColor(...MUTED); doc.setFont("helvetica", "bold"); doc.setFontSize(8);
   doc.text("ABOUT THESE FIGURES", M, y); y += 5;
-  const explain = [
+  const explain = UKI ? [
+    ["System costs", "per-system estimates by tier (enterprise / departmental / standalone), scaled by bed count and complexity. Calibrated against the contract register of a large acute NHS Trust (~1,385 beds, 42 legacy systems, 2024/25)."],
+    ["Clinical capacity", "clinician time freed by eliminating context-switching across legacy systems, valued at a £55/hr blended NHS Agenda for Change rate with a conservative realisation factor. Sources: Bartek et al JIMI 2023 (2.78M EHR audit-log events), Nuffield Trust 2020."],
+    ["Patient safety", "cost avoidance from transition medication errors: excess bed days at £400/day (NHS Reference Costs), clinical negligence indemnity reduction (NHS Resolution / NAO Oct 2025), duplicate testing avoided. Source: Camacho et al 2024, BMJ Quality & Safety."],
+  ] : [
     ["System costs", "per-system estimates by tier (enterprise / departmental / standalone), scaled by bed count. Sources: KLAS 2025 benchmarks, Becker's Hospital Review."],
     ["Clinical capacity", "clinician time freed by eliminating context-switching across legacy systems, valued at a $95/hr blended rate with a conservative 30% realization factor. Sources: Bartek et al JIMI 2023 (2.78M EHR audit-log events), Sinsky et al 2016."],
     ["Reimbursement", "CMS penalty programs (HRRP 0.33% avg, HAC, VBP) plus denial recovery: 4.8% net revenue loss (HFMA), 30% attributed to documentation fragmentation, 20% recoverable through consolidation."],
@@ -285,10 +327,12 @@ async function generatePDF(r, lead, ctx) {
   doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(...MUTED);
   doc.text("DISCLAIMER", M, y); y += 3.6;
   doc.setFont("helvetica", "italic"); doc.setFontSize(6.8); doc.setTextColor(...MUTED);
-  doc.text(doc.splitTextToSize("Indicative only, not a quote or a guarantee. Figures are modeled estimates with improvement rates attributed to system consolidation as a contributing factor, not sole cause. Validate against your organization's own application inventory, contracts, and payer mix before use in a business case.", W), M, y);
+  doc.text(doc.splitTextToSize(UKI
+    ? "Indicative only, not a quote or a guarantee. Figures are modelled estimates with improvement rates attributed to system consolidation as a contributing factor, not sole cause. Validate against your organisation's own application inventory and contract register before use in a business case."
+    : "Indicative only, not a quote or a guarantee. Figures are modeled estimates with improvement rates attributed to system consolidation as a contributing factor, not sole cause. Validate against your organization's own application inventory, contracts, and payer mix before use in a business case.", W), M, y);
 
   const orgSlug = lead.org ? "-" + lead.org.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") : "";
-  doc.save("galen-roi-estimate" + orgSlug + ".pdf");
+  doc.save("galen-roi-estimate" + (UKI ? "-uki" : "") + orgSlug + ".pdf");
 }
 
 const MailIcon = ({ size = 22, stroke = "#34DEC2" }) => (
@@ -315,7 +359,7 @@ export function LeadCapture({ r, leadContext }) {
     setSending(true);
 
     const ctx = leadContext || {};
-    const providerLabel = PROVIDER_LABELS[ctx.providerType] || ctx.providerType || "";
+    const providerLabel = PROVIDER_LABELS[UKI ? ctx.orgType : ctx.providerType] || (UKI ? ctx.orgType : ctx.providerType) || "";
 
     // 1. Generate + download the PDF summary (the value exchange).
     try { await generatePDF(r, lead, ctx); } catch (e) { console.warn("PDF failed:", e); }
@@ -324,7 +368,9 @@ export function LeadCapture({ r, leadContext }) {
     saveSubmission({
       timestamp: new Date().toISOString(),
       lead: { name: lead.name, email: lead.email, org: lead.org, role: lead.role },
-      inputs: { providerType: ctx.providerType, beds: ctx.beds, orgs: ctx.orgs, reimbursementModel: ctx.reimbursementModel },
+      inputs: UKI
+        ? { orgType: ctx.orgType, beds: ctx.beds, orgs: ctx.orgs, journey: ctx.journey, scenarioMode: ctx.scenarioMode }
+        : { providerType: ctx.providerType, beds: ctx.beds, orgs: ctx.orgs, reimbursementModel: ctx.reimbursementModel },
       results: {
         annualSavings: r.annualWithReimbursement || r.annual || 0,
         legacySystems: r.legacy || 0,
@@ -337,7 +383,7 @@ export function LeadCapture({ r, leadContext }) {
     // 3. Fire-and-forget to HubSpot, context in the message field.
     if (HUBSPOT_PORTAL_ID && HUBSPOT_FORM_GUID) {
       try {
-        const context = `Galen Clinical Archive ROI (US embed) submission | Provider: ${providerLabel} | Beds: ${fmtNum(ctx.beds || 0)} | Legacy systems: ${r.legacy || 0} (${r.decom || 0} retired) | Est. annual savings: ${fmtK(r.annualWithReimbursement || r.annual || 0)} | FTE freed: ${r.fteEquivalent || 0}`;
+        const context = `Galen Clinical Archive ROI (${UKI ? "UKI" : "US"} embed) submission | ${UKI ? "Organisation" : "Provider"}: ${providerLabel} | Beds: ${fmtNum(ctx.beds || 0)} | Legacy systems: ${r.legacy || 0} (${r.decom || 0} retired) | Est. annual savings: ${fmtK(r.annualWithReimbursement || r.annual || 0)} | FTE freed: ${r.fteEquivalent || 0}`;
         await fetch(`https://forms-${HUBSPOT_REGION}.hsforms.com/submissions/v3/integration/submit/${HUBSPOT_PORTAL_ID}/${HUBSPOT_FORM_GUID}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -350,7 +396,7 @@ export function LeadCapture({ r, leadContext }) {
               { name: "jobtitle", value: lead.role || "" },
               { name: "message", value: context },
             ],
-            context: { pageUri: window.location.href, pageName: "Galen Clinical Archive ROI Calculator (US embed)" },
+            context: { pageUri: window.location.href, pageName: `Galen Clinical Archive ROI Calculator (${UKI ? "UKI" : "US"} embed)` },
             legalConsentOptions: { consent: { consentToProcess: true, text: "I agree to receive communications about my ROI estimate." } },
           }),
         });
@@ -382,7 +428,7 @@ export function LeadCapture({ r, leadContext }) {
       <input type="email" placeholder="Work email *" aria-label="Work email (required)" autoComplete="email" value={lead.email} onChange={e => setLead(p => ({ ...p, email: e.target.value }))} style={inputStyle} />
     </div>
     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-      <input type="text" placeholder="Organization" aria-label="Organization" autoComplete="organization" value={lead.org} onChange={e => setLead(p => ({ ...p, org: e.target.value }))} style={inputStyle} />
+      <input type="text" placeholder={UKI ? "Organisation" : "Organization"} aria-label={UKI ? "Organisation" : "Organization"} autoComplete="organization" value={lead.org} onChange={e => setLead(p => ({ ...p, org: e.target.value }))} style={inputStyle} />
       <select aria-label="Your role" value={lead.role} onChange={e => setLead(p => ({ ...p, role: e.target.value }))} style={{ ...inputStyle, color: lead.role ? "#0F4146" : "#5F787C" }}>
         <option value="" style={{ color: "#0F4146" }}>Your role</option>
         {ROLE_OPTIONS.map(o => <option key={o} value={o} style={{ color: "#0F4146" }}>{o}</option>)}
@@ -410,7 +456,7 @@ export function AdminLeads({ onClose }) {
     const rows = [["Timestamp", "Name", "Email", "Organization", "Role", "Provider type", "Beds", "Legacy systems", "Systems retired", "Est. annual savings", "FTE freed"]];
     for (const rec of records) rows.push([
       rec.timestamp, rec.lead?.name, rec.lead?.email, rec.lead?.org, rec.lead?.role,
-      rec.inputs?.providerType, rec.inputs?.beds, rec.results?.legacySystems,
+      rec.inputs?.providerType || rec.inputs?.orgType, rec.inputs?.beds, rec.results?.legacySystems,
       rec.results?.systemsRetired, rec.results?.annualSavings, rec.results?.fteFreed,
     ]);
     const csv = rows.map(row => row.map(esc).join(",")).join("\n");
@@ -451,7 +497,7 @@ export function AdminLeads({ onClose }) {
           <thead><tr>{["When", "Name", "Email", "Organization", "Role", "Est. savings", "Systems"].map(h => <th key={h} style={{ ...cell, color: C.textMuted, fontWeight: 700 }}>{h}</th>)}</tr></thead>
           <tbody>
             {records.map((rec, i) => <tr key={i}>
-              <td style={cell}>{new Date(rec.timestamp).toLocaleString("en-US")}</td>
+              <td style={cell}>{new Date(rec.timestamp).toLocaleString(UKI ? "en-GB" : "en-US")}</td>
               <td style={{ ...cell, color: C.text, fontWeight: 600 }}>{rec.lead?.name || "-"}</td>
               <td style={cell}>{rec.lead?.email || "-"}</td>
               <td style={cell}>{rec.lead?.org || "-"}</td>

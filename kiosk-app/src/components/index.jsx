@@ -5,6 +5,7 @@ import { Icon } from './Icons';
 // Build-time flag: '1' when built with `--mode embed` (see .env.embed).
 // Used only to attach embed-specific classNames; kiosk DOM is unchanged.
 const EMBED = import.meta.env.VITE_EMBED === '1';
+import { UKI } from '../market';
 
 export function Card({ children, style }) {
   return <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: EMBED ? 20 : 24, padding: EMBED ? "clamp(18px, 3vw, 34px)" : "36px 40px 32px", ...style }}>{children}</div>;
@@ -22,6 +23,19 @@ export function StepIndicator({ steps, current, onJump }) {
   </div>;
 }
 
+const STEP_CONTEXT_UKI = [
+  // 0 - Scope
+  { title: "Why this matters", text: "Your organisation type sets realistic defaults for beds, sites and the size of the legacy estate. Everything can be fine-tuned in the later steps." },
+  // 1 - Journey
+  { title: "Why this matters", text: "Whether you already have an EPR changes the calculation significantly. With an EPR in place, the ROI focuses on archiving and decommissioning legacy systems. If you're migrating, it includes the full migration case." },
+  // 2 - Scale
+  { title: "Why this matters", text: "Bed count is the primary scaling factor: it drives staffing levels, clinical time at risk, and harm exposure. Multi-Trust and ICS programmes multiply corporate overheads and duplicate systems." },
+  // 3 - Systems
+  { title: "Why this matters", text: "Each legacy system has a real annual cost: licensing, hosting, interfaces and support. The number and tier of systems determines your decommission savings and how much time clinicians waste switching between platforms." },
+  // 4 - Fine-tune
+  { title: "Why this matters", text: "These settings calibrate the model to your situation. Complexity and data quality affect migration effort; the decommission target sets how much of the estate you retire. Galen costs let us calculate your payback period." },
+];
+
 const STEP_CONTEXT = [
   // 0 - Scope
   { title: "Why this matters", text: "Your organization type determines the staffing ratios, system complexity, and cost benchmarks we use. The reimbursement model shapes which financial impacts appear in your report. Fee-for-service focuses on denial recovery and coding accuracy, value-based adds CMS penalty programs (HRRP, HAC, VBP), and mixed models blend both. This ensures the ROI reflects your actual revenue exposure." },
@@ -37,7 +51,7 @@ const STEP_CONTEXT = [
 
 export function NavButtons({ step, totalSteps, onBack, onNext, onCalculate, onStartOver }) {
   if (step >= totalSteps - 1) return null;
-  const ctx = STEP_CONTEXT[step];
+  const ctx = (UKI ? STEP_CONTEXT_UKI : STEP_CONTEXT)[step];
   return <div style={{ borderTop: `1px solid ${C.border}` }}>
     {ctx && <div className={EMBED ? "embed-nav-hint" : undefined} style={{ margin: EMBED ? `18px ${GUTTER} 0` : "20px 56px 0", padding: EMBED ? "14px 18px" : "16px 20px", background: `${C.accent}08`, border: `1px solid ${C.accent}20`, borderRadius: 14, display: "flex", gap: 12, alignItems: "flex-start" }}>
       <span style={{ flexShrink: 0, marginTop: 1 }}><Icon name="lightbulb" size={20} stroke={C.accent} /></span>

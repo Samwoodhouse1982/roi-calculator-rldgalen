@@ -1,14 +1,15 @@
-# ROI Calculator — US Kiosk App (Touchscreen + Embed)
+# ROI Calculator — Kiosk App (Touchscreen + Embed, US + UKI)
 
 Conference kiosk app for RLDatix Galen Clinical Archive ROI estimation.
-Dark theme, touch-optimized. One codebase, two build modes:
+Dark theme, touch-optimized. One codebase, three shipped builds:
 
 | Mode | Command | Output | Surface |
 |------|---------|--------|---------|
-| **Touchscreen** (default) | `npm run build` | `dist/` | Fixed portrait 1080×1920 (9:16) conference kiosk |
-| **Embed** | `npm run build:embed` | `dist/` | Responsive / iframe-friendly web version — light RLDatix web theme, scales from ~320px phones to desktop |
+| **US touchscreen** (default) | `npm run build` | `dist/` | Fixed portrait 1080×1920 (9:16) conference kiosk |
+| **US embed** | `npm run build:embed` | `dist/` | Responsive / iframe-friendly web version — light RLDatix web theme, scales from ~320px phones to desktop |
+| **UKI embed** | `npm run build:embed:uki` | `dist/` | UK & Ireland market variant of the embed — NHS/Ireland model, £, `en-GB` |
 
-The mode is selected at build time via `--mode embed`, which loads
+The surface is selected at build time via `--mode embed`, which loads
 `.env.embed` (`VITE_EMBED=1`). The flag switches the font scale
 (`theme.js`), the outer container sizing (`App.jsx`), the splash screen
 variant (`components/SplashScreen.kiosk.jsx` vs
@@ -16,6 +17,19 @@ variant (`components/SplashScreen.kiosk.jsx` vs
 `index.embed.html`). The calculation engine, input flow, and results
 layout are shared and identical in both modes. See `README-EMBED.md` for
 embed-specific details.
+
+The market is a second build dimension: `--mode embed-uki` loads
+`.env.embed-uki` (`VITE_EMBED=1` + `VITE_MARKET=uki`), read via
+`src/market.js`. UKI swaps in the NHS/Ireland engine
+(`src/calc/engine.uki.js` — a verbatim port of
+`web/uki/roi-calculator.html`'s model, numeric parity verified), the UK
+system catalogue (`src/calc/vendors.uki.js`), org-type presets
+(`src/calc/presets.uki.js`), £/`en-GB` formatting (`theme.js`), an
+org-type Scope step + Scale step, UK report content (Camacho et al BMJ
+2024 safety model, SAR turnaround, NHS sources), an on-screen
+Conservative/Moderate/Optimistic confidence toggle, and a £ PDF. All UKI
+code is behind `UKI` build-flag gates so the US builds are unaffected
+(verified DOM-identical). There is no UKI touchscreen build.
 
 ## Deploy to Netlify
 

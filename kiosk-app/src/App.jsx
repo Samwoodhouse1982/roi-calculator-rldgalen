@@ -7,11 +7,14 @@ const EMBED = import.meta.env.VITE_EMBED === '1';
 import { SplashScreen } from './components/SplashScreen';
 import { AdminLeads } from './components/LeadCapture';
 import { BackgroundParticles } from './components/BackgroundParticles';
-import { calc } from './calc/engine';
-import { PRESETS, PROVIDER_PRESET_MAP, PROVIDER_MULTIPLIERS, REIMBURSE_MULTIPLIERS } from './calc/presets';
-import { systemCost } from './calc/vendors';
+import { UKI } from './market';
+import { calc } from './calc/index.js';
+import { PRESETS as PRESETS_US, PROVIDER_PRESET_MAP, PROVIDER_MULTIPLIERS, REIMBURSE_MULTIPLIERS } from './calc/presets';
+import { PRESETS as PRESETS_UKI } from './calc/presets.uki';
+const PRESETS = UKI ? PRESETS_UKI : PRESETS_US;
+import { systemCost } from './calc/vendors.index.js';
 import { StepIndicator, NavButtons, PageTransition } from './components';
-import { ProviderStep, JourneyStep, FacilitiesStep, SystemsStep, FineTuneStep } from './steps';
+import { ProviderStep, JourneyStep, FacilitiesStep, SystemsStep, FineTuneStep, OrgTypeStep, ScaleStep } from './steps';
 import { ResultsPage } from './results/ResultsPage';
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -316,7 +319,7 @@ function AdminOverlay({ onClose }) {
  * Annual avg. The selected option is held in App-level state so it persists
  * across re-renders and can be used by ResultsPage to scale every figure.
  */
-function TimescaleBar({ viewTimescale, setViewTimescale }) {
+function TimescaleBar({ viewTimescale, setViewTimescale, scenarioMode = null, setScenarioMode }) {
   return <div className={EMBED ? "embed-timescale" : undefined} style={{
     padding: "14px 56px 16px",
     borderBottom: `1px solid ${C.borderLight}`,
@@ -354,6 +357,26 @@ function TimescaleBar({ viewTimescale, setViewTimescale }) {
         }}>{opt.label}</button>;
       })}
     </div>
+    {scenarioMode != null && <>
+      <div style={{ fontSize: F.tiny, fontWeight: 600, color: C.textMuted, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", margin: "10px 0 8px" }}>Confidence level:</div>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+        {[
+          { k: 'CONSERVATIVE', label: 'Conservative' },
+          { k: 'EXPECTED', label: 'Moderate' },
+          { k: 'STRETCH', label: 'Optimistic' },
+        ].map(opt => {
+          const active = scenarioMode === opt.k;
+          return <button key={opt.k} onClick={() => setScenarioMode(opt.k)} style={{
+            padding: "12px 22px", borderRadius: 12, fontSize: F.small, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+            border: active ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
+            background: active ? C.accent : C.surface,
+            color: active ? C.onAccent : C.textMid,
+            transition: "all .15s",
+            minWidth: 120,
+          }}>{opt.label}</button>;
+        })}
+      </div>
+    </>}
   </div>;
 }
 
@@ -522,7 +545,9 @@ function EmbedStyles() {
 function CalibratingScreen({ onDone }) {
   const [step, setStep] = useState(0);
   const [barW, setBarW] = useState(0);
-  const steps = ['Mapping your legacy estate', 'Modeling decommission savings', 'Estimating clinical capacity impact', 'Calculating reimbursement recovery'];
+  const steps = UKI
+    ? ['Mapping your legacy estate', 'Modelling decommission savings', 'Estimating clinical capacity impact', 'Valuing quality & safety improvements']
+    : ['Mapping your legacy estate', 'Modeling decommission savings', 'Estimating clinical capacity impact', 'Calculating reimbursement recovery'];
   useEffect(() => {
     const t = [
       setTimeout(() => { setStep(1); setBarW(25); }, 600),
@@ -584,6 +609,8 @@ export default function App() {
   // the results screen regardless of how far the user has scrolled the report.
   const [viewTimescale, setViewTimescale] = useState('annual');
   const [providerType, setProviderType] = useState("community");
+  const [orgType, setOrgType] = useState("TYPICAL");          // UKI scope selection
+  const [scenarioMode, setScenarioMode] = useState("EXPECTED"); // UKI on-screen confidence toggle
   const [reimbursementModel, setReimbursementModel] = useState("mixed");
   const [occupancyRate, setOccupancyRate] = useState(0.65);
   const [galenMigrationCost, setGalenMigrationCost] = useState(0);
@@ -599,6 +626,7 @@ export default function App() {
   const setFacility = useCallback((key, val) => setFacilitiesState(p => ({ ...p, [key]: val })), []);
   const applyPreset = useCallback((key) => { const p = PRESETS[key]; if (!p) return; setInputs({ ...p.data, tiers: { ...p.data.tiers } }); setFlagships([]); setFacilitiesState({}); }, []);
   const selectProvider = useCallback((key) => { setProviderType(key); const pk = PROVIDER_PRESET_MAP[key]; if (pk) applyPreset(pk); setFacilitiesState(key === 'multi_hospital' ? { ...IDN_FACILITIES } : {}); }, [applyPreset]);
+  const selectOrgType = useCallback((key) => { setOrgType(key); applyPreset(key); }, [applyPreset]);
 
   const addFlagship = useCallback((sys, tier) => {
     const cost = sys.baseCost ? systemCost(sys, inputs.bed_count) : (sys.cost || 250000);
@@ -618,6 +646,9 @@ export default function App() {
   }, []);
 
   const calcInputs = useMemo(() => {
+    if (UKI) {
+      return { ...inputs, _knownSpend: costMode === "known" && knownSpend > 0 ? knownSpend : 0 };
+    }
     const pm = PROVIDER_MULTIPLIERS[providerType] || PROVIDER_MULTIPLIERS.community;
     const rm = REIMBURSE_MULTIPLIERS[reimbursementModel] || REIMBURSE_MULTIPLIERS.mixed;
 
@@ -666,7 +697,7 @@ export default function App() {
     };
   }, [inputs, providerType, reimbursementModel, occupancyRate, facilities, costMode, knownSpend]);
 
-  const r = useMemo(() => calc(calcInputs, "EXPECTED", {}, flagships), [calcInputs, flagships]);
+  const r = useMemo(() => calc(calcInputs, UKI ? scenarioMode : "EXPECTED", {}, flagships), [calcInputs, flagships, scenarioMode]);
 
   const handleCalculate = useCallback(() => setCalibrating(true), []);
   const handleCalibrationDone = useCallback(() => {
@@ -675,7 +706,7 @@ export default function App() {
     // Capture session metadata so the admin overlay can break stats down by
     // organisation type and report cumulative impact across all assessments.
     recordCompletion({
-      providerType,
+      providerType: UKI ? orgType : providerType,
       beds: inputs.bed_count,
       orgs: inputs.org_count,
       systems: r.legacy || 0,
@@ -694,6 +725,8 @@ export default function App() {
     setShowSplash(true);
     setKioskStep(0);
     setProviderType("community");
+    setOrgType("TYPICAL");
+    setScenarioMode("EXPECTED");
     setReimbursementModel("mixed");
     setOccupancyRate(0.65);
     setGalenMigrationCost(0);
@@ -712,6 +745,8 @@ export default function App() {
     setKioskStep(0);
     setCalibrating(false);
     setProviderType("community");
+    setOrgType("TYPICAL");
+    setScenarioMode("EXPECTED");
     setReimbursementModel("mixed");
     setOccupancyRate(0.65);
     setGalenMigrationCost(0);
@@ -725,12 +760,12 @@ export default function App() {
 
   const renderStep = () => {
     switch (kioskStep) {
-      case 0: return <ProviderStep providerType={providerType} onSelect={selectProvider} reimbursementModel={reimbursementModel} setReimbursementModel={setReimbursementModel} />;
+      case 0: return UKI ? <OrgTypeStep orgType={orgType} onSelect={selectOrgType} /> : <ProviderStep providerType={providerType} onSelect={selectProvider} reimbursementModel={reimbursementModel} setReimbursementModel={setReimbursementModel} />;
       case 1: return <JourneyStep journey={inputs.journey} onSelect={v => update("journey", v)} />;
-      case 2: return <FacilitiesStep inputs={inputs} update={update} facilities={facilities} setFacility={setFacility} />;
+      case 2: return UKI ? <ScaleStep inputs={inputs} update={update} /> : <FacilitiesStep inputs={inputs} update={update} facilities={facilities} setFacility={setFacility} />;
       case 3: return <SystemsStep inputs={inputs} updateTier={updateTier} flagships={flagships} addFlagship={addFlagship} removeFlagship={removeFlagship} updateFlagshipCost={updateFlagshipCost} updateFlagshipInstances={updateFlagshipInstances} costMode={costMode} setCostMode={setCostMode} knownSpend={knownSpend} setKnownSpend={setKnownSpend} />;
       case 4: return <FineTuneStep inputs={inputs} update={update} galenMigrationCost={galenMigrationCost} setGalenMigrationCost={setGalenMigrationCost} galenAnnualCost={galenAnnualCost} setGalenAnnualCost={setGalenAnnualCost} occupancyRate={occupancyRate} setOccupancyRate={setOccupancyRate} />;
-      case 5: return <ResultsPage r={r} galenMigrationCost={galenMigrationCost} galenAnnualCost={galenAnnualCost} viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} onAdjust={handleAdjust} onStartOver={handleStartOver} leadContext={{ providerType, beds: inputs.bed_count, orgs: inputs.org_count, reimbursementModel, calcInputs, flagships }} />;
+      case 5: return <ResultsPage r={r} galenMigrationCost={galenMigrationCost} galenAnnualCost={galenAnnualCost} viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} onAdjust={handleAdjust} onStartOver={handleStartOver} leadContext={UKI ? { orgType, beds: inputs.bed_count, orgs: inputs.org_count, journey: inputs.journey, scenarioMode, calcInputs, flagships } : { providerType, beds: inputs.bed_count, orgs: inputs.org_count, reimbursementModel, calcInputs, flagships }} />;
       default: return null;
     }
   };
@@ -845,7 +880,7 @@ export default function App() {
           containing block. This sits in the static-flex column above the
           scrollable content area. Only renders on the report screen
           (kioskStep === 5). */}
-      {kioskStep === 5 && <TimescaleBar viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} />}
+      {kioskStep === 5 && <TimescaleBar viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} scenarioMode={UKI ? scenarioMode : null} setScenarioMode={setScenarioMode} />}
       <div className={EMBED ? "embed-scroll-area" : undefined} style={{ flex: 1, overflowY: "auto", padding: "0 56px 32px" }}>
         <PageTransition step={kioskStep}>{renderStep()}</PageTransition>
       </div>

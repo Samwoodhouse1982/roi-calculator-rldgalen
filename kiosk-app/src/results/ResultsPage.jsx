@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LeadCapture } from '../components/LeadCapture';
 import { C, F, fmtK, fmtNum } from '../theme';
+import { UKI } from '../market';
 import { Icon } from '../components/Icons';
 import { Card } from '../components';
 
@@ -148,7 +149,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
   // freed across 3 years (e.g. 5.2 FTE/yr steady state × 2.20 ramp factor =
   // 11.4 FTE-years cumulative). For Year 1, it's first-year FTE during ramp
   // (5.2 × 0.40 = 2.08 FTE).
-  const fteRaw = r.hrsSaved ? r.hrsSaved * (r.realization || 0.3) / 2080 : 0; // 2080 hrs/yr - matches the engine's fteEquivalent basis
+  const fteRaw = r.hrsSaved ? r.hrsSaved * (r.realization || 0.3) / (UKI ? 1820 : 2080) : 0; // hrs/yr FTE basis - matches each engine's fteEquivalent (NHS 1820, US 2080)
   const fteScaled = fteRaw * ts.mult;
   const fte = fteScaled >= 1 ? Math.round(fteScaled) : Math.round(fteScaled * 10) / 10;
   const fmtFte = v => v < 1 ? v.toFixed(1) : fmtNum(v);
@@ -349,7 +350,9 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         <Methodology
           formula={"\u03a3 (tier_count \u00d7 tier_cost) \u00d7 decom_rate \u00d7 scenario.decom + retired_flagships \u00d7 scenario.decom"}
           plug={`${r.entDecom} enterprise \u00d7 ${fmtK(r.entCost)} + ${r.depDecom} departmental \u00d7 ${fmtK(r.depCost)} + ${r.nicDecom} standalone \u00d7 ${fmtK(r.nicCost)}\n${r.flagshipRetireCount > 0 ? `+ ${r.flagshipRetireCount} retired flagship${r.flagshipRetireCount === 1 ? "" : "s"} \u00d7 scenario.decom (${Math.round((r.decomFactor||1) * 100)}%)` : ""}\n= ${fmtK(r.decomSave)}/yr (${Math.round(r.decom / Math.max(1, r.legacy) * 100)}% of ${r.legacy} systems retired)`}
-          source={"Tier costs use bed-scaled annual benchmarks: Enterprise ($300k base + $700/bed), Departmental ($75k + $160/bed), Standalone ($14k + $20/bed). Sources: KLAS 2025 EHR & vendor benchmarks, Becker's Hospital Review IT spend reports, AHA Hospital IT Survey."}
+          source={UKI
+            ? "Tier costs use bed-scaled annual benchmarks: Enterprise (£300k base + £700/bed), Departmental (£75k + £160/bed), Standalone (£14k + £20/bed), scaled by estate complexity. Calibrated against the contract register of a large acute NHS Trust (~1,385 beds, 42 legacy systems, 2024/25 data) — defaults cover ~80% of actual estate value."
+            : "Tier costs use bed-scaled annual benchmarks: Enterprise ($300k base + $700/bed), Departmental ($75k + $160/bed), Standalone ($14k + $20/bed). Sources: KLAS 2025 EHR & vendor benchmarks, Becker's Hospital Review IT spend reports, AHA Hospital IT Survey."}
         />
       </Card>
     </div>
@@ -367,9 +370,15 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         <Row label="Full-time equivalent (FTE)" value={fmtFte(fte)} accent />
         <Row label="Capacity value" value={fmtKts(seg.capacity)} accent />
         <Methodology
-          formula={"clinicians \u00d7 (mins/wk - residual) \u00d7 working_weeks / 60 \u00d7 $95 \u00d7 scenario.realization"}
-          plug={`${fmtNum(r.clinicians)} active clinicians \u00d7 ${Math.max(0, r.minsWasted - (r.isArchiveOnly ? 1 : 2))} reducible mins/wk (${r.minsWasted} - ${r.isArchiveOnly ? 1 : 2} residual) \u00d7 50 working wks / 60\n= ${fmtNum(r.hrsSaved)} hrs \u00d7 $95/hr \u00d7 ${Math.round((r.realization || 0.3) * 100)}% realization\n= ${fmtK(r.timeSave)}/yr`}
-          source={"Active clinicians = total staff (beds \u00d7 3.2) \u00d7 65% active rate (Sinsky et al 2016, KLAS Arch Collaborative 500k+ clinicians). Each clinician touches ~35% of legacy estate (role-based access, modeled). Switch penalty 4% per system: Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events, \u03b2=0.03), corroborated by Westbrook et al JAMIA 2010. $95/hr blended: AHA RN/MD/tech weighted."}
+          formula={UKI
+            ? "clinicians \u00d7 (mins/wk - residual) \u00d7 48 working_weeks / 60 \u00d7 \u00a355 \u00d7 scenario.realisation"
+            : "clinicians \u00d7 (mins/wk - residual) \u00d7 working_weeks / 60 \u00d7 $95 \u00d7 scenario.realization"}
+          plug={UKI
+            ? `${fmtNum(r.clinicians)} active clinicians \u00d7 ${Math.max(0, r.minsWasted - (r.isArchiveOnly ? 1 : 2))} reducible mins/wk (${r.minsWasted} - ${r.isArchiveOnly ? 1 : 2} residual) \u00d7 48 working wks / 60\n= ${fmtNum(r.hrsSaved)} hrs \u00d7 \u00a355/hr \u00d7 ${Math.round((r.realization || 0.3) * 100)}% realisation\n= ${fmtK(r.timeSave)}/yr`
+            : `${fmtNum(r.clinicians)} active clinicians \u00d7 ${Math.max(0, r.minsWasted - (r.isArchiveOnly ? 1 : 2))} reducible mins/wk (${r.minsWasted} - ${r.isArchiveOnly ? 1 : 2} residual) \u00d7 50 working wks / 60\n= ${fmtNum(r.hrsSaved)} hrs \u00d7 $95/hr \u00d7 ${Math.round((r.realization || 0.3) * 100)}% realization\n= ${fmtK(r.timeSave)}/yr`}
+          source={UKI
+            ? "Active clinicians = total staff (beds \u00d7 2.8, NHS Digital workforce statistics 2023/24) \u00d7 65% active rate (Sinsky et al 2016, KLAS Arch Collaborative 500k+ clinicians). Each clinician touches ~35% of legacy estate (role-based access, modelled). Switch penalty 4% per system: Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events, \u03b2=0.03), corroborated by Westbrook et al JAMIA 2010 and Nuffield Trust 2020. \u00a355/hr blended: NHS Agenda for Change mid-band including on-costs, weighted towards nursing. Realisation rate: NHS Productive Ward reported 20-40%."
+            : "Active clinicians = total staff (beds \u00d7 3.2) \u00d7 65% active rate (Sinsky et al 2016, KLAS Arch Collaborative 500k+ clinicians). Each clinician touches ~35% of legacy estate (role-based access, modeled). Switch penalty 4% per system: Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events, \u03b2=0.03), corroborated by Westbrook et al JAMIA 2010. $95/hr blended: AHA RN/MD/tech weighted."}
         />
       </Card>
     </div>
@@ -401,12 +410,19 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         <Row label="Patients protected from harm" value={fmtNum(Math.round(r.safetyPatientsProtected * ts.mult))} />
         <Row label="Excess bed days avoided" value={fmtNum(Math.round(r.safetyBedDaysAvoided * ts.mult))} />
         {r.readmissionsAvoided > 0 && <Row label={"Readmissions avoided (" + Math.round(r.readmissionsAvoided * ts.mult) + " patients)"} value={r.readmissionCostAvoidance > 0 ? fmtKts(r.readmissionCostAvoidance) : "quality metric"} />}
-        {r.malpracticeReduction > 0 && <Row label="Malpractice reduction" value={fmtKts(r.malpracticeReduction)} />}
+        {r.malpracticeReduction > 0 && <Row label={UKI ? "Clinical negligence indemnity reduction" : "Malpractice reduction"} value={fmtKts(r.malpracticeReduction)} />}
+        {UKI && (r.duplicateTestSaving || 0) > 0 && <Row label="Duplicate testing avoided" value={fmtKts(r.duplicateTestSaving)} />}
         {(r.qualitySavings || 0) > 0 && <Row label="Total cost avoidance" value={fmtKts(r.qualitySavings)} accent />}
         <Methodology
-          formula={"Excess bed days \u00d7 $3,132/day + Malpractice premium \u00d7 5% \u00d7 scenario.safety + Readmissions avoided \u00d7 $15,200"}
-          plug={`Excess bed days: ${fmtNum(r.safetyBedDaysAvoided || 0)} days \u00d7 $3,132 = ${fmtK(r.excessDayCostAvoided || 0)}/yr\n${r.malpracticeReduction > 0 ? `Malpractice: beds \u00d7 $8,500 premium \u00d7 5% reduction \u00d7 scenario.safety = ${fmtK(r.malpracticeReduction)}/yr\n` : ""}${r.readmissionCostAvoidance > 0 ? `Readmissions: ${r.readmissionsAvoided} avoided \u00d7 $15,200 = ${fmtK(r.readmissionCostAvoidance)}/yr\n` : ""}= ${fmtK(r.qualitySavings || 0)}/yr total`}
-          source={"Excess bed days: HCUP/AHRQ ($3,132/day acute). Medication errors: Bates et al (1.8 preventable ADEs per 100 admits). Communication failures contribute to 30% of malpractice claims (CRICO 2016). Malpractice premium: Mello et al Health Affairs 2010, NPDB 2023, TDC Group 2025. Readmissions: CMS 15.6% baseline, Vest et al JAMIA 2019 (0.8pp reduction from EHR consolidation). Classification: cost avoidance \u2014 these represent harm that doesn't occur, not direct budget reductions."}
+          formula={UKI
+            ? "Excess bed days \u00d7 \u00a3400/day + Indemnity (beds \u00d7 \u00a37,500 \u00d7 5%) \u00d7 scenario.safety + Duplicate tests avoided \u00d7 \u00a335"
+            : "Excess bed days \u00d7 $3,132/day + Malpractice premium \u00d7 5% \u00d7 scenario.safety + Readmissions avoided \u00d7 $15,200"}
+          plug={UKI
+            ? `Excess bed days: ${fmtNum(r.safetyBedDaysAvoided || 0)} days \u00d7 \u00a3400 = ${fmtK(r.excessDayCostAvoided || 0)}/yr\n${r.malpracticeReduction > 0 ? `Indemnity: beds \u00d7 \u00a37,500 exposure \u00d7 5% reduction \u00d7 scenario.safety = ${fmtK(r.malpracticeReduction)}/yr\n` : ""}${(r.duplicateTestSaving || 0) > 0 ? `Duplicate tests: beds \u00d7 22 tests/yr \u00d7 18% duplicate rate \u00d7 \u00a335 \u00d7 scenario.safety = ${fmtK(r.duplicateTestSaving)}/yr\n` : ""}= ${fmtK(r.qualitySavings || 0)}/yr total`
+            : `Excess bed days: ${fmtNum(r.safetyBedDaysAvoided || 0)} days \u00d7 $3,132 = ${fmtK(r.excessDayCostAvoided || 0)}/yr\n${r.malpracticeReduction > 0 ? `Malpractice: beds \u00d7 $8,500 premium \u00d7 5% reduction \u00d7 scenario.safety = ${fmtK(r.malpracticeReduction)}/yr\n` : ""}${r.readmissionCostAvoidance > 0 ? `Readmissions: ${r.readmissionsAvoided} avoided \u00d7 $15,200 = ${fmtK(r.readmissionCostAvoidance)}/yr\n` : ""}= ${fmtK(r.qualitySavings || 0)}/yr total`}
+          source={UKI
+            ? "Harm rates: Camacho et al 2024 (BMJ Quality & Safety) \u2014 ~1.8M medication errors at care transitions across NHS England annually, 31,500 patients harmed, 36,500 excess bed days. Excess bed day cost: \u00a3400/day (NHS Reference Costs, general acute, conservative blended). Indemnity: NHS Resolution \u00a33.6bn annual settlements (NAO Oct 2025) with 30% communication-failure attribution (CRICO 2016). Duplicate testing: Bates et al (18% duplicate rate when records fragmented), \u00a335/test NHS pathology blended. Classification: cost avoidance \u2014 harm that doesn't occur, not direct budget reductions."
+            : "Excess bed days: HCUP/AHRQ ($3,132/day acute). Medication errors: Bates et al (1.8 preventable ADEs per 100 admits). Communication failures contribute to 30% of malpractice claims (CRICO 2016). Malpractice premium: Mello et al Health Affairs 2010, NPDB 2023, TDC Group 2025. Readmissions: CMS 15.6% baseline, Vest et al JAMIA 2019 (0.8pp reduction from EHR consolidation). Classification: cost avoidance \u2014 these represent harm that doesn't occur, not direct budget reductions."}
         />
       </Card>
     </div>
@@ -480,13 +496,15 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
     </div>}
 
     {/* Operational efficiency + Legal and compliance in a 2-column grid, just
-        above the methodology carousel. Equal-height cards via height: 100%. */}
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 18 }}>
+        above the methodology carousel. Equal-height cards via height: 100%.
+        UKI has no e-discovery/cyber module, so the Legal card is hidden and
+        Operational efficiency spans the full width. */}
+    <div style={{ display: 'grid', gridTemplateColumns: UKI ? '1fr' : '1fr 1fr', gap: 18, marginBottom: 18 }}>
 
     {/* Operational efficiency */}
     <Card style={{ height: '100%', borderLeft: "3px solid #2ecc71" }}>
       <CTitle iconKey="clock" color="#2ecc71">Operational efficiency</CTitle>
-      <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>IT service desk and records request improvements from reducing the number of systems staff need to support and search.</div>
+      <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>{UKI ? "IT service desk and subject access request (SAR) improvements from reducing the number of systems staff need to support and search." : "IT service desk and records request improvements from reducing the number of systems staff need to support and search."}</div>
       <div style={{ display: "flex", gap: 14, marginBottom: 16 }}>
         <div style={{ flex: 1, padding: "18px 20px", background: C.bg, borderRadius: 16, textAlign: "center" }}>
           <div style={{ fontSize: F.tiny, color: C.textMuted, marginBottom: 4 }}>Service desk tickets</div>
@@ -495,7 +513,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
           <div style={{ fontSize: F.tiny, color: C.textMid, marginTop: 8 }}>{r.ticketsBaselineMonthly}/mo → {r.ticketsAfter}/mo</div>
         </div>
         <div style={{ flex: 1, padding: "18px 20px", background: C.bg, borderRadius: 16, textAlign: "center" }}>
-          <div style={{ fontSize: F.tiny, color: C.textMuted, marginBottom: 4 }}>Records request turnaround</div>
+          <div style={{ fontSize: F.tiny, color: C.textMuted, marginBottom: 4 }}>{UKI ? "SAR turnaround" : "Records request turnaround"}</div>
           <div style={{ fontSize: F.h2, fontWeight: 800, color: "#2ecc71" }}>{r.sarReductionPct}%</div>
           <div style={{ fontSize: F.tiny, color: C.textMuted }}>faster</div>
           <div style={{ fontSize: F.tiny, color: C.textMid, marginTop: 8 }}>{r.sarDaysBefore} days → {r.sarDaysAfter} days</div>
@@ -503,13 +521,17 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
       </div>
       <Methodology
         formula={"Tickets/mo: legacy \u00d7 2.5 \u00d7 dq_factor (before) vs surviving \u00d7 2.5 \u00d7 60% (after). SAR: 1.5 base + 0.4/system (before) vs 0.15/surviving (after)"}
-        plug={`Tickets baseline: ${r.legacy} legacy systems \u00d7 2.5/mo = ${fmtNum(r.ticketsBaselineMonthly)}/month\nTickets after: ${r.legacy - r.decom} surviving \u00d7 2.5/mo \u00d7 60% = ${fmtNum(r.ticketsAfter)}/month (${r.ticketsReductionPct}% reduction)\nRecords request: ${r.sarDaysBefore}d \u2192 ${r.sarDaysAfter}d (${r.sarReductionPct}% faster)`}
-        source={"Ticket benchmarks: AHIMA support volume studies (2.5 tickets/system/month average for legacy clinical systems). Surviving system factor: post-archive systems run with reduced ticket volume due to consolidated access. SAR/records request: AHIMA multi-source record assembly benchmarks, HIPAA-compliant release timelines."}
+        plug={`Tickets baseline: ${r.legacy} legacy systems \u00d7 2.5/mo = ${fmtNum(r.ticketsBaselineMonthly)}/month\nTickets after: ${r.legacy - r.decom} surviving \u00d7 2.5/mo \u00d7 60% = ${fmtNum(r.ticketsAfter)}/month (${r.ticketsReductionPct}% reduction)\n${UKI ? "SAR turnaround" : "Records request"}: ${r.sarDaysBefore}d \u2192 ${r.sarDaysAfter}d (${r.sarReductionPct}% faster)`}
+        source={UKI
+          ? "Ticket benchmarks: ITIL service desk reporting in NHS trusts (2.5 tickets/system/month for legacy clinical systems); surviving systems generate fewer tickets through consolidated support. SAR turnaround: the ICO requires searching every system where patient data may be held \u2014 1.5 day base + 0.4 days per system, consistent with NHS information governance team reports and validated against a benchmarked Trust (42 systems \u2248 18 working days per SAR)."
+          : "Ticket benchmarks: AHIMA support volume studies (2.5 tickets/system/month average for legacy clinical systems). Surviving system factor: post-archive systems run with reduced ticket volume due to consolidated access. SAR/records request: AHIMA multi-source record assembly benchmarks, HIPAA-compliant release timelines."}
       />
     </Card>
 
-    {/* Legal & compliance */}
-    <Card style={{ height: '100%', borderLeft: "3px solid #e74c3c" }}>
+    {/* Legal & compliance — US only: the UKI engine has no e-discovery or
+        cyber module (medico-legal value is carried in the indemnity line of
+        the Patient safety card instead). */}
+    {!UKI && <Card style={{ height: '100%', borderLeft: "3px solid #e74c3c" }}>
       <CTitle iconKey="shield" color="#e74c3c">Legal and compliance</CTitle>
       <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>Medico-legal records assembly savings and cyber attack surface reduction from retiring legacy systems.</div>
       <div style={{ display: "flex", gap: 14, marginBottom: 16 }}>
@@ -529,7 +551,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         plug={`e-Discovery: ${r.litigationCases} cases/yr \u00d7 22 hrs saved/case \u00d7 $55/hr = ${fmtK(r.ediscoverySaving || 0)}/yr\nCyber: ${r.cyberSystemsRetired} attack surfaces eliminated`}
         source={"e-Discovery: ~12 litigation cases per 100 beds typical for US hospitals. Records assembly: 28 hrs/case (3.5 days) across fragmented systems vs 6 hrs from consolidated archive. HIM staff rate: $55/hr (BLS 2024). Cyber: avg healthcare breach $10.93m (IBM/Ponemon 2023). 90% of health systems attacked in 2024. Each legacy system on unsupported OS is an attack vector."}
       />
-    </Card>
+    </Card>}
 
     </div>
 
@@ -547,7 +569,16 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
       <MethodologyBento
         selectedIdx={methSelectedIdx}
         onSelect={setMethSelectedIdx}
-        tiles={[
+        tiles={UKI ? [
+          { color: C.accent, title: "System costing", num: "01", body: <>Each legacy system is classified into three tiers with annual cost scaled by bed count and estate complexity: Enterprise (£300k base + £700/bed, e.g. a legacy PAS or EPR), Departmental (£75k + £160/bed), Standalone (£14k + £20/bed). The formulas were calibrated against the complete contract register of a large acute NHS Trust (~1,385 beds, 42 legacy systems, 2024/25 data) — defaults cover ~80% of actual estate value. Named flagship systems and "I know my spend" mode capture outlier contracts the generic formulas would miss.</> },
+          { color: C.amber, title: "Clinical capacity", num: "02", body: <>Staffing uses 2.8 clinical FTEs per acute bed (NHS Digital workforce statistics 2023/24; Lord Carter review). Two evidence-based filters apply: 65% of staff are regular system users (Sinsky et al 2016; KLAS Arch Collaborative — 500k+ clinicians), and each user touches ~35% of the legacy estate. A 4% task-switching penalty per system (Bartek et al JIMI 2023, primary: 2.78M EHR audit-log events, β=0.03; corroborated by Westbrook et al JAMIA 2010 and Nuffield Trust 2020) determines minutes wasted. Hours freed are valued at £55/hr (NHS Agenda for Change mid-band with on-costs) with a 20-40% realisation rate (NHS Productive Ward), reflecting that freed time creates capacity, not automatic cash savings.</> },
+          { color: C.purple, title: "Patient safety", num: "03", body: <>Harm rates come from Camacho et al 2024 (BMJ Quality & Safety): ~1.8M medication errors at care transitions across NHS England annually — 18 errors per bed/yr — with 31,500 patients harmed (0.315/bed) and 36,500 excess bed days (0.365/bed). A fragmentation index (0.6-1.2, capped at 20 systems) scales risk by the number of legacy systems, and your data quality setting adjusts it further. The error and patients-protected counts provide qualitative context; only the financial lines in the next tile enter the ROI total.</> },
+          { color: C.rose, title: "Quality cost avoidance", num: "04", body: <>Three financial lines convert safety improvement into value: excess bed days avoided at £400/day (NHS Reference Costs, general acute, conservative blended); clinical negligence indemnity reduction (£7,500/bed exposure — NHS Resolution's £3.6bn annual settlements (NAO Oct 2025) across ~140k acute beds with 30% communication-failure attribution per CRICO 2016 — reduced 5%); and duplicate testing avoided (22 tests/bed/yr × 18% duplicate rate when records are fragmented (Bates et al) × £35/test NHS pathology blended). All are classified as cost avoidance: harm that doesn't occur, not direct budget reductions.</> },
+          { color: "#2ecc71", title: "Confidence levels", num: "05", body: <>The Conservative / Moderate / Optimistic toggle on this report re-runs the whole model with a different multiplier set. Conservative: 85% of planned retirements land, 20% time realisation, 15% safety reduction. Moderate: 100% / 30% / 25%. Optimistic: 110% / 40% / 35%. The corridors come from NHS EPR programme consensus (decommission), NHS Productive Ward (realisation 20-40%) and Camacho et al 2024 / Gate et al 2023 (25-50% error reductions from consolidation). A benchmarked Trust's stated £16m/yr target fell between Conservative and Moderate — the corridor brackets real-world figures.</> },
+          { color: "#8e44ad", title: "Real-world validation", num: "06", body: <>The model was validated against the complete application footprint of a large acute NHS Trust (~1,385 beds, dual-site merged estate): 42 unique systems (3 enterprise, 15 departmental, 24 standalone) with £16.75m/yr total contract value. Defaults alone reproduced £11.9m/yr (−26% vs the £16m target); with tier cost overrides or "I know my spend" mode the model landed within 2.5%. Four systems accounted for 78% of spend — exactly the pattern the named-flagship feature captures.</> },
+          { color: C.accent, title: "Year-by-year ramp", num: "07", body: <>Savings are phased to reflect progressive legacy system retirement as data is migrated and interfaces are decommissioned. The 3-year view models 40% / 80% / 100% of steady state across Years 1-3. The 5-year view models 20% / 40% / 60% / 80% / 100% for a slower, more conservative cadence typical of larger Trusts and ICS-wide programmes. The top-of-page timescale toggle switches between these views and re-scales every figure on the report. Galen payback is calculated as migration cost ÷ (annual decommission savings minus annual archive cost).</> },
+          { color: C.blue, title: "Key sources", num: "08", body: <>Camacho et al 2024, BMJ Quality & Safety (transition medication errors, harm, excess bed days) · National Audit Office Oct 2025 & NHS Resolution 2024/25 (clinical negligence) · NHS Digital workforce statistics 2023/24 · Lord Carter operational productivity review · NHS Employers Agenda for Change 2024/25 (£55/hr blended rate) · NHS Reference Costs (£400/bed-day, pathology) · Bartek et al JIMI 2023 & Westbrook et al JAMIA 2010 (system-switching cost) · Nuffield Trust 2020 (system navigation) · ICO guidance (SAR search obligations) · Benchmarked acute NHS Trust contract register (2024/25).</> },
+        ] : [
           { color: C.accent, title: "System costing", num: "01", body: <>Each legacy system is classified into three tiers (enterprise, departmental, or standalone) with costs scaled by bed count. Enterprise systems (e.g. legacy EHR) cost $150k to $1.5m+ base plus $650 to $7,500 per bed. Departmental systems run $80k to $350k plus $200 to $900 per bed. Standalone tools are $50k to $200k plus $120 to $620 per bed. Source: KLAS 2025 benchmarks, Becker's Hospital Review.</> },
           { color: C.amber, title: "Clinical capacity", num: "02", body: <>Not all staff use all systems. We apply two evidence-based filters: 65% of staff are regular system users (Sinsky et al 2016; KLAS Arch Collaborative — 500k+ clinicians analyzed), and each user interacts with ~35% of the legacy estate. A 4% productivity penalty per system touched (Bartek et al JIMI 2023, primary: 2.78M EHR audit-log events, β=0.03; corroborated by Westbrook et al JAMIA 2010) determines time wasted. Hours freed are valued at $95/hr with 30% realization, reflecting that freed time creates capacity, not direct savings.</> },
           { color: C.blue, title: "CMS reimbursement", num: "03", body: <>Three CMS penalty programs are modeled: Hospital Readmissions Reduction Program (HRRP, up to 3% of base DRG, FY2025 data), Hospital-Acquired Condition Reduction (HAC, 1% for bottom quartile), and Value-Based Purchasing (VBP, 2% withhold pool). Denial recovery uses HFMA's 4.8% net revenue loss benchmark. Better documentation from system consolidation improves coding accuracy, reduces denials, and lowers penalty exposure. Evidence: Pattar et al JAMA 2025, Vest et al JAMIA 2019.</> },
@@ -558,6 +589,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
           { color: C.blue, title: "Key sources", num: "08", body: <>KLAS Research (Best in KLAS 2025 Data Archiving) · HIMSS Analytics (system usage patterns) · AHRQ Patient Safety Indicators · CMS Hospital Compare (HRRP, HAC, VBP penalty data) · HFMA (denial management benchmarks) · KFF/AHA (cost per bed day) · CRICO Strategies (malpractice analysis) · Bates et al, JAMA (ADE rates) · Westbrook et al, JAMIA 2010 (system switching costs) · CHIME Digital Health Survey (duplicate systems in IDNs).</> },
         ]}
       />
+
     </div>
 
     {/* Actions */}
