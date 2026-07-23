@@ -625,7 +625,9 @@ function calc(inp, mode, ov = {}, flagships = []) {
     occupancy = inp._occupancy ?? DEFAULT_OCCUPANCY;
     admissionsPerYear = Math.round(inp.bed_count * (365 / AU_AVG_ALOS) * occupancy);
     estAnnualRevenueCalc = admissionsPerYear * AU_NWAU_PER_SEPARATION * AU_NWAU_PRICE;
-    estMedicareDrgRevenue = Math.round(estAnnualRevenueCalc * 0.70);
+    // ABF-funded share of admitted revenue varies by provider profile
+    // (rural 80% ... tertiary 65%); 0.70 retained as the fallback.
+    estMedicareDrgRevenue = Math.round(estAnnualRevenueCalc * (inp._abfPct || 0.70));
     medicareDrg = inp._medicareDrgRevenue > 0 ? inp._medicareDrgRevenue : estMedicareDrgRevenue;
     abfEfficiencyGain = Math.round(totalEstate * 0.15 * decomPct);
     privatePct = inp._privatePct ?? 0.15;
@@ -3714,7 +3716,7 @@ function ROICalculator() {
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
             {[
               {tier:"enterprise",label:sector==="aged_care"?"Care management platforms":sector==="ndis"?"Client management systems":"Enterprise systems",color:C.accent,bg:C.accentPale,br:C.border,hint:sector==="aged_care"?"e.g. Leecare, iCare, eCase, AlayaCare":sector==="ndis"?"e.g. ShiftCare, SupportAbility, Lumary":"e.g. legacy EMR, PAS, large clinical suites",max:Math.max(10, inputs.tiers.enterprise + 2),tip:sector==="aged_care"?"Primary resident care platforms. Highest per-system cost.":sector==="ndis"?"Primary participant/client management platforms.":"Large clinical platforms, e.g. legacy EMR/PAS, major departmental suites. High per-system cost."},
-              {tier:"departmental",label:sector==="aged_care"?"Medication & rostering":sector==="ndis"?"Rostering & scheduling":"Departmental systems",color:"#1a7a7a",bg:"#eef9f7",br:"#c0e8e2",hint:sector==="aged_care"?"e.g. MPS Connect, WebsterCare, Humanforce, Deputy":sector==="ndis"?"e.g. RotaWiz, Deputy, Humanforce":"e.g. theatres, lab, ED, maternity, radiology",max:Math.max(30, inputs.tiers.departmental + 5),tip:sector==="aged_care"?"Medication management, rostering, and scheduling systems.":sector==="ndis"?"Staff rostering, scheduling, and travel planning systems.":"Mid-tier clinical systems serving one department or specialty. Moderate running costs."},
+              {tier:"departmental",label:sector==="aged_care"?"Medication & rostering":sector==="ndis"?"Rostering & scheduling":"Departmental systems",color:"#1a7a7a",bg:"#eef9f7",br:"#c0e8e2",hint:sector==="aged_care"?"e.g. MPS Connect, WebsterCare, Deputy":sector==="ndis"?"e.g. RotaWiz, Deputy":"e.g. theatres, lab, ED, maternity, radiology",max:Math.max(30, inputs.tiers.departmental + 5),tip:sector==="aged_care"?"Medication management, rostering, and scheduling systems.":sector==="ndis"?"Staff rostering, scheduling, and travel planning systems.":"Mid-tier clinical systems serving one department or specialty. Moderate running costs."},
               {tier:"niche",label:sector==="aged_care"?"Compliance & admin":sector==="ndis"?"Billing & compliance":"Standalone systems",color:"#3d8a8a",bg:C.tealPale,br:`${C.teal}22`,hint:sector==="aged_care"?"e.g. QI reporting, SIRS, audit tools, finance":sector==="ndis"?"e.g. NDIA claims, incident reporting, worker screening":"e.g. document stores, scanned notes, specialty databases",max:Math.max(100, inputs.tiers.niche + 10),tip:sector==="aged_care"?"Compliance, quality indicator reporting, finance, and admin tools.":sector==="ndis"?"NDIA billing/claims, incident reporting, worker screening, finance.":"Small self-contained tools, e.g. single-function databases, document stores, scanned notes. Low individual cost but they add up."},
             ].map(t=>{
               const computedCost = tierCost(t.tier,inputs.bed_count,CX[inputs.complexity_level]);
@@ -3923,21 +3925,29 @@ function ROICalculator() {
 
       <AnimatedSlider label={<span>{sector === "aged_care" ? "Occupancy rate" : sector === "ndis" ? "Utilisation rate" : "Bed occupancy rate"}<InfoTip text={sector === "aged_care" ? "Average occupancy across your residential places. Typical 90-95%. Drives revenue and staffing estimates." : sector === "ndis" ? "Proportion of available staff hours that are billable. Typical 65-75%. Drives revenue and utilisation uplift estimates." : "Average bed occupancy. National average is ~90% (OECD 2023, AMA). This drives admission volume, revenue estimates, and ADE calculations."}/></span>} value={occupancyRate} min={0.30} max={1.00} step={0.01} display={`${Math.round(occupancyRate*100)}%`} onChange={v=>{setOccupancyRate(v);touch(3);}} suffix=""/>
 
-      <div style={{marginTop:16,padding:"14px 16px",background:C.bg,borderRadius:8,border:`1px solid ${C.borderLight}`}}>
+      {/* ABF revenue is a hospital-sector concept only: aged care is AN-ACC
+          funded and NDIS is claims-based, and for those sectors bed_count
+          holds places/participants, which made this estimate meaningless.
+          Text input (not type=number): a controlled number input that parses
+          on every keystroke can hit the browser's badInput state (typed
+          'e'/'.', pasted "250,000,000") where React can no longer clear the
+          field and it appears stuck. Digits are stripped from whatever is
+          typed or pasted instead. */}
+      {sector === "hospital" && <div style={{marginTop:16,padding:"14px 16px",background:C.bg,borderRadius:8,border:`1px solid ${C.borderLight}`}}>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
           <span style={{fontSize:12,fontWeight:600,color:C.textMid}}>ABF revenue (optional)</span>
           <InfoTip text="If you know your annual ABF revenue (total NWAU (National Weighted Activity Unit) funding), enter it here. If left blank, we estimate from bed count, occupancy, and casemix."/>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:13,color:C.textMuted}}>{"A$"}</span>
-          <input type="number" value={medicareDrgRevenue || ""} placeholder={fmtNum(Math.round(inputs.bed_count * (365/AU_AVG_ALOS) * occupancyRate * AU_NWAU_PER_SEPARATION * AU_NWAU_PRICE * 0.70))} min={0} step={100000}
-            onChange={e => setMedicareDrgRevenue(parseInt(e.target.value) || 0)}
+          <input type="text" inputMode="numeric" value={medicareDrgRevenue ? fmtNum(medicareDrgRevenue) : ""} placeholder={fmtNum(Math.round(inputs.bed_count * (365/AU_AVG_ALOS) * occupancyRate * AU_NWAU_PER_SEPARATION * AU_NWAU_PRICE * (calcInputs._abfPct || 0.70)))}
+            onChange={e => { const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 12); setMedicareDrgRevenue(digits ? parseInt(digits, 10) : 0); }}
             style={{flex:1,maxWidth:200,padding:"8px 12px",border:`1px solid ${C.borderLight}`,borderRadius:999,fontSize:13,fontFamily:"inherit",textAlign:"right"}}/>
           <span style={{fontSize:12,color:C.textMuted}}>/yr</span>
           {medicareDrgRevenue > 0 && <button type="button" onClick={()=>setMedicareDrgRevenue(0)} style={{border:"none",background:"none",color:C.textMuted,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Use estimate</button>}
         </div>
-        {!medicareDrgRevenue && <div style={{fontSize:11,color:C.textMuted,marginTop:4}}>Estimated: {fmtK(Math.round(inputs.bed_count * (365/AU_AVG_ALOS) * occupancyRate * AU_NWAU_PER_SEPARATION * AU_NWAU_PRICE * 0.70))}/yr ({fmtNum(Math.round(inputs.bed_count * (365/AU_AVG_ALOS) * occupancyRate))} admissions at {Math.round(occupancyRate*100)}% occupancy)</div>}
-      </div>
+        {!medicareDrgRevenue && <div style={{fontSize:11,color:C.textMuted,marginTop:4}}>Estimated: {fmtK(Math.round(inputs.bed_count * (365/AU_AVG_ALOS) * occupancyRate * AU_NWAU_PER_SEPARATION * AU_NWAU_PRICE * (calcInputs._abfPct || 0.70)))}/yr ({fmtNum(Math.round(inputs.bed_count * (365/AU_AVG_ALOS) * occupancyRate))} admissions at {Math.round(occupancyRate*100)}% occupancy, {Math.round((calcInputs._abfPct || 0.70)*100)}% ABF-funded)</div>}
+      </div>}
       <div style={{marginTop:16,padding:"14px 16px",background:C.bg,borderRadius:8,border:`1px solid ${C.borderLight}`}}>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
           <span style={{fontSize:12,fontWeight:600,color:C.textMid}}>Galen Clinical Archive costs (optional)</span>
@@ -3947,15 +3957,15 @@ function ROICalculator() {
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:12,color:C.textMid,minWidth:120}}>Migration cost</span>
             <span style={{fontSize:13,color:C.textMuted}}>{"A$"}</span>
-            <input type="number" value={galenMigrationCost || ""} placeholder="One-time" min={0} step={10000}
-              onChange={e => setGalenMigrationCost(parseInt(e.target.value) || 0)}
+            <input type="text" inputMode="numeric" value={galenMigrationCost ? fmtNum(galenMigrationCost) : ""} placeholder="One-time"
+              onChange={e => { const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 12); setGalenMigrationCost(digits ? parseInt(digits, 10) : 0); }}
               style={{flex:1,maxWidth:160,padding:"8px 12px",border:`1px solid ${C.borderLight}`,borderRadius:999,fontSize:13,fontFamily:"inherit",textAlign:"right"}}/>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:12,color:C.textMid,minWidth:120}}>Annual archive cost</span>
             <span style={{fontSize:13,color:C.textMuted}}>{"A$"}</span>
-            <input type="number" value={galenAnnualCost || ""} placeholder="Per year" min={0} step={10000}
-              onChange={e => setGalenAnnualCost(parseInt(e.target.value) || 0)}
+            <input type="text" inputMode="numeric" value={galenAnnualCost ? fmtNum(galenAnnualCost) : ""} placeholder="Per year"
+              onChange={e => { const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 12); setGalenAnnualCost(digits ? parseInt(digits, 10) : 0); }}
               style={{flex:1,maxWidth:160,padding:"8px 12px",border:`1px solid ${C.borderLight}`,borderRadius:999,fontSize:13,fontFamily:"inherit",textAlign:"right"}}/>
             <span style={{fontSize:11,color:C.textMuted}}>/yr</span>
           </div>
