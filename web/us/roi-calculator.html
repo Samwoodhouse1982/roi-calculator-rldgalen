@@ -1640,8 +1640,13 @@ function ROICalculator() {
       _portfolioSystems: portfolioImpact.addSystems,
       _portfolioStaff: portfolioImpact.addStaff,
       _portfolioCost: portfolioImpact.addCost,
+      // Derived from the current view (overrides any stale _rampYears the
+      // toggle buttons previously wrote into inputs): the ramp length must
+      // never be sticky, or the Year 1 view shows 20% instead of 40% of
+      // steady state after visiting the 5-yr total view.
+      _rampYears: viewTimescale === "total5" ? 5 : 3,
     };
-  }, [inputs, providerType, reimbursementModel, medicareDrgRevenue]);
+  }, [inputs, providerType, reimbursementModel, medicareDrgRevenue, viewTimescale]);
   // For range display: strip out blend factors so rCon/rExp/rStr show their pure anchors
   const cleanOv = useMemo(() => {
     if (!blendFactors) return mergedOv;
@@ -3764,7 +3769,7 @@ function ROICalculator() {
           {k:"total3",l:"3-yr total"},
           {k:"total5",l:"5-yr total"},
           {k:"annual",l:"Annual avg"},
-        ].map(t => <button type="button" key={t.k} className="roi-timescale-btn" onClick={()=>{setViewTimescale(t.k);if(t.k==="total3")setInputs(p=>({...p,_rampYears:3}));if(t.k==="total5")setInputs(p=>({...p,_rampYears:5}));}} style={{padding:"7px 16px",border:"none",borderRadius:999,background:viewTimescale===t.k?C.accent:"transparent",color:viewTimescale===t.k?"#fff":C.textMid,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",whiteSpace:"nowrap"}}>{t.l}</button>)}
+        ].map(t => <button type="button" key={t.k} className="roi-timescale-btn" onClick={()=>setViewTimescale(t.k)} style={{padding:"7px 16px",border:"none",borderRadius:999,background:viewTimescale===t.k?C.accent:"transparent",color:viewTimescale===t.k?"#fff":C.textMid,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",whiteSpace:"nowrap"}}>{t.l}</button>)}
       </div>
       </div>
     </div>}

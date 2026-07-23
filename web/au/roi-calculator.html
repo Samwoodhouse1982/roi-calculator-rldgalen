@@ -1547,7 +1547,6 @@ function ROICalculator() {
   const [reimbursementModel, setReimbursementModel] = useState("mixed");
   const [medicareDrgRevenue, setMedicareDrgRevenue] = useState(0);
   const [occupancyRate, setOccupancyRate] = useState(0.90);
-  const [rampYears, setRampYears] = useState(3);
   const [galenMigrationCost, setGalenMigrationCost] = useState(0);
   const [trancheMode, setTrancheMode] = useState(false);
   const [showFacilities, setShowFacilities] = useState(null);
@@ -1570,6 +1569,13 @@ function ROICalculator() {
   const avgBedsPerHospital = inputs.org_count > 0 ? Math.round(inputs.bed_count / inputs.org_count) : 0;
   const [activePreset, setActivePreset] = useState(null);
   const [viewTimescale, setViewTimescale] = useState("annual");
+  // Ramp length is DERIVED from the current view, never sticky state. It used
+  // to be a useState set by the total-view buttons, which made the Year 1 view
+  // depend on toggle history: after visiting "5-yr total" (20/40/60/80/100
+  // ramp), "Year 1" silently showed 20% of steady state instead of 40% —
+  // half the original figure. Deriving it guarantees each toggle button
+  // always shows the same number regardless of the path taken to reach it.
+  const rampYears = viewTimescale === "total5" ? 5 : 3;
   const [scenarioMode, setScenarioMode] = useState(null);
   const [scenarioBlend, setScenarioBlend] = useState(null);
   // setBlend used by the slider - sets continuous blend AND closest discrete scenario  
@@ -4264,7 +4270,7 @@ function ROICalculator() {
             {k:"total3",l:"3-yr total"},
             {k:"total5",l:"5-yr total"},
             {k:"annual",l:"Annual"},
-          ].map(t => <button type="button" key={t.k} className="roi-timescale-btn" onClick={()=>{setViewTimescale(t.k);if(t.k==="total3")setRampYears(3);if(t.k==="total5")setRampYears(5);}} style={{padding:"7px 16px",border:"none",borderRadius:999,background:viewTimescale===t.k?C.accent:"transparent",color:viewTimescale===t.k?"#fff":C.textMid,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",whiteSpace:"nowrap"}}>{t.l}</button>)}
+          ].map(t => <button type="button" key={t.k} className="roi-timescale-btn" onClick={()=>setViewTimescale(t.k)} style={{padding:"7px 16px",border:"none",borderRadius:999,background:viewTimescale===t.k?C.accent:"transparent",color:viewTimescale===t.k?"#fff":C.textMid,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",whiteSpace:"nowrap"}}>{t.l}</button>)}
         </div>
       </div>
     </div>
