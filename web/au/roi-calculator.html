@@ -591,12 +591,16 @@ function calc(inp, mode, ov = {}, flagships = []) {
   let ndisClaimsRecovery=0, ndisUtilisationUplift=0, ndisComplianceSaving=0, ndisRetentionSaving=0;
 
   if (isAgedCare) {
-    // AN-ACC funding optimisation
+    // AN-ACC funding optimisation. Both funding lines carry the 30%
+    // fragmentation attribution: system consolidation is a contributing
+    // factor to documentation-driven uplift and rostering efficiency, not
+    // the sole cause — consistent with the attribution applied to the
+    // quality and readmission lines.
     const totalRevenue = inp.bed_count * AC_REVENUE_PER_PLACE;
-    acAnaccUplift = Math.round(totalRevenue * 0.45 * AC_ANACC_UPLIFT * decomPct);
+    acAnaccUplift = Math.round(totalRevenue * 0.45 * AC_ANACC_UPLIFT * AC_FUNDING_ATTRIBUTION * decomPct);
     // Agency staff cost reduction
     const acStaffCost = inp.bed_count * AC_STAFF_PER_PLACE * AC_BLENDED_HOURLY * 1824;
-    acAgencyReduction = Math.round(acStaffCost * AC_AGENCY_SPEND_PCT * AC_AGENCY_REDUCTION * decomPct);
+    acAgencyReduction = Math.round(acStaffCost * AC_AGENCY_SPEND_PCT * AC_AGENCY_REDUCTION * AC_FUNDING_ATTRIBUTION * decomPct);
     // Compliance efficiency
     acComplianceSaving = Math.round(inp.org_count * AC_COMPLIANCE_FTE_PER_FACILITY * AC_COMPLIANCE_COST_PER_FTE * decomPct * 0.5);
     // Avoidable cost of harm
@@ -841,6 +845,7 @@ const AC_COMPLIANCE_FTE_PER_FACILITY = 0.5; // QI reporting, SIRS, Star Ratings,
 const AC_COMPLIANCE_COST_PER_FTE = 65000;  // Annual cost of compliance admin staff
 const AC_HARM_COST_PER_PLACE = 3000;       // Falls A$35k, pressure injuries A$10k, med incidents A$15k; blended ~A$3k/place/yr
 const AC_FRAGMENTATION_ATTRIBUTION = 0.25; // 25% of avoidable harm attributable to information fragmentation
+const AC_FUNDING_ATTRIBUTION = 0.30;       // 30% of AN-ACC uplift / agency efficiency attributable to system consolidation (contributing factor, not sole cause; consistent with readmission attribution)
 const AC_PPH_RATE_PER_PLACE = 0.15;        // 15% of aged-care residents have a preventable hospital admission/yr (AIHW Australian Health Performance Framework; midpoint of ACSC + falls/fractures + UTI/dehydration data)
 const AC_PPH_COST = 8000;                  // A$8,000 avg cost per preventable admission (AIHW IHACPA NWAU-derived; ACSC episode mid-range)
 const AC_PPH_FRAGMENTATION_ATTRIBUTION = 0.30; // 30% attributable to information fragmentation (consistent with acute readmissions; RACF medication-reconciliation evidence)
@@ -2724,8 +2729,8 @@ function ROICalculator() {
     let reimbTotalLabel;
     if (r.isAgedCare) {
       reimbBody = [
-        ["AN-ACC funding uplift", fmtK(r.acAnaccUplift) + "/yr", "3% uplift on 45% documentation-responsive share of revenue (AN-ACC model, since Oct 2022)"],
-        ["Agency cost reduction", fmtK(r.acAgencyReduction) + "/yr", "15% reduction on the ~10% agency portion of total staff cost (integrated rostering)"],
+        ["AN-ACC funding uplift", fmtK(r.acAnaccUplift) + "/yr", "3% uplift on 45% documentation-responsive share of revenue (AN-ACC model, since Oct 2022) × 30% attributed to system consolidation"],
+        ["Agency cost reduction", fmtK(r.acAgencyReduction) + "/yr", "15% reduction on the ~10% agency portion of total staff cost (integrated rostering) × 30% attributed to system consolidation"],
         ["Compliance efficiency", fmtK(r.acComplianceSaving) + "/yr", "QI Program, SIRS, Star Ratings collation; ~50% of 0.5 FTE/facility at A$65k"],
         ["Avoidable harm (falls / pressure / medication)", fmtK(r.acHarmAvoidance) + "/yr", "A$3k/place blended × 25% fragmentation (ACSQHC)"],
         ["Preventable hospitalisations", fmtK(r.acPPHAvoidance) + "/yr", "15% PPH rate × A$8k/admission × 30% fragmentation (AIHW)"],
