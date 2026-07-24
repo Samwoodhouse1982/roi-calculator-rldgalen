@@ -7,14 +7,16 @@ const EMBED = import.meta.env.VITE_EMBED === '1';
 import { SplashScreen } from './components/SplashScreen';
 import { AdminLeads } from './components/LeadCapture';
 import { BackgroundParticles } from './components/BackgroundParticles';
-import { UKI } from './market';
+import { UKI, AU } from './market';
 import { calc } from './calc/index.js';
 import { PRESETS as PRESETS_US, PROVIDER_PRESET_MAP, PROVIDER_MULTIPLIERS, REIMBURSE_MULTIPLIERS } from './calc/presets';
 import { PRESETS as PRESETS_UKI } from './calc/presets.uki';
-const PRESETS = UKI ? PRESETS_UKI : PRESETS_US;
+import { PRESETS as PRESETS_AU, SECTOR_OCCUPANCY } from './calc/presets.au';
+import { PROVIDER_MULTIPLIERS as PM_AU, REIMBURSE_MULTIPLIERS as RM_AU } from './calc/engine.au';
+const PRESETS = UKI ? PRESETS_UKI : AU ? PRESETS_AU : PRESETS_US;
 import { systemCost } from './calc/vendors.index.js';
 import { StepIndicator, NavButtons, PageTransition } from './components';
-import { ProviderStep, JourneyStep, FacilitiesStep, SystemsStep, FineTuneStep, OrgTypeStep, ScaleStep } from './steps';
+import { ProviderStep, JourneyStep, FacilitiesStep, SystemsStep, FineTuneStep, OrgTypeStep, ScaleStep, SectorOrgStep } from './steps';
 import { ResultsPage } from './results/ResultsPage';
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -547,6 +549,8 @@ function CalibratingScreen({ onDone }) {
   const [barW, setBarW] = useState(0);
   const steps = UKI
     ? ['Mapping your legacy estate', 'Modelling decommission savings', 'Estimating clinical capacity impact', 'Valuing quality & safety improvements']
+    : AU
+    ? ['Mapping your legacy estate', 'Modelling decommission savings', 'Estimating clinical capacity impact', 'Valuing funding & quality impact']
     : ['Mapping your legacy estate', 'Modeling decommission savings', 'Estimating clinical capacity impact', 'Calculating reimbursement recovery'];
   useEffect(() => {
     const t = [
@@ -609,10 +613,11 @@ export default function App() {
   // the results screen regardless of how far the user has scrolled the report.
   const [viewTimescale, setViewTimescale] = useState('annual');
   const [providerType, setProviderType] = useState("community");
-  const [orgType, setOrgType] = useState("TYPICAL");          // UKI scope selection
-  const [scenarioMode, setScenarioMode] = useState("EXPECTED"); // UKI on-screen confidence toggle
+  const [orgType, setOrgType] = useState("TYPICAL");          // UKI/AU scope selection
+  const [sector, setSector] = useState("hospital");            // AU sector (hospital / aged_care / ndis)
+  const [scenarioMode, setScenarioMode] = useState("EXPECTED"); // UKI/AU on-screen confidence toggle
   const [reimbursementModel, setReimbursementModel] = useState("mixed");
-  const [occupancyRate, setOccupancyRate] = useState(0.65);
+  const [occupancyRate, setOccupancyRate] = useState(AU ? 0.90 : 0.65);
   const [galenMigrationCost, setGalenMigrationCost] = useState(0);
   const [galenAnnualCost, setGalenAnnualCost] = useState(0);
   const [flagships, setFlagships] = useState([]);
@@ -626,7 +631,18 @@ export default function App() {
   const setFacility = useCallback((key, val) => setFacilitiesState(p => ({ ...p, [key]: val })), []);
   const applyPreset = useCallback((key) => { const p = PRESETS[key]; if (!p) return; setInputs({ ...p.data, tiers: { ...p.data.tiers } }); setFlagships([]); setFacilitiesState({}); }, []);
   const selectProvider = useCallback((key) => { setProviderType(key); const pk = PROVIDER_PRESET_MAP[key]; if (pk) applyPreset(pk); setFacilitiesState(key === 'multi_hospital' ? { ...IDN_FACILITIES } : {}); }, [applyPreset]);
-  const selectOrgType = useCallback((key) => { setOrgType(key); applyPreset(key); }, [applyPreset]);
+  const selectOrgType = useCallback((key) => {
+    setOrgType(key); applyPreset(key);
+    if (AU) { const pr = PRESETS_AU[key]; if (pr) { setSector(pr.sector); setOccupancyRate(SECTOR_OCCUPANCY[pr.sector] ?? 0.90); } }
+  }, [applyPreset]);
+  // AU: picking a sector applies that sector's default size preset.
+  const AU_SECTOR_DEFAULT = { hospital: "TYPICAL", aged_care: "AC_MID", ndis: "NDIS_MID" };
+  const selectSector = useCallback((key) => {
+    setSector(key);
+    const def = AU_SECTOR_DEFAULT[key] || "TYPICAL";
+    setOrgType(def); applyPreset(def);
+    setOccupancyRate(SECTOR_OCCUPANCY[key] ?? 0.90);
+  }, [applyPreset]);
 
   const addFlagship = useCallback((sys, tier) => {
     const cost = sys.baseCost ? systemCost(sys, inputs.bed_count) : (sys.cost || 250000);
@@ -648,6 +664,24 @@ export default function App() {
   const calcInputs = useMemo(() => {
     if (UKI) {
       return { ...inputs, _knownSpend: costMode === "known" && knownSpend > 0 ? knownSpend : 0 };
+    }
+    if (AU) {
+      const preset = PRESETS_AU[orgType] || PRESETS_AU.TYPICAL;
+      const pt = preset.providerType;
+      const pm = PM_AU[pt] || PM_AU.regional;
+      const rm = RM_AU[reimbursementModel] || RM_AU.mixed;
+      return {
+        ...inputs,
+        _providerType: pt,
+        _abfPct: pm.abf_pct ?? 0.72,
+        _privatePct: pm.private_pct ?? 0.15,
+        _complexityBoost: pm.complexity_boost ?? 1.0,
+        _privateWeight: rm.private_weight ?? 1.0,
+        _efficiencyWeight: rm.efficiency_weight ?? 1.0,
+        _occupancy: occupancyRate,
+        _lhdCount: pt === "statewide" ? Math.max(1, Math.round(inputs.org_count / 13)) : (pt === "state_network" ? Math.max(1, inputs.org_count) : 0),
+        _knownSpend: costMode === "known" && knownSpend > 0 ? knownSpend : 0,
+      };
     }
     const pm = PROVIDER_MULTIPLIERS[providerType] || PROVIDER_MULTIPLIERS.community;
     const rm = REIMBURSE_MULTIPLIERS[reimbursementModel] || REIMBURSE_MULTIPLIERS.mixed;
@@ -697,7 +731,7 @@ export default function App() {
     };
   }, [inputs, providerType, reimbursementModel, occupancyRate, facilities, costMode, knownSpend]);
 
-  const r = useMemo(() => calc(calcInputs, UKI ? scenarioMode : "EXPECTED", {}, flagships), [calcInputs, flagships, scenarioMode]);
+  const r = useMemo(() => calc(calcInputs, (UKI || AU) ? scenarioMode : "EXPECTED", {}, flagships), [calcInputs, flagships, scenarioMode]);
 
   const handleCalculate = useCallback(() => setCalibrating(true), []);
   const handleCalibrationDone = useCallback(() => {
@@ -706,7 +740,7 @@ export default function App() {
     // Capture session metadata so the admin overlay can break stats down by
     // organisation type and report cumulative impact across all assessments.
     recordCompletion({
-      providerType: UKI ? orgType : providerType,
+      providerType: UKI ? orgType : AU ? `${sector}:${orgType}` : providerType,
       beds: inputs.bed_count,
       orgs: inputs.org_count,
       systems: r.legacy || 0,
@@ -760,12 +794,12 @@ export default function App() {
 
   const renderStep = () => {
     switch (kioskStep) {
-      case 0: return UKI ? <OrgTypeStep orgType={orgType} onSelect={selectOrgType} /> : <ProviderStep providerType={providerType} onSelect={selectProvider} reimbursementModel={reimbursementModel} setReimbursementModel={setReimbursementModel} />;
+      case 0: return AU ? <SectorOrgStep sector={sector} onSelectSector={selectSector} orgType={orgType} onSelectOrg={selectOrgType} /> : UKI ? <OrgTypeStep orgType={orgType} onSelect={selectOrgType} /> : <ProviderStep providerType={providerType} onSelect={selectProvider} reimbursementModel={reimbursementModel} setReimbursementModel={setReimbursementModel} />;
       case 1: return <JourneyStep journey={inputs.journey} onSelect={v => update("journey", v)} />;
-      case 2: return UKI ? <ScaleStep inputs={inputs} update={update} /> : <FacilitiesStep inputs={inputs} update={update} facilities={facilities} setFacility={setFacility} />;
-      case 3: return <SystemsStep inputs={inputs} updateTier={updateTier} flagships={flagships} addFlagship={addFlagship} removeFlagship={removeFlagship} updateFlagshipCost={updateFlagshipCost} updateFlagshipInstances={updateFlagshipInstances} costMode={costMode} setCostMode={setCostMode} knownSpend={knownSpend} setKnownSpend={setKnownSpend} />;
-      case 4: return <FineTuneStep inputs={inputs} update={update} galenMigrationCost={galenMigrationCost} setGalenMigrationCost={setGalenMigrationCost} galenAnnualCost={galenAnnualCost} setGalenAnnualCost={setGalenAnnualCost} occupancyRate={occupancyRate} setOccupancyRate={setOccupancyRate} />;
-      case 5: return <ResultsPage r={r} galenMigrationCost={galenMigrationCost} galenAnnualCost={galenAnnualCost} viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} onAdjust={handleAdjust} onStartOver={handleStartOver} leadContext={UKI ? { orgType, beds: inputs.bed_count, orgs: inputs.org_count, journey: inputs.journey, scenarioMode, calcInputs, flagships } : { providerType, beds: inputs.bed_count, orgs: inputs.org_count, reimbursementModel, calcInputs, flagships }} />;
+      case 2: return (UKI || AU) ? <ScaleStep inputs={inputs} update={update} sector={AU ? sector : null} /> : <FacilitiesStep inputs={inputs} update={update} facilities={facilities} setFacility={setFacility} />;
+      case 3: return <SystemsStep inputs={inputs} updateTier={updateTier} flagships={flagships} addFlagship={addFlagship} removeFlagship={removeFlagship} updateFlagshipCost={updateFlagshipCost} updateFlagshipInstances={updateFlagshipInstances} costMode={costMode} setCostMode={setCostMode} knownSpend={knownSpend} setKnownSpend={setKnownSpend} sector={AU ? sector : null} />;
+      case 4: return <FineTuneStep inputs={inputs} update={update} galenMigrationCost={galenMigrationCost} setGalenMigrationCost={setGalenMigrationCost} galenAnnualCost={galenAnnualCost} setGalenAnnualCost={setGalenAnnualCost} occupancyRate={occupancyRate} setOccupancyRate={setOccupancyRate} sector={AU ? sector : null} />;
+      case 5: return <ResultsPage r={r} galenMigrationCost={galenMigrationCost} galenAnnualCost={galenAnnualCost} viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} onAdjust={handleAdjust} onStartOver={handleStartOver} leadContext={AU ? { sector, orgType, beds: inputs.bed_count, orgs: inputs.org_count, journey: inputs.journey, scenarioMode, calcInputs, flagships } : UKI ? { orgType, beds: inputs.bed_count, orgs: inputs.org_count, journey: inputs.journey, scenarioMode, calcInputs, flagships } : { providerType, beds: inputs.bed_count, orgs: inputs.org_count, reimbursementModel, calcInputs, flagships }} />;
       default: return null;
     }
   };
@@ -880,7 +914,7 @@ export default function App() {
           containing block. This sits in the static-flex column above the
           scrollable content area. Only renders on the report screen
           (kioskStep === 5). */}
-      {kioskStep === 5 && <TimescaleBar viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} scenarioMode={UKI ? scenarioMode : null} setScenarioMode={setScenarioMode} />}
+      {kioskStep === 5 && <TimescaleBar viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} scenarioMode={(UKI || AU) ? scenarioMode : null} setScenarioMode={setScenarioMode} />}
       <div className={EMBED ? "embed-scroll-area" : undefined} style={{ flex: 1, overflowY: "auto", padding: "0 56px 32px" }}>
         <PageTransition step={kioskStep}>{renderStep()}</PageTransition>
       </div>

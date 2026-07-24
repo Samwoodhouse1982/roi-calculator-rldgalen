@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { C, F, fmtK, fmtNum } from '../theme';
-import { UKI } from '../market';
+import { UKI, AU } from '../market';
 import rldatixLogo from '../assets/rldatix-logo.png';
 import { calc } from '../calc';
+import { PRESETS as PRESETS_AU } from '../calc/presets.au';
 
 /* ────────────────────────────────────────────────────────────────────────
    Lead capture — ported from the Smart Match web build's LeadCapture and
@@ -30,10 +31,19 @@ const HUBSPOT_REGION = "eu1";
 
 // Market-suffixed storage key so UKI and US leads never mix if both builds
 // are ever served from the same origin.
-const STORAGE_KEY = UKI ? "galen-roi-uki-embed-submissions" : "galen-roi-embed-submissions";
+const STORAGE_KEY = UKI ? "galen-roi-uki-embed-submissions" : AU ? "galen-roi-au-embed-submissions" : "galen-roi-embed-submissions";
 const MAX_RECORDS = 200;
 
-const ROLE_OPTIONS = UKI ? [
+const ROLE_OPTIONS = AU ? [
+  "CIO / Digital Health leadership",
+  "CMIO / Clinical informatics",
+  "Health Information Services",
+  "Finance / Business case",
+  "EMR / Applications team",
+  "Aged Care / NDIS operations",
+  "Consultant / Advisory",
+  "Other",
+] : UKI ? [
   "CIO / Digital leadership",
   "CCIO / Clinical informatics",
   "Health records / IG",
@@ -51,8 +61,8 @@ const ROLE_OPTIONS = UKI ? [
   "Other",
 ];
 
-// UKI leadContext carries orgType (preset key); US carries providerType.
-const PROVIDER_LABELS = UKI ? {
+// UKI/AU leadContext carries orgType (preset key); US carries providerType.
+const PROVIDER_LABELS = AU ? Object.fromEntries(Object.entries(PRESETS_AU).map(([k, v]) => [k, v.label])) : UKI ? {
   SMALL: "Specialist / Smaller Trust",
   TYPICAL: "Typical Acute Trust",
   LARGE: "Large Acute Trust",
@@ -105,7 +115,7 @@ async function generatePDF(r, lead, ctx) {
   const M = 14, W = 210 - 2 * M;
   // jsPDF's built-in helvetica has no £ glyph mapping issue in WinAnsi, so a
   // plain string works for both currencies.
-  const usd = n => (UKI ? "£" : "$") + Math.round(n || 0).toLocaleString(UKI ? "en-GB" : "en-US");
+  const usd = n => (UKI ? "£" : AU ? "A$" : "$") + Math.round(n || 0).toLocaleString(UKI ? "en-GB" : AU ? "en-AU" : "en-US");
   const PROVIDERS = PROVIDER_LABELS;
   const REIMB = { ffs: "Fee-for-Service", vbc: "Value-Based", mixed: "Mixed" };
   const total = r.annualWithReimbursement || r.annual || 0;
@@ -116,7 +126,7 @@ async function generatePDF(r, lead, ctx) {
   doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(17);
   doc.text("Galen Clinical Archive: ROI Estimate", M, 16);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...SEAFOAM);
-  doc.text("RLDatix" + (UKI ? " · UK & Ireland" : "") + " · " + new Date().toLocaleDateString(UKI ? "en-GB" : "en-US") + (lead.org ? " · " + lead.org : ""), M, 24);
+  doc.text("RLDatix" + (UKI ? " · UK & Ireland" : AU ? " · Australia" : "") + " · " + new Date().toLocaleDateString(UKI ? "en-GB" : AU ? "en-AU" : "en-US") + (lead.org ? " · " + lead.org : ""), M, 24);
   const logo = await logoDataUrl();
   if (logo) { try { doc.addImage(logo, "PNG", 210 - M - 38, 9, 38, 7.3); } catch (e) { /* header still fine without it */ } }
 
@@ -141,7 +151,15 @@ async function generatePDF(r, lead, ctx) {
 
   // ── KPI row ──
   const kW = (W - 9) / 4, kH = 21;
-  const kpis = UKI ? [
+  const auReimbKpi = r.isAgedCare ? ["AN-ACC & FUNDING", usd(r.reimbursementImpact), "funding accuracy + agency + compliance"]
+    : r.isNDIS ? ["NDIS REVENUE", usd(r.reimbursementImpact), "claims + utilisation + retention"]
+    : ["ABF & REVENUE", usd(r.reimbursementImpact), "consolidation efficiency + private revenue"];
+  const kpis = AU ? [
+    ["DECOMMISSION SAVINGS", usd(r.decomSave), "licensing, support and infrastructure retired"],
+    ["STAFF CAPACITY", (r.fteEquivalent || 0) + " FTE", usd(r.timeSave) + "/yr staff time value"],
+    auReimbKpi,
+    ["QUALITY & SAFETY", usd(r.qualitySavings), "cost avoidance from harm prevented"],
+  ] : UKI ? [
     ["DECOMMISSION SAVINGS", usd(r.decomSave), "licensing, support and infrastructure retired"],
     ["CLINICAL CAPACITY", (r.fteEquivalent || 0) + " FTE", usd(r.timeSave) + "/yr clinician time value"],
     ["PATIENT SAFETY", usd(r.qualitySavings), "cost avoidance from harm prevented"],
@@ -209,7 +227,12 @@ async function generatePDF(r, lead, ctx) {
       doc.setTextColor(...MID); doc.setFont("helvetica", "normal"); doc.setFontSize(6.5);
       doc.text("per year at steady state", x + 4, y + 23.5);
       doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); doc.line(x + 4, y + 25.5, x + sW - 4, y + 25.5);
-      const stats = UKI ? [
+      const stats = AU ? [
+        ["Decommission", fmtK(rr.decomSave)],
+        ["Staff capacity", fmtK(rr.timeSave)],
+        [rr.isAgedCare ? "AN-ACC & funding" : rr.isNDIS ? "NDIS revenue" : "ABF & revenue", fmtK(rr.reimbursementImpact)],
+        ["Quality & safety", fmtK(rr.qualitySavings)],
+      ] : UKI ? [
         ["Decommission", fmtK(rr.decomSave)],
         ["Clinical capacity", fmtK(rr.timeSave)],
         ["Patient safety", fmtK(rr.qualitySavings)],
@@ -256,7 +279,13 @@ async function generatePDF(r, lead, ctx) {
     });
     if (note) { doc.setTextColor(...MUTED); doc.setFont("helvetica", "italic"); doc.setFontSize(6.5); doc.text(note, x + 4, y + colH - 3.5); }
   };
-  colBox(M, "Your inputs", UKI ? [
+  colBox(M, "Your inputs", AU ? [
+    ["Organisation type", PROVIDER_LABELS[ctx.orgType] || ctx.orgType || "-"],
+    [ctx.sector === "aged_care" ? "Residential places" : ctx.sector === "ndis" ? "Active participants" : "Total acute beds", fmtNum(ctx.beds || 0)],
+    [ctx.sector === "hospital" ? "Hospitals / facilities" : "Facilities / sites", fmtNum(ctx.orgs || 1)],
+    ["Journey", ctx.journey === "HAVE_EPR" ? "Archive & decommission" : "Migrating to a new EMR"],
+    ["Legacy systems in scope", fmtNum(r.legacy || 0)],
+  ] : UKI ? [
     ["Organisation type", PROVIDERS[ctx.orgType] || ctx.orgType || "-"],
     ["Total acute beds", fmtNum(ctx.beds || 0)],
     ["Trusts / organisations", fmtNum(ctx.orgs || 1)],
@@ -273,8 +302,9 @@ async function generatePDF(r, lead, ctx) {
     ["Legacy decommission", fmtK(r.decomSave)],
     ["Clinical capacity", fmtK(r.timeSave)],
   ];
-  if (!UKI) comp.push(["Reimbursement impact", fmtK(r.reimbursementImpact)]);
-  comp.push(["Patient safety", fmtK(r.qualitySavings)]);
+  if (AU) { if ((r.reimbursementImpact || 0) > 0) comp.push([r.isAgedCare ? "AN-ACC & funding" : r.isNDIS ? "NDIS revenue & efficiency" : "ABF & revenue", fmtK(r.reimbursementImpact)]); }
+  else if (!UKI) comp.push(["Reimbursement impact", fmtK(r.reimbursementImpact)]);
+  if (!AU || (r.qualitySavings || 0) > 0) comp.push([AU && r.isAgedCare ? "Quality & avoidable harm" : "Patient safety", fmtK(r.qualitySavings)]);
   if (r.academicSavings > 0) comp.push(["Academic program", fmtK(r.academicSavings)]);
   if (r.mergeSavings > 0) comp.push(["Network consolidation", fmtK(r.mergeSavings)]);
   while (comp.length < 5) comp.push(["", ""]);
@@ -291,6 +321,8 @@ async function generatePDF(r, lead, ctx) {
   const extras = (r.academicSavings > 0 ? `  +  ${usd(r.academicSavings)} academic` : "") + (r.mergeSavings > 0 ? `  +  ${usd(r.mergeSavings)} network` : "");
   doc.text(UKI
     ? `${usd(r.decomSave)} decommission  +  ${usd(r.timeSave)} capacity  +  ${usd(r.qualitySavings)} safety`
+    : AU
+    ? `${usd(r.decomSave)} decommission  +  ${usd(r.timeSave)} capacity  +  ${usd(r.reimbursementImpact)} funding  +  ${usd(r.qualitySavings)} quality${extras}`
     : `${usd(r.decomSave)} decommission  +  ${usd(r.timeSave)} capacity  +  ${usd(r.reimbursementImpact)} reimbursement  +  ${usd(r.qualitySavings)} safety${extras}`, M + 4, y + 12.5);
   doc.setFont("helvetica", "bold"); doc.setTextColor(...TEAL);
   doc.text(`=  ${usd(total)} per year at steady state`, M + 4, y + 17.5);
@@ -300,7 +332,11 @@ async function generatePDF(r, lead, ctx) {
   doc.setDrawColor(...BORDER); doc.setLineWidth(0.2); doc.line(M, y, M + W, y); y += 5;
   doc.setTextColor(...MUTED); doc.setFont("helvetica", "bold"); doc.setFontSize(8);
   doc.text("ABOUT THESE FIGURES", M, y); y += 5;
-  const explain = UKI ? [
+  const explain = AU ? [
+    ["System costs", "per-system estimates by tier (enterprise / departmental / standalone), scaled by size and complexity with per-type market caps. Sources: AU state contract-derived pricing, NSW SDPR programme data."],
+    ["Staff capacity", "staff time freed by eliminating context-switching across legacy systems, valued at a blended A$65/hr (hospitals) or A$42/hr (aged care / NDIS) with a conservative realisation factor. Sources: Bartek et al JIMI 2023, Sinsky et al 2016."],
+    ["Funding & quality", "sector modules: ABF consolidation efficiency + private revenue recovery (hospitals, VAGO 2019 / APRA); AN-ACC uplift + agency + compliance with 30% attribution (aged care); claims + utilisation + retention (NDIS). Quality lines are cost avoidance (QAHCS/AIHW, IHACPA, VMIA)."],
+  ] : UKI ? [
     ["System costs", "per-system estimates by tier (enterprise / departmental / standalone), scaled by bed count and complexity. Calibrated against the contract register of a large acute NHS Trust (~1,385 beds, 42 legacy systems, 2024/25)."],
     ["Clinical capacity", "clinician time freed by eliminating context-switching across legacy systems, valued at a £55/hr blended NHS Agenda for Change rate with a conservative realisation factor. Sources: Bartek et al JIMI 2023 (2.78M EHR audit-log events), Nuffield Trust 2020."],
     ["Patient safety", "cost avoidance from transition medication errors: excess bed days at £400/day (NHS Reference Costs), clinical negligence indemnity reduction (NHS Resolution / NAO Oct 2025), duplicate testing avoided. Source: Camacho et al 2024, BMJ Quality & Safety."],
@@ -327,12 +363,12 @@ async function generatePDF(r, lead, ctx) {
   doc.setFont("helvetica", "bold"); doc.setFontSize(6.8); doc.setTextColor(...MUTED);
   doc.text("DISCLAIMER", M, y); y += 3.6;
   doc.setFont("helvetica", "italic"); doc.setFontSize(6.8); doc.setTextColor(...MUTED);
-  doc.text(doc.splitTextToSize(UKI
-    ? "Indicative only, not a quote or a guarantee. Figures are modelled estimates with improvement rates attributed to system consolidation as a contributing factor, not sole cause. Validate against your organisation's own application inventory and contract register before use in a business case."
+  doc.text(doc.splitTextToSize((UKI || AU)
+    ? "Indicative only, not a quote or a guarantee. Figures are modelled estimates with improvement rates attributed to system consolidation as a contributing factor, not sole cause. Validate against your organisation's own application inventory, contracts and funding mix before use in a business case."
     : "Indicative only, not a quote or a guarantee. Figures are modeled estimates with improvement rates attributed to system consolidation as a contributing factor, not sole cause. Validate against your organization's own application inventory, contracts, and payer mix before use in a business case.", W), M, y);
 
   const orgSlug = lead.org ? "-" + lead.org.trim().replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "") : "";
-  doc.save("galen-roi-estimate" + (UKI ? "-uki" : "") + orgSlug + ".pdf");
+  doc.save("galen-roi-estimate" + (UKI ? "-uki" : AU ? "-au" : "") + orgSlug + ".pdf");
 }
 
 const MailIcon = ({ size = 22, stroke = "#34DEC2" }) => (
@@ -359,7 +395,7 @@ export function LeadCapture({ r, leadContext }) {
     setSending(true);
 
     const ctx = leadContext || {};
-    const providerLabel = PROVIDER_LABELS[UKI ? ctx.orgType : ctx.providerType] || (UKI ? ctx.orgType : ctx.providerType) || "";
+    const providerLabel = PROVIDER_LABELS[(UKI || AU) ? ctx.orgType : ctx.providerType] || ((UKI || AU) ? ctx.orgType : ctx.providerType) || "";
 
     // 1. Generate + download the PDF summary (the value exchange).
     try { await generatePDF(r, lead, ctx); } catch (e) { console.warn("PDF failed:", e); }
@@ -368,7 +404,9 @@ export function LeadCapture({ r, leadContext }) {
     saveSubmission({
       timestamp: new Date().toISOString(),
       lead: { name: lead.name, email: lead.email, org: lead.org, role: lead.role },
-      inputs: UKI
+      inputs: AU
+        ? { sector: ctx.sector, orgType: ctx.orgType, beds: ctx.beds, orgs: ctx.orgs, journey: ctx.journey, scenarioMode: ctx.scenarioMode }
+        : UKI
         ? { orgType: ctx.orgType, beds: ctx.beds, orgs: ctx.orgs, journey: ctx.journey, scenarioMode: ctx.scenarioMode }
         : { providerType: ctx.providerType, beds: ctx.beds, orgs: ctx.orgs, reimbursementModel: ctx.reimbursementModel },
       results: {
@@ -383,7 +421,7 @@ export function LeadCapture({ r, leadContext }) {
     // 3. Fire-and-forget to HubSpot, context in the message field.
     if (HUBSPOT_PORTAL_ID && HUBSPOT_FORM_GUID) {
       try {
-        const context = `Galen Clinical Archive ROI (${UKI ? "UKI" : "US"} embed) submission | ${UKI ? "Organisation" : "Provider"}: ${providerLabel} | Beds: ${fmtNum(ctx.beds || 0)} | Legacy systems: ${r.legacy || 0} (${r.decom || 0} retired) | Est. annual savings: ${fmtK(r.annualWithReimbursement || r.annual || 0)} | FTE freed: ${r.fteEquivalent || 0}`;
+        const context = `Galen Clinical Archive ROI (${UKI ? "UKI" : AU ? "AU" : "US"} embed) submission | ${(UKI || AU) ? "Organisation" : "Provider"}: ${providerLabel} | ${AU && ctx.sector === "aged_care" ? "Places" : AU && ctx.sector === "ndis" ? "Participants" : "Beds"}: ${fmtNum(ctx.beds || 0)} | Legacy systems: ${r.legacy || 0} (${r.decom || 0} retired) | Est. annual savings: ${fmtK(r.annualWithReimbursement || r.annual || 0)} | FTE freed: ${r.fteEquivalent || 0}`;
         await fetch(`https://forms-${HUBSPOT_REGION}.hsforms.com/submissions/v3/integration/submit/${HUBSPOT_PORTAL_ID}/${HUBSPOT_FORM_GUID}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -396,7 +434,7 @@ export function LeadCapture({ r, leadContext }) {
               { name: "jobtitle", value: lead.role || "" },
               { name: "message", value: context },
             ],
-            context: { pageUri: window.location.href, pageName: `Galen Clinical Archive ROI Calculator (${UKI ? "UKI" : "US"} embed)` },
+            context: { pageUri: window.location.href, pageName: `Galen Clinical Archive ROI Calculator (${UKI ? "UKI" : AU ? "AU" : "US"} embed)` },
             legalConsentOptions: { consent: { consentToProcess: true, text: "I agree to receive communications about my ROI estimate." } },
           }),
         });
@@ -428,7 +466,7 @@ export function LeadCapture({ r, leadContext }) {
       <input type="email" placeholder="Work email *" aria-label="Work email (required)" autoComplete="email" value={lead.email} onChange={e => setLead(p => ({ ...p, email: e.target.value }))} style={inputStyle} />
     </div>
     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-      <input type="text" placeholder={UKI ? "Organisation" : "Organization"} aria-label={UKI ? "Organisation" : "Organization"} autoComplete="organization" value={lead.org} onChange={e => setLead(p => ({ ...p, org: e.target.value }))} style={inputStyle} />
+      <input type="text" placeholder={(UKI || AU) ? "Organisation" : "Organization"} aria-label={(UKI || AU) ? "Organisation" : "Organization"} autoComplete="organization" value={lead.org} onChange={e => setLead(p => ({ ...p, org: e.target.value }))} style={inputStyle} />
       <select aria-label="Your role" value={lead.role} onChange={e => setLead(p => ({ ...p, role: e.target.value }))} style={{ ...inputStyle, color: lead.role ? "#0F4146" : "#5F787C" }}>
         <option value="" style={{ color: "#0F4146" }}>Your role</option>
         {ROLE_OPTIONS.map(o => <option key={o} value={o} style={{ color: "#0F4146" }}>{o}</option>)}
@@ -497,7 +535,7 @@ export function AdminLeads({ onClose }) {
           <thead><tr>{["When", "Name", "Email", "Organization", "Role", "Est. savings", "Systems"].map(h => <th key={h} style={{ ...cell, color: C.textMuted, fontWeight: 700 }}>{h}</th>)}</tr></thead>
           <tbody>
             {records.map((rec, i) => <tr key={i}>
-              <td style={cell}>{new Date(rec.timestamp).toLocaleString(UKI ? "en-GB" : "en-US")}</td>
+              <td style={cell}>{new Date(rec.timestamp).toLocaleString(UKI ? "en-GB" : AU ? "en-AU" : "en-US")}</td>
               <td style={{ ...cell, color: C.text, fontWeight: 600 }}>{rec.lead?.name || "-"}</td>
               <td style={cell}>{rec.lead?.email || "-"}</td>
               <td style={cell}>{rec.lead?.org || "-"}</td>

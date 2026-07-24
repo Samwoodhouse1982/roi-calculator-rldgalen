@@ -9,7 +9,9 @@
     "build:embed": "vite build --mode embed",
     "preview": "vite preview",
     "dev:embed:uki": "vite --mode embed-uki",
-    "build:embed:uki": "vite build --mode embed-uki"
+    "build:embed:uki": "vite build --mode embed-uki",
+    "dev:embed:au": "vite --mode embed-au",
+    "build:embed:au": "vite build --mode embed-au"
   },
   "dependencies": {
     "jspdf": "^4.2.1",

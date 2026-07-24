@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LeadCapture } from '../components/LeadCapture';
 import { C, F, fmtK, fmtNum } from '../theme';
-import { UKI } from '../market';
+import { UKI, AU } from '../market';
 import { Icon } from '../components/Icons';
 import { Card } from '../components';
 
@@ -149,13 +149,13 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
   // freed across 3 years (e.g. 5.2 FTE/yr steady state × 2.20 ramp factor =
   // 11.4 FTE-years cumulative). For Year 1, it's first-year FTE during ramp
   // (5.2 × 0.40 = 2.08 FTE).
-  const fteRaw = r.hrsSaved ? r.hrsSaved * (r.realization || 0.3) / (UKI ? 1820 : 2080) : 0; // hrs/yr FTE basis - matches each engine's fteEquivalent (NHS 1820, US 2080)
+  const fteRaw = r.hrsSaved ? r.hrsSaved * (r.realization || 0.3) / (UKI ? 1820 : AU ? 1824 : 2080) : 0; // hrs/yr FTE basis - matches each engine's fteEquivalent (NHS 1820, AU 1824, US 2080)
   const fteScaled = fteRaw * ts.mult;
   // UKI keeps one decimal at any magnitude to line up with the full web
   // calculator's "FTE equivalent" stat (e.g. 2.4); US rounds to whole FTE
   // once >= 1, as it always has.
-  const fte = UKI ? Math.round(fteScaled * 10) / 10 : fteScaled >= 1 ? Math.round(fteScaled) : Math.round(fteScaled * 10) / 10;
-  const fmtFte = UKI
+  const fte = (UKI || AU) ? Math.round(fteScaled * 10) / 10 : fteScaled >= 1 ? Math.round(fteScaled) : Math.round(fteScaled * 10) / 10;
+  const fmtFte = (UKI || AU)
     ? (v => Number.isInteger(v) ? fmtNum(v) : v.toFixed(1))
     : (v => v < 1 ? v.toFixed(1) : fmtNum(v));
   const hasGalen = galenMigrationCost > 0;
@@ -200,8 +200,8 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
       <div className={EMBED ? "embed-comp-legend" : undefined} style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
         <CompositionItem color={C.accent} dotColor={C.chart.decom} label="Decommission" amount={Math.round(seg.decom * ts.mult)} pct={Math.round(seg.decom / Math.max(1, totalAnnual) * 100)} />
         <CompositionItem color={C.amber} dotColor={C.chart.capacity} label="Capacity" amount={Math.round(seg.capacity * ts.mult)} pct={Math.round(seg.capacity / Math.max(1, totalAnnual) * 100)} />
-        {seg.reimb > 0 && <CompositionItem color={C.blue} dotColor={C.chart.reimb} label="Reimbursement" amount={Math.round(seg.reimb * ts.mult)} pct={Math.round(seg.reimb / Math.max(1, totalAnnual) * 100)} />}
-        {seg.safety > 0 && <CompositionItem color={C.purple} dotColor={C.chart.safety} label="Patient safety" amount={Math.round(seg.safety * ts.mult)} pct={Math.round(seg.safety / Math.max(1, totalAnnual) * 100)} />}
+        {seg.reimb > 0 && <CompositionItem color={C.blue} dotColor={C.chart.reimb} label={AU ? (r.isAgedCare ? "AN-ACC & funding" : r.isNDIS ? "Claims & utilisation" : "ABF & revenue") : "Reimbursement"} amount={Math.round(seg.reimb * ts.mult)} pct={Math.round(seg.reimb / Math.max(1, totalAnnual) * 100)} />}
+        {seg.safety > 0 && <CompositionItem color={C.purple} dotColor={C.chart.safety} label={AU && r.isAgedCare ? "Quality & harm" : "Patient safety"} amount={Math.round(seg.safety * ts.mult)} pct={Math.round(seg.safety / Math.max(1, totalAnnual) * 100)} />}
         {seg.academic > 0 && <CompositionItem color="#e67e22" dotColor={C.chart.academic} label="Academic" amount={Math.round(seg.academic * ts.mult)} pct={Math.round(seg.academic / Math.max(1, totalAnnual) * 100)} />}
         {seg.network > 0 && <CompositionItem color="#8e44ad" dotColor={C.chart.network} label="Network" amount={Math.round(seg.network * ts.mult)} pct={Math.round(seg.network / Math.max(1, totalAnnual) * 100)} />}
       </div>
@@ -211,10 +211,10 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
       <KpiCard label="Legacy decommission" amount={Math.round(seg.decom * ts.mult)} sub={`${r.decom} of ${r.legacy} systems retired`} color={C.accent} iconKey="unlock" onClick={() => scrollTo(decomRef)} />
       <KpiCard label="Clinical capacity" value={<AnimVal value={Math.round(fte * 10)} format={(v) => fmtFte(v / 10) + " FTE freed"} />} sub={<><AnimK value={Math.round(seg.capacity * ts.mult)} /> value</>} color={C.amber} iconKey="clock" onClick={() => scrollTo(capacityRef)} />
-      {seg.reimb > 0 && <KpiCard label="Reimbursement impact" amount={Math.round(seg.reimb * ts.mult)} sub="CMS penalties + denial recovery" color={C.blue} iconKey="dollar" onClick={() => scrollTo(reimbRef)} />}
-      {seg.safety > 0 && <KpiCard label="Patient safety" amount={Math.round(seg.safety * ts.mult)} sub={<><AnimVal value={Math.round(r.safetyPatientsProtected * ts.mult)} format={fmtNum} /> patients protected{r.readmissionsAvoided > 0 ? <>, <AnimVal value={Math.round(r.readmissionsAvoided * ts.mult)} format={(v) => v.toString()} /> readmissions avoided</> : ""}</>} color={C.purple} iconKey="shield" onClick={() => scrollTo(safetyRef)} />}
+      {seg.reimb > 0 && <KpiCard label={AU ? (r.isAgedCare ? "Funding & efficiency" : r.isNDIS ? "Revenue & efficiency" : "ABF & revenue") : "Reimbursement impact"} amount={Math.round(seg.reimb * ts.mult)} sub={AU ? (r.isAgedCare ? "AN-ACC + agency + compliance" : r.isNDIS ? "Claims + utilisation + retention" : "ABF efficiency + private revenue") : "CMS penalties + denial recovery"} color={C.blue} iconKey="dollar" onClick={() => scrollTo(reimbRef)} />}
+      {seg.safety > 0 && <KpiCard label={AU && r.isAgedCare ? "Quality & harm avoided" : "Patient safety"} amount={Math.round(seg.safety * ts.mult)} sub={AU && r.isAgedCare ? "Avoidable harm + preventable admissions" : <><AnimVal value={Math.round(r.safetyPatientsProtected * ts.mult)} format={fmtNum} /> patients protected{r.readmissionsAvoided > 0 ? <>, <AnimVal value={Math.round(r.readmissionsAvoided * ts.mult)} format={(v) => v.toString()} /> readmissions avoided</> : ""}</>} color={C.purple} iconKey="shield" onClick={() => scrollTo(safetyRef)} />}
       {seg.network > 0 && <KpiCard label="Network consolidation" amount={Math.round(seg.network * ts.mult)} sub={`${r.duplicateSystems} duplicate systems across ${r.org_count || ""} facilities`} color="#8e44ad" iconKey="network" onClick={() => scrollTo(networkRef)} />}
-      {seg.academic > 0 && <KpiCard label="Academic program" amount={Math.round(seg.academic * ts.mult)} sub="Research + GME + teaching" color="#e67e22" iconKey="graduation" onClick={() => scrollTo(academicRef)} />}
+      {seg.academic > 0 && <KpiCard label={AU ? "Academic programme" : "Academic program"} amount={Math.round(seg.academic * ts.mult)} sub={AU ? "Research + teaching efficiency" : "Research + GME + teaching"} color="#e67e22" iconKey="graduation" onClick={() => scrollTo(academicRef)} />}
     </div>
 
     {/* Lead capture - web/embed only; the kiosk is an attended sales surface
@@ -289,8 +289,8 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
           const segments = [
             { key: "Decommission", color: C.chart.decom, val: seg.decom },
             { key: "Capacity", color: C.chart.capacity, val: seg.capacity },
-            { key: "Reimbursement", color: C.chart.reimb, val: seg.reimb },
-            { key: "Patient safety", color: C.chart.safety, val: seg.safety },
+            { key: AU ? (r.isAgedCare ? "AN-ACC & funding" : r.isNDIS ? "Claims & utilisation" : "ABF & revenue") : "Reimbursement", color: C.chart.reimb, val: seg.reimb },
+            { key: AU && r.isAgedCare ? "Quality & harm" : "Patient safety", color: C.chart.safety, val: seg.safety },
             { key: "Network", color: C.chart.network, val: seg.network },
             { key: "Academic", color: C.chart.academic, val: seg.academic },
           ].filter(s => s.val > 0);
@@ -357,6 +357,8 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
           plug={`${r.entDecom} enterprise \u00d7 ${fmtK(r.entCost)} + ${r.depDecom} departmental \u00d7 ${fmtK(r.depCost)} + ${r.nicDecom} standalone \u00d7 ${fmtK(r.nicCost)}\n${r.flagshipRetireCount > 0 ? `+ ${r.flagshipRetireCount} retired flagship${r.flagshipRetireCount === 1 ? "" : "s"} \u00d7 scenario.decom (${Math.round((r.decomFactor||1) * 100)}%)` : ""}\n= ${fmtK(r.decomSave)}/yr (${Math.round(r.decom / Math.max(1, r.legacy) * 100)}% of ${r.legacy} systems retired)`}
           source={UKI
             ? "Tier costs use bed-scaled annual benchmarks: Enterprise (£300k base + £700/bed), Departmental (£75k + £160/bed), Standalone (£14k + £20/bed), scaled by estate complexity. Calibrated against the contract register of a large acute NHS Trust (~1,385 beds, 42 legacy systems, 2024/25 data) — defaults cover ~80% of actual estate value."
+            : AU
+            ? "Tier costs use scale-adjusted annual benchmarks: Enterprise (A$250k base + A$600/bed), Departmental (A$65k + A$140/bed), Standalone (A$12k + A$18/bed), scaled by complexity and provider profile. Sources: AU state contract-derived pricing, NSW SDPR programme data, vendor case studies."
             : "Tier costs use bed-scaled annual benchmarks: Enterprise ($300k base + $700/bed), Departmental ($75k + $160/bed), Standalone ($14k + $20/bed). Sources: KLAS 2025 EHR & vendor benchmarks, Becker's Hospital Review IT spend reports, AHA Hospital IT Survey."}
         />
       </Card>
@@ -377,12 +379,20 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         <Methodology
           formula={UKI
             ? "clinicians \u00d7 (mins/wk - residual) \u00d7 48 working_weeks / 60 \u00d7 \u00a355 \u00d7 scenario.realisation"
+            : AU
+            ? `staff \u00d7 (mins/wk - residual) \u00d7 48 working_weeks / 60 \u00d7 A$${r.isAgedCare || r.isNDIS ? 42 : 65} \u00d7 scenario.realisation`
             : "clinicians \u00d7 (mins/wk - residual) \u00d7 working_weeks / 60 \u00d7 $95 \u00d7 scenario.realization"}
           plug={UKI
             ? `${fmtNum(r.clinicians)} active clinicians \u00d7 ${Math.max(0, r.minsWasted - (r.isArchiveOnly ? 1 : 2))} reducible mins/wk (${r.minsWasted} - ${r.isArchiveOnly ? 1 : 2} residual) \u00d7 48 working wks / 60\n= ${fmtNum(r.hrsSaved)} hrs \u00d7 \u00a355/hr \u00d7 ${Math.round((r.realization || 0.3) * 100)}% realisation\n= ${fmtK(r.timeSave)}/yr`
+            : AU
+            ? `${fmtNum(r.clinicians)} active system users \u00d7 ${Math.max(0, r.minsWasted - (r.isArchiveOnly ? 1 : 2))} reducible mins/wk (${r.minsWasted} - ${r.isArchiveOnly ? 1 : 2} residual) \u00d7 48 working wks / 60\n= ${fmtNum(r.hrsSaved)} hrs \u00d7 A$${r.isAgedCare || r.isNDIS ? 42 : 65}/hr \u00d7 ${Math.round((r.realization || 0.3) * 100)}% realisation\n= ${fmtK(r.timeSave)}/yr`
             : `${fmtNum(r.clinicians)} active clinicians \u00d7 ${Math.max(0, r.minsWasted - (r.isArchiveOnly ? 1 : 2))} reducible mins/wk (${r.minsWasted} - ${r.isArchiveOnly ? 1 : 2} residual) \u00d7 50 working wks / 60\n= ${fmtNum(r.hrsSaved)} hrs \u00d7 $95/hr \u00d7 ${Math.round((r.realization || 0.3) * 100)}% realization\n= ${fmtK(r.timeSave)}/yr`}
           source={UKI
             ? "Active clinicians = total staff (beds \u00d7 2.8, NHS Digital workforce statistics 2023/24) \u00d7 65% active rate (Sinsky et al 2016, KLAS Arch Collaborative 500k+ clinicians). Each clinician touches ~35% of legacy estate (role-based access, modelled). Switch penalty 4% per system: Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events, \u03b2=0.03), corroborated by Westbrook et al JAMIA 2010 and Nuffield Trust 2020. \u00a355/hr blended: NHS Agenda for Change mid-band including on-costs, weighted towards nursing. Realisation rate: NHS Productive Ward reported 20-40%."
+            : AU
+            ? (r.isAgedCare || r.isNDIS
+              ? "Staffing from sector ratios (aged care 1.5 headcount/place per the 215 care-minute mandate; NDIS 0.2 staff/participant) × 65% active system users (Sinsky et al 2016, KLAS Arch Collaborative). Switch penalty 4% per system (Bartek et al JIMI 2023). A$42/hr care-sector blended award rate."
+              : "Staffing: NSW Health SDPR (3.0 clinical staff per acute bed) × 65% active rate (Sinsky et al 2016, KLAS Arch Collaborative 500k+ clinicians). Each user touches ~35% of the legacy estate. Switch penalty 4% per system: Bartek et al JIMI 2023 (2.78M EHR audit-log events, β=0.03), corroborated by Westbrook et al JAMIA 2010. A$65/hr blended (AIHW workforce data).")
             : "Active clinicians = total staff (beds \u00d7 3.2) \u00d7 65% active rate (Sinsky et al 2016, KLAS Arch Collaborative 500k+ clinicians). Each clinician touches ~35% of legacy estate (role-based access, modeled). Switch penalty 4% per system: Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events, \u03b2=0.03), corroborated by Westbrook et al JAMIA 2010. $95/hr blended: AHA RN/MD/tech weighted."}
         />
       </Card>
@@ -391,46 +401,84 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
     {/* Reimbursement */}
     {seg.reimb > 0 && <div ref={reimbRef}>
       <Card style={{ height: '100%', borderLeft: `3px solid ${C.blue}` }}>
-        <CTitle iconKey="dollar" color={C.blue}>Reimbursement & compliance</CTitle>
-        <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>CMS penalty program recovery and denial reduction from improved documentation through system consolidation.</div>
+        <CTitle iconKey="dollar" color={C.blue}>{AU ? (r.isAgedCare ? "AN-ACC funding & efficiency" : r.isNDIS ? "NDIS revenue & efficiency" : "ABF efficiency & revenue") : "Reimbursement & compliance"}</CTitle>
+        <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>{AU ? (r.isAgedCare ? "Funding accuracy, agency staffing reduction and compliance efficiency enabled by consolidated records - 30% attributed to system consolidation." : r.isNDIS ? "Claims accuracy, billable utilisation, staff retention and compliance efficiency from consolidated client records." : "Consolidation efficiency on the surviving estate plus private patient revenue recovery from complete documentation.") : "CMS penalty program recovery and denial reduction from improved documentation through system consolidation."}</div>
+        {AU && (r.abfEfficiencyGain || 0) > 0 && <Row label="ABF consolidation efficiency" value={fmtKts(r.abfEfficiencyGain)} />}
+        {AU && (r.privateRevRecovery || 0) > 0 && <Row label="Private patient revenue recovery" value={fmtKts(r.privateRevRecovery)} />}
+        {AU && (r.acAnaccUplift || 0) > 0 && <Row label="AN-ACC funding uplift" value={fmtKts(r.acAnaccUplift)} />}
+        {AU && (r.acAgencyReduction || 0) > 0 && <Row label="Agency staffing reduction" value={fmtKts(r.acAgencyReduction)} />}
+        {AU && (r.acComplianceSaving || 0) > 0 && <Row label="Compliance efficiency" value={fmtKts(r.acComplianceSaving)} />}
+        {AU && (r.ndisClaimsRecovery || 0) > 0 && <Row label="Claims accuracy recovery" value={fmtKts(r.ndisClaimsRecovery)} />}
+        {AU && (r.ndisUtilisationUplift || 0) > 0 && <Row label="Billable utilisation uplift" value={fmtKts(r.ndisUtilisationUplift)} />}
+        {AU && (r.ndisComplianceSaving || 0) > 0 && <Row label="Compliance efficiency" value={fmtKts(r.ndisComplianceSaving)} />}
+        {AU && (r.ndisRetentionSaving || 0) > 0 && <Row label="Staff retention saving" value={fmtKts(r.ndisRetentionSaving)} />}
         {r.hrrpReduction > 0 && <Row label="Hospital Readmissions Reduction Program (HRRP) recovery" value={fmtKts(r.hrrpReduction)} />}
         {r.hacReduction > 0 && <Row label="Hospital-Acquired Condition (HAC) improvement" value={fmtKts(r.hacReduction)} />}
         {r.vbpImprovement > 0 && <Row label="Value-Based Purchasing (VBP) opportunity" value={fmtKts(r.vbpImprovement)} />}
         {r.denialRecovery > 0 && <Row label="Denial recovery" value={fmtKts(r.denialRecovery)} />}
-        <Row label="Total reimbursement impact" value={fmtKts(seg.reimb)} accent />
+        <Row label={AU ? (r.isAgedCare ? "Total funding & efficiency" : r.isNDIS ? "Total revenue & efficiency" : "Total ABF & revenue impact") : "Total reimbursement impact"} value={fmtKts(seg.reimb)} accent />
         <Methodology
-          formula={"HRRP penalty reduction + HAC penalty reduction + VBP improvement + Denial recovery"}
-          plug={`HRRP: ${fmtK(r.hrrpReduction)}/yr (Medicare DRG ${fmtK(r.medicareDrg)} \u00d7 0.33% avg penalty \u00d7 scenario.safety)\nHAC: ${fmtK(r.hacReduction)}/yr (DRG \u00d7 1% \u00d7 25% bottom-quartile probability)\nVBP: ${fmtK(r.vbpImprovement)}/yr (DRG \u00d7 2% withhold \u00d7 15% improvement potential)\nDenials: ${fmtK(r.denialRecovery)}/yr (revenue \u00d7 4.8% denial rate \u00d7 fragmentation attribution)\n= ${fmtK(seg.reimb)}/yr total`}
-          source={"HRRP: CMS Section 1886(q) Social Security Act (3% max penalty, 0.33% avg FY2025 - Advisory Board). HAC: CMS HAC Reduction Program (1% reduction for bottom 25%). VBP: CMS Hospital Value-Based Purchasing (2% withhold pool). Denials: HFMA 2024 + AHIP industry data ($262bn annually denied, 4.8% net loss). Fragmentation attribution: Vest et al JAMIA 2019."}
+          formula={AU
+            ? (r.isAgedCare ? "Revenue × 45% × 3% AN-ACC uplift × 30% attribution + Staff cost × 10% agency × 15% × 30% attribution + 0.5 FTE/facility × A$65k × 50%"
+              : r.isNDIS ? "Revenue × 8% rejection × 5% recovery + Utilisation uplift 4% + Compliance 0.3 FTE/100 × A$60k × 50% + Turnover 27.5% × A$6.5k × 10%"
+              : "Surviving estate × 15% × scenario.decom + Private leakage × 30% recovery")
+            : "HRRP penalty reduction + HAC penalty reduction + VBP improvement + Denial recovery"}
+          plug={AU
+            ? (r.isAgedCare ? `AN-ACC uplift: ${fmtK(r.acAnaccUplift)}/yr\nAgency reduction: ${fmtK(r.acAgencyReduction)}/yr\nCompliance: ${fmtK(r.acComplianceSaving)}/yr\n= ${fmtK(seg.reimb)}/yr total`
+              : r.isNDIS ? `Claims accuracy: ${fmtK(r.ndisClaimsRecovery)}/yr\nUtilisation uplift: ${fmtK(r.ndisUtilisationUplift)}/yr\nCompliance: ${fmtK(r.ndisComplianceSaving)}/yr\nRetention: ${fmtK(r.ndisRetentionSaving)}/yr\n= ${fmtK(seg.reimb)}/yr total`
+              : `ABF efficiency: ${fmtK(r.abfEfficiencyGain)}/yr (15% of the SURVIVING estate - retired systems are already counted in decommission savings)\nPrivate revenue: ${fmtK(r.privateRevRecovery)}/yr (${fmtNum(r.admissionsPerYear || 0)} admissions \u00d7 private mix \u00d7 15% unbilled \u00d7 30% recovered)\n= ${fmtK(seg.reimb)}/yr total`)
+            : `HRRP: ${fmtK(r.hrrpReduction)}/yr (Medicare DRG ${fmtK(r.medicareDrg)} \u00d7 0.33% avg penalty \u00d7 scenario.safety)\nHAC: ${fmtK(r.hacReduction)}/yr (DRG \u00d7 1% \u00d7 25% bottom-quartile probability)\nVBP: ${fmtK(r.vbpImprovement)}/yr (DRG \u00d7 2% withhold \u00d7 15% improvement potential)\nDenials: ${fmtK(r.denialRecovery)}/yr (revenue \u00d7 4.8% denial rate \u00d7 fragmentation attribution)\n= ${fmtK(seg.reimb)}/yr total`}
+          source={AU
+            ? (r.isAgedCare ? "AN-ACC model (since Oct 2022): 3% uplift on the 45% documentation-responsive share of revenue, 30% attributed to system consolidation. Agency: ~10% of staffing on agency/casual cover, 15% reducible via integrated rostering, 30% attribution. Compliance: QI Program, SIRS and Star Ratings collation (~0.5 FTE/facility). Revenue: A$160k/place (AN-ACC subsidy $117,396 + resident fees, health.gov.au / StewartBrown FY25)."
+              : r.isNDIS ? "NDIA Q4 2024-25 (revenue basis: average annualised payments per non-SIL participant ~A$45.9k). Claims: ~8% baseline rejection, documentation-driven recovery. Utilisation: 70% billable baseline. Turnover: 27.5% at A$6.5k replacement (A$5-8k benchmark)."
+              : "ABF efficiency: 15% of the surviving legacy estate's admin cost (IHACPA NWAU pricing context; NSW SDPR programme data). Private revenue: ~15% of privately insured episodes in public hospitals go unbilled (VAGO 2019); 30% recoverable; APRA Dec 2024 average episode benefit $3,824 + MBS.")
+            : "HRRP: CMS Section 1886(q) Social Security Act (3% max penalty, 0.33% avg FY2025 - Advisory Board). HAC: CMS HAC Reduction Program (1% reduction for bottom 25%). VBP: CMS Hospital Value-Based Purchasing (2% withhold pool). Denials: HFMA 2024 + AHIP industry data ($262bn annually denied, 4.8% net loss). Fragmentation attribution: Vest et al JAMIA 2019."}
         />
       </Card>
     </div>}
 
-    {/* Patient safety */}
-    <div ref={safetyRef}>
+    {/* Patient safety — hidden for AU NDIS (no quality module) */}
+    {(!AU || (r.qualitySavings || 0) > 0) && <div ref={safetyRef}>
       <Card style={{ height: '100%', borderLeft: `3px solid ${C.purple}` }}>
-        <CTitle iconKey="shield" color={C.purple}>Patient safety impact</CTitle>
-        <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>Cost avoidance from preventing adverse events attributable to fragmented clinical information across legacy systems.</div>
+        <CTitle iconKey="shield" color={C.purple}>{AU && r.isAgedCare ? "Quality & avoidable harm" : "Patient safety impact"}</CTitle>
+        <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>{AU && r.isAgedCare ? "Cost avoidance from reducing falls, pressure injuries, medication incidents and preventable hospital admissions - 25-30% attributed to information fragmentation." : "Cost avoidance from preventing adverse events attributable to fragmented clinical information across legacy systems."}</div>
+        {/* Per-bed harm counts use acute-hospital rates; aged care has its own lines */}
+        {!(AU && (r.isAgedCare || r.isNDIS)) && <>
         <Row label="Medication errors avoided" value={fmtNum(Math.round(r.safetyMedErrorsAvoided * ts.mult))} />
         <Row label="Patients protected from harm" value={fmtNum(Math.round(r.safetyPatientsProtected * ts.mult))} />
         <Row label="Excess bed days avoided" value={fmtNum(Math.round(r.safetyBedDaysAvoided * ts.mult))} />
+        </>}
+        {AU && r.isAgedCare && (r.acHarmAvoidance || 0) > 0 && <Row label="Avoidable harm (falls / pressure / medication)" value={fmtKts(r.acHarmAvoidance)} />}
+        {AU && r.isAgedCare && (r.acPPHAvoidance || 0) > 0 && <Row label="Preventable hospital admissions" value={fmtKts(r.acPPHAvoidance)} />}
+        {AU && !r.isAgedCare && (r.excessDayCostAvoided || 0) > 0 && <Row label="Excess bed-day cost avoided" value={fmtKts(r.excessDayCostAvoided)} />}
+        {AU && (r.duplicateReduction || 0) > 0 && <Row label="Duplicate testing reduction" value={fmtKts(r.duplicateReduction)} />}
+        {AU && (r.ediscoverySaving || 0) > 0 && <Row label="Medico-legal (e-Discovery) savings" value={fmtKts(r.ediscoverySaving)} />}
         {r.readmissionsAvoided > 0 && <Row label={"Readmissions avoided (" + Math.round(r.readmissionsAvoided * ts.mult) + " patients)"} value={r.readmissionCostAvoidance > 0 ? fmtKts(r.readmissionCostAvoidance) : "quality metric"} />}
-        {r.malpracticeReduction > 0 && <Row label={UKI ? "Clinical negligence indemnity reduction" : "Malpractice reduction"} value={fmtKts(r.malpracticeReduction)} />}
+        {r.malpracticeReduction > 0 && <Row label={UKI ? "Clinical negligence indemnity reduction" : AU ? "Medical indemnity reduction" : "Malpractice reduction"} value={fmtKts(r.malpracticeReduction)} />}
         {UKI && (r.duplicateTestSaving || 0) > 0 && <Row label="Duplicate testing avoided" value={fmtKts(r.duplicateTestSaving)} />}
         {(r.qualitySavings || 0) > 0 && <Row label="Total cost avoidance" value={fmtKts(r.qualitySavings)} accent />}
         <Methodology
           formula={UKI
             ? "Excess bed days \u00d7 \u00a3400/day + Indemnity (beds \u00d7 \u00a37,500 \u00d7 5%) \u00d7 scenario.safety + Duplicate tests avoided \u00d7 \u00a335"
+            : AU
+            ? (r.isAgedCare ? "Places \u00d7 A$3,000 harm cost \u00d7 25% fragmentation \u00d7 scenario.safety + Places \u00d7 15% PPH \u00d7 A$8,000 \u00d7 30% \u00d7 scenario.safety"
+              : "Excess bed days \u00d7 A$3,100 + Indemnity (beds \u00d7 A$20,000 \u00d7 3%) \u00d7 scenario.safety + Duplicate tests + e-Discovery + Readmissions \u00d7 A$11,500")
             : "Excess bed days \u00d7 $3,132/day + Malpractice premium \u00d7 5% \u00d7 scenario.safety + Readmissions avoided \u00d7 $15,200"}
           plug={UKI
             ? `Excess bed days: ${fmtNum(r.safetyBedDaysAvoided || 0)} days \u00d7 \u00a3400 = ${fmtK(r.excessDayCostAvoided || 0)}/yr\n${r.malpracticeReduction > 0 ? `Indemnity: beds \u00d7 \u00a37,500 exposure \u00d7 5% reduction \u00d7 scenario.safety = ${fmtK(r.malpracticeReduction)}/yr\n` : ""}${(r.duplicateTestSaving || 0) > 0 ? `Duplicate tests: beds \u00d7 22 tests/yr \u00d7 18% duplicate rate \u00d7 \u00a335 \u00d7 scenario.safety = ${fmtK(r.duplicateTestSaving)}/yr\n` : ""}= ${fmtK(r.qualitySavings || 0)}/yr total`
+            : AU
+            ? (r.isAgedCare ? `Avoidable harm: ${fmtK(r.acHarmAvoidance || 0)}/yr\nPreventable admissions: ${fmtK(r.acPPHAvoidance || 0)}/yr\n= ${fmtK(r.qualitySavings || 0)}/yr total`
+              : `Excess bed days: ${fmtK(r.excessDayCostAvoided || 0)}/yr\nIndemnity: ${fmtK(r.malpracticeReduction || 0)}/yr\nDuplicate testing: ${fmtK(r.duplicateReduction || 0)}/yr\ne-Discovery: ${fmtK(r.ediscoverySaving || 0)}/yr\nReadmissions: ${fmtK(r.readmissionCostAvoidance || 0)}/yr\n= ${fmtK(r.qualitySavings || 0)}/yr total`)
             : `Excess bed days: ${fmtNum(r.safetyBedDaysAvoided || 0)} days \u00d7 $3,132 = ${fmtK(r.excessDayCostAvoided || 0)}/yr\n${r.malpracticeReduction > 0 ? `Malpractice: beds \u00d7 $8,500 premium \u00d7 5% reduction \u00d7 scenario.safety = ${fmtK(r.malpracticeReduction)}/yr\n` : ""}${r.readmissionCostAvoidance > 0 ? `Readmissions: ${r.readmissionsAvoided} avoided \u00d7 $15,200 = ${fmtK(r.readmissionCostAvoidance)}/yr\n` : ""}= ${fmtK(r.qualitySavings || 0)}/yr total`}
           source={UKI
             ? "Harm rates: Camacho et al 2024 (BMJ Quality & Safety) \u2014 ~1.8M medication errors at care transitions across NHS England annually, 31,500 patients harmed, 36,500 excess bed days. Excess bed day cost: \u00a3400/day (NHS Reference Costs, general acute, conservative blended). Indemnity: NHS Resolution \u00a33.6bn annual settlements (NAO Oct 2025) with 30% communication-failure attribution (CRICO 2016). Duplicate testing: Bates et al (18% duplicate rate when records fragmented), \u00a335/test NHS pathology blended. Classification: cost avoidance \u2014 harm that doesn't occur, not direct budget reductions."
+            : AU
+            ? (r.isAgedCare ? "Harm cost A$3,000/place/yr blended (falls A$35k, pressure injuries A$10k, medication incidents A$15k; AIHW injury data), 25% attributed to information fragmentation (ACSQHC). Preventable admissions: 15% of residents/yr (AIHW Australian Health Performance Framework) at A$8,000 (IHACPA NWAU-derived), 30% attribution. Classification: cost avoidance."
+              : "Excess bed days: QAHCS/AIHW baseline at A$3,100/day (IHACPA long-stay outlier weights), 35% attributed to information fragmentation (ACSQHC). Indemnity: 3% of A$20,000/bed exposure (VMIA 2025-26 benchmark). Duplicate testing: 22% duplicate rate (Banker et al 2024, RCPA) on A$12,000/bed pathology, 50% addressable. Readmissions: 6.2-10.9% Australian all-cause 30-day baseline, 0.6pp reduction (Vest et al JAMIA 2019), A$11,500/readmission. AU evidence: QLD DigiMat 12.9% decline in medication complications (Woods et al 2024); RCH Melbourne 22% mortality decrease post-EMR (South et al 2022). Classification: cost avoidance.")
             : "Excess bed days: HCUP/AHRQ ($3,132/day acute). Medication errors: Bates et al (1.8 preventable ADEs per 100 admits). Communication failures contribute to 30% of malpractice claims (CRICO 2016). Malpractice premium: Mello et al Health Affairs 2010, NPDB 2023, TDC Group 2025. Readmissions: CMS 15.6% baseline, Vest et al JAMIA 2019 (0.8pp reduction from EHR consolidation). Classification: cost avoidance \u2014 these represent harm that doesn't occur, not direct budget reductions."}
         />
       </Card>
-    </div>
+    </div>}
 
     </div>
 
@@ -457,7 +505,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         <Methodology
           formula={"Shared infrastructure: facilities \u00d7 $250k duplicate hosting cost \u00d7 60% consolidatable + Operational efficiency: total estate \u00d7 15% \u00d7 scenario.decom"}
           plug={`Shared infrastructure: ${r.org_count} facilities \u00d7 $250k duplicate hosting / interfaces / support \u00d7 60% consolidatable = ${fmtK(r.infraConsolidation)}/yr\nOperational efficiency: ${fmtK(r.totalEstate)} estate \u00d7 15% \u00d7 scenario.decom = ${fmtK(r.standardizationSave)}/yr\n= ${fmtK(seg.network)}/yr total\n\nNote: the ${r.duplicateSystems} duplicate systems are NOT summed here. Their per-system licensing and support costs are recovered through Decommission savings above (each retired system's cost is captured there). Counting them again here would inflate the total.`}
-          source={"Duplicate system rate: ~30% of legacy systems are typically replicated across facilities in an IDN (CHIME Digital Health Survey, KLAS M&A Best Practices) — shown for context only. Shared infrastructure: AHA Hospital IT Survey post-merger ($250k per facility in duplicate hosting, network, monitoring). Operational efficiency 15%: Deloitte healthcare M&A studies (governance, vendor management, audit, and training overhead reduction from running one consolidated estate vs many separate ones)."}
+          source={AU ? "Duplicate system rate: ~35% of systems are replicated across facilities post-merger. Shared infrastructure: A$350k per district (data centre, network, service desk, training), 60% consolidatable through a single archive. Sources: NSW/QLD health infrastructure programme data, vendor consolidation case studies." : "Duplicate system rate: ~30% of legacy systems are typically replicated across facilities in an IDN (CHIME Digital Health Survey, KLAS M&A Best Practices) — shown for context only. Shared infrastructure: AHA Hospital IT Survey post-merger ($250k per facility in duplicate hosting, network, monitoring). Operational efficiency 15%: Deloitte healthcare M&A studies (governance, vendor management, audit, and training overhead reduction from running one consolidated estate vs many separate ones)."}
         />
       </Card>
     </div>}
@@ -469,6 +517,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>Additional savings from retiring research databases, GME tracking systems, and teaching program administration tools.</div>
         {r.researchDecomSave > 0 && <Row label="Research system decommission" value={fmtKts(r.researchDecomSave)} />}
         {r.gmeEfficiency > 0 && <Row label="Graduate Medical Education (GME) compliance" value={fmtKts(r.gmeEfficiency)} />}
+        {AU && (r.teachingEfficiency || 0) > 0 && <Row label="Teaching compliance efficiency" value={fmtKts(r.teachingEfficiency)} />}
         {r.teachingOverhead > 0 && <Row label="Teaching program overhead" value={fmtKts(r.teachingOverhead)} />}
         <Row label="Total academic savings" value={fmtKts(seg.academic)} accent />
         <Methodology
@@ -504,7 +553,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         above the methodology carousel. Equal-height cards via height: 100%.
         UKI has no e-discovery/cyber module, so the Legal card is hidden and
         Operational efficiency spans the full width. */}
-    <div style={{ display: 'grid', gridTemplateColumns: UKI ? '1fr' : '1fr 1fr', gap: 18, marginBottom: 18 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: (UKI || (AU && !((r.ediscoverySaving || 0) > 0))) ? '1fr' : '1fr 1fr', gap: 18, marginBottom: 18 }}>
 
     {/* Operational efficiency */}
     <Card style={{ height: '100%', borderLeft: "3px solid #2ecc71" }}>
@@ -529,14 +578,15 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         plug={`Tickets baseline: ${r.legacy} legacy systems \u00d7 2.5/mo = ${fmtNum(r.ticketsBaselineMonthly)}/month\nTickets after: ${r.legacy - r.decom} surviving \u00d7 2.5/mo \u00d7 60% = ${fmtNum(r.ticketsAfter)}/month (${r.ticketsReductionPct}% reduction)\n${UKI ? "SAR turnaround" : "Records request"}: ${r.sarDaysBefore}d \u2192 ${r.sarDaysAfter}d (${r.sarReductionPct}% faster)`}
         source={UKI
           ? "Ticket benchmarks: ITIL service desk reporting in NHS trusts (2.5 tickets/system/month for legacy clinical systems); surviving systems generate fewer tickets through consolidated support. SAR turnaround: the ICO requires searching every system where patient data may be held \u2014 1.5 day base + 0.4 days per system, consistent with NHS information governance team reports and validated against a benchmarked Trust (42 systems \u2248 18 working days per SAR)."
+          : AU
+          ? "Ticket benchmarks: ITIL service desk metrics (2.5 tickets/system/month for legacy clinical systems); surviving systems generate fewer tickets through consolidated support. Records requests: 3.0 day base coordination (cross-LHD, redaction, quality review) + 0.8 days per system before consolidation vs 0.15 days per surviving system after."
           : "Ticket benchmarks: AHIMA support volume studies (2.5 tickets/system/month average for legacy clinical systems). Surviving system factor: post-archive systems run with reduced ticket volume due to consolidated access. SAR/records request: AHIMA multi-source record assembly benchmarks, HIPAA-compliant release timelines."}
       />
     </Card>
 
-    {/* Legal & compliance — US only: the UKI engine has no e-discovery or
-        cyber module (medico-legal value is carried in the indemnity line of
-        the Patient safety card instead). */}
-    {!UKI && <Card style={{ height: '100%', borderLeft: "3px solid #e74c3c" }}>
+    {/* Legal & compliance — US and AU hospitals: the UKI engine has no
+        e-discovery or cyber module, and AU aged care/NDIS zero it out. */}
+    {!UKI && (!AU || (r.ediscoverySaving || 0) > 0) && <Card style={{ height: '100%', borderLeft: "3px solid #e74c3c" }}>
       <CTitle iconKey="shield" color="#e74c3c">Legal and compliance</CTitle>
       <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>Medico-legal records assembly savings and cyber attack surface reduction from retiring legacy systems.</div>
       <div style={{ display: "flex", gap: 14, marginBottom: 16 }}>
@@ -552,9 +602,11 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         </div>
       </div>
       <Methodology
-        formula={"e-Discovery: cases \u00d7 (28h before - 6h after) \u00d7 $55/hr. Cyber: legacy systems eliminated = attack surfaces removed"}
-        plug={`e-Discovery: ${r.litigationCases} cases/yr \u00d7 22 hrs saved/case \u00d7 $55/hr = ${fmtK(r.ediscoverySaving || 0)}/yr\nCyber: ${r.cyberSystemsRetired} attack surfaces eliminated`}
-        source={"e-Discovery: ~12 litigation cases per 100 beds typical for US hospitals. Records assembly: 28 hrs/case (3.5 days) across fragmented systems vs 6 hrs from consolidated archive. HIM staff rate: $55/hr (BLS 2024). Cyber: avg healthcare breach $10.93m (IBM/Ponemon 2023). 90% of health systems attacked in 2024. Each legacy system on unsupported OS is an attack vector."}
+        formula={AU ? "e-Discovery: cases \u00d7 (24h before - 5h after) \u00d7 A$45/hr. Cyber: legacy systems eliminated = attack surfaces removed" : "e-Discovery: cases \u00d7 (28h before - 6h after) \u00d7 $55/hr. Cyber: legacy systems eliminated = attack surfaces removed"}
+        plug={AU ? `e-Discovery: ${r.litigationCases} cases/yr \u00d7 19 hrs saved/case \u00d7 A$45/hr = ${fmtK(r.ediscoverySaving || 0)}/yr\nCyber: ${r.cyberSystemsRetired} attack surfaces eliminated` : `e-Discovery: ${r.litigationCases} cases/yr \u00d7 22 hrs saved/case \u00d7 $55/hr = ${fmtK(r.ediscoverySaving || 0)}/yr\nCyber: ${r.cyberSystemsRetired} attack surfaces eliminated`}
+        source={AU
+          ? "e-Discovery: ~8 medico-legal / coronial / complaint cases per 100 beds (lower than US). Records assembly: 24 hrs/case across fragmented systems vs 5 hrs from a consolidated archive, at A$45/hr health information staff rates. Cyber: average Australian data breach A$4.26m across all industries (IBM Cost of a Data Breach 2024); healthcare typically runs above average. Privacy Act 1988, Notifiable Data Breaches scheme."
+          : "e-Discovery: ~12 litigation cases per 100 beds typical for US hospitals. Records assembly: 28 hrs/case (3.5 days) across fragmented systems vs 6 hrs from consolidated archive. HIM staff rate: $55/hr (BLS 2024). Cyber: avg healthcare breach $10.93m (IBM/Ponemon 2023). 90% of health systems attacked in 2024. Each legacy system on unsupported OS is an attack vector."}
       />
     </Card>}
 
@@ -583,6 +635,15 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
           { color: "#8e44ad", title: "Real-world validation", num: "06", body: <>The model was validated against the complete application footprint of a large acute NHS Trust (~1,385 beds, dual-site merged estate): 42 unique systems (3 enterprise, 15 departmental, 24 standalone) with £16.75m/yr total contract value. Defaults alone reproduced £11.9m/yr (−26% vs the £16m target); with tier cost overrides or "I know my spend" mode the model landed within 2.5%. Four systems accounted for 78% of spend — exactly the pattern the named-flagship feature captures.</> },
           { color: C.accent, title: "Year-by-year ramp", num: "07", body: <>Savings are phased to reflect progressive legacy system retirement as data is migrated and interfaces are decommissioned. The 3-year view models 40% / 80% / 100% of steady state across Years 1-3. The 5-year view models 20% / 40% / 60% / 80% / 100% for a slower, more conservative cadence typical of larger Trusts and ICS-wide programmes. The top-of-page timescale toggle switches between these views and re-scales every figure on the report. Galen payback is calculated as migration cost ÷ (annual decommission savings minus annual archive cost).</> },
           { color: C.blue, title: "Key sources", num: "08", body: <>Camacho et al 2024, BMJ Quality & Safety (transition medication errors, harm, excess bed days) · National Audit Office Oct 2025 & NHS Resolution 2024/25 (clinical negligence) · NHS Digital workforce statistics 2023/24 · Lord Carter operational productivity review · NHS Employers Agenda for Change 2024/25 (£55/hr blended rate) · NHS Reference Costs (£400/bed-day, pathology) · Bartek et al JIMI 2023 & Westbrook et al JAMIA 2010 (system-switching cost) · Nuffield Trust 2020 (system navigation) · ICO guidance (SAR search obligations) · Benchmarked acute NHS Trust contract register (2024/25).</> },
+        ] : AU ? [
+          { color: C.accent, title: "System costing", num: "01", body: <>Each legacy system is classified into three tiers with annual cost scaled by organisation size and complexity: Enterprise (A$250k base + A$600/bed, e.g. a legacy EMR or PAS), Departmental (A$65k + A$140/bed), Standalone (A$12k + A$18/bed), with per-type market caps. Aged care and NDIS use sector catalogues (care platforms, medication/rostering, claims tools) at sector price points. Sources: AU state contract-derived pricing, NSW SDPR programme data, vendor case studies.</> },
+          { color: C.amber, title: "Staff capacity", num: "02", body: <>Staffing uses sector ratios: hospitals 3.0 clinical staff per acute bed (NSW Health SDPR: 75,500 EMR users / 25,632 beds), aged care 1.5 headcount per place (215 care-minute mandate), NDIS 0.2 staff per participant. Two evidence-based filters apply: 65% of staff are regular system users (Sinsky et al 2016; KLAS Arch Collaborative) and each touches ~35% of the estate. A 4% task-switching penalty per system (Bartek et al JIMI 2023: 2.78M EHR audit-log events) sets minutes wasted, valued at A$65/hr (hospitals) or A$42/hr (care sectors) with a conservative realisation rate.</> },
+          { color: C.blue, title: "Funding & revenue", num: "03", body: <>Hospitals: consolidation efficiency at 15% of the SURVIVING estate's admin cost (never overlapping decommission savings) plus private patient revenue recovery — ~15% of privately insured episodes in public hospitals go unbilled (VAGO 2019), 30% recoverable, valued from APRA's $3,824 average episode benefit. Aged care: 3% AN-ACC uplift on the 45% documentation-responsive revenue share, agency staffing reduction, and compliance efficiency — each with 30% attribution to system consolidation. NDIS: claims accuracy, billable utilisation, retention and compliance efficiency.</> },
+          { color: C.purple, title: "Quality & safety", num: "04", body: <>Hospital harm baselines from QAHCS/AIHW with 35% attributed to information fragmentation (ACSQHC): excess bed days at A$3,100/day (IHACPA), medical indemnity at 3% of A$20,000/bed (VMIA 2025-26), duplicate testing at a 22% rate (Banker et al 2024, RCPA), readmissions at a ~10% Australian baseline with a 0.6pp reduction (Vest et al JAMIA 2019). Aged care uses falls/pressure/medication harm costs and preventable-admission rates (AIHW). AU outcome evidence: QLD DigiMat 12.9% decline in medication complications; RCH Melbourne 22% mortality decrease post-EMR. All classified as cost avoidance.</> },
+          { color: "#2ecc71", title: "Confidence levels", num: "05", body: <>The Conservative / Moderate / Optimistic toggle re-runs the whole model with a different factor set. Conservative: 85% of planned retirements land, 20% time realisation, 15% safety capture. Moderate: 100% / 30% / 25%. Optimistic: 110% (capped at 100% of any single contract's value) / 40% / 35%. Every figure on this report — including the sector funding modules — scales through a genuine re-run, not a flat multiplier.</> },
+          { color: "#8e44ad", title: "Scale & network", num: "06", body: <>Multi-facility programmes (LHDs/HHSs, statewide) add consolidation savings incremental to decommissioning: duplicate system elimination (35% duplication rate post-merger) and shared infrastructure at A$350k per district (data centre, network, service desk, training), 60% consolidatable through a single archive. Tertiary/teaching hospitals add a research-system module (3.5 systems per 100 beds — visible and editable, never silent) plus teaching compliance efficiency.</> },
+          { color: C.accent, title: "Year-by-year ramp", num: "07", body: <>Savings are phased to reflect progressive legacy system retirement as data is migrated and interfaces are decommissioned. The 3-year view models 40% / 80% / 100% of steady state across Years 1-3. The 5-year view models 20% / 40% / 60% / 80% / 100% for the slower cadence typical of district and statewide programmes. The top-of-page timescale toggle switches between these views and re-scales every figure. Galen payback is calculated as migration cost ÷ (annual decommission savings minus annual archive cost).</> },
+          { color: C.blue, title: "Key sources", num: "08", body: <>IHACPA NEP 2025-26 (A$7,258/NWAU) · AIHW admitted patient care 2023-24 · ACSQHC safety reports · QAHCS (Wilson et al) · VMIA 2025-26 indemnity benchmarks · APRA PHI benefits Dec 2024 · VAGO 2019 (unbilled private episodes) · NSW Health SDPR · AN-ACC funding model (health.gov.au) · StewartBrown FY25 aged-care survey · NDIA quarterly reports 2024-25 · Bartek et al JIMI 2023 · Vest et al JAMIA 2019 · Woods et al 2024 (QLD DigiMat) · South et al 2022 (RCH Melbourne).</> },
         ] : [
           { color: C.accent, title: "System costing", num: "01", body: <>Each legacy system is classified into three tiers (enterprise, departmental, or standalone) with costs scaled by bed count. Enterprise systems (e.g. legacy EHR) cost $150k to $1.5m+ base plus $650 to $7,500 per bed. Departmental systems run $80k to $350k plus $200 to $900 per bed. Standalone tools are $50k to $200k plus $120 to $620 per bed. Source: KLAS 2025 benchmarks, Becker's Hospital Review.</> },
           { color: C.amber, title: "Clinical capacity", num: "02", body: <>Not all staff use all systems. We apply two evidence-based filters: 65% of staff are regular system users (Sinsky et al 2016; KLAS Arch Collaborative — 500k+ clinicians analyzed), and each user interacts with ~35% of the legacy estate. A 4% productivity penalty per system touched (Bartek et al JIMI 2023, primary: 2.78M EHR audit-log events, β=0.03; corroborated by Westbrook et al JAMIA 2010) determines time wasted. Hours freed are valued at $95/hr with 30% realization, reflecting that freed time creates capacity, not direct savings.</> },

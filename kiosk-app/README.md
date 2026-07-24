@@ -1,13 +1,14 @@
-# ROI Calculator — Kiosk App (Touchscreen + Embed, US + UKI)
+# ROI Calculator — Kiosk App (Touchscreen + Embed, US + UKI + AU)
 
 Conference kiosk app for RLDatix Galen Clinical Archive ROI estimation.
-Dark theme, touch-optimized. One codebase, three shipped builds:
+Dark theme, touch-optimized. One codebase, four shipped builds:
 
 | Mode | Command | Output | Surface |
 |------|---------|--------|---------|
 | **US touchscreen** (default) | `npm run build` | `dist/` | Fixed portrait 1080×1920 (9:16) conference kiosk |
 | **US embed** | `npm run build:embed` | `dist/` | Responsive / iframe-friendly web version — light RLDatix web theme, scales from ~320px phones to desktop |
 | **UKI embed** | `npm run build:embed:uki` | `dist/` | UK & Ireland market variant of the embed — NHS/Ireland model, £, `en-GB` |
+| **AU embed** | `npm run build:embed:au` | `dist/` | Australia market variant of the embed — hospitals + aged care + NDIS, A$, `en-AU` |
 
 The surface is selected at build time via `--mode embed`, which loads
 `.env.embed` (`VITE_EMBED=1`). The flag switches the font scale
@@ -30,6 +31,15 @@ org-type Scope step + Scale step, UK report content (Camacho et al BMJ
 Conservative/Moderate/Optimistic confidence toggle, and a £ PDF. All UKI
 code is behind `UKI` build-flag gates so the US builds are unaffected
 (verified DOM-identical). There is no UKI touchscreen build.
+
+The AU market (`--mode embed-au` → `.env.embed-au`) follows the same
+pattern with three sectors: the audited Australian engine
+(`src/calc/engine.au.js`, ported from `web/au/roi-calculator.html` after
+its accuracy audit — surviving-estate efficiency basis, capped stretch,
+30% aged-care funding attribution), sector-aware Scope/Systems/Fine-tune
+steps (hospitals / residential aged care / NDIS), AU catalogues
+(`vendors.au.js`), presets (`presets.au.js`), A$/`en-AU` formatting, AU
+report content, and an A$ PDF. There is no AU touchscreen build.
 
 ## Deploy to Netlify
 

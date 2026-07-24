@@ -3,3 +3,4 @@
 // build is always US.
 export const MARKET = import.meta.env.VITE_MARKET || 'us';
 export const UKI = MARKET === 'uki';
+export const AU = MARKET === 'au';

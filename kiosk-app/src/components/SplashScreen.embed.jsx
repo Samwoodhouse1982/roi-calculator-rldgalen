@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { C, F } from '../theme';
-import { UKI } from '../market';
+import { UKI, AU } from '../market';
 import rldatixLogo from '../assets/rldatix-logo.png';
 import klasBadge from '../assets/best-in-klas-2025-data-archiving.svg';
 
@@ -39,9 +39,9 @@ export function SplashScreen({ onStart, onAdminReveal }) {
           fontSize: 'clamp(1.9rem, 5.2vw, 3rem)', fontWeight: 800, lineHeight: 1.15,
           color: C.text, margin: '0 0 20px', letterSpacing: '-0.5px',
         }}>
-          {UKI ? "Migrating to a new EPR?" : "Decommission legacy systems."}
+          {UKI ? "Migrating to a new EPR?" : AU ? "Retiring legacy systems?" : "Decommission legacy systems."}
           <br />
-          <span style={{ color: C.green }}>{UKI ? "Discover your archiving ROI." : "Discover your ROI."}</span>
+          <span style={{ color: C.green }}>{UKI ? "Discover your archiving ROI." : AU ? "Discover your archiving ROI." : "Discover your ROI."}</span>
         </h1>
 
         <div style={{ width: 120, height: 5, borderRadius: 3, margin: '0 auto 26px', background: 'linear-gradient(90deg, #1A8A7A, #34DEC2)' }} />
@@ -49,7 +49,7 @@ export function SplashScreen({ onStart, onAdminReveal }) {
         <p style={{
           fontSize: F.body, color: C.textMid, lineHeight: 1.65, margin: '0 auto 36px', maxWidth: 640,
         }}>
-          {UKI ? "See how much your Trust or ICS could save by retiring legacy systems and consolidating clinical data into a single archive." : "See exactly how much your health system could save by retiring legacy applications and consolidating clinical data into a single archive."}
+          {UKI ? "See how much your Trust or ICS could save by retiring legacy systems and consolidating clinical data into a single archive." : AU ? "See how much your hospital, aged care or NDIS organisation could save by retiring legacy systems and consolidating clinical data into a single archive." : "See exactly how much your health system could save by retiring legacy applications and consolidating clinical data into a single archive."}
         </p>
 
         <button onClick={onStart} style={{
@@ -73,7 +73,7 @@ export function SplashScreen({ onStart, onAdminReveal }) {
           WebkitMaskSize: 'contain', maskSize: 'contain',
           WebkitMaskPosition: 'center', maskPosition: 'center',
         }} />
-        <div style={{ fontSize: F.tiny, color: C.textMuted, marginTop: 10 }}>{UKI ? "v1.0 · Updated July 19, 2026" : "v3.2 · Updated July 19, 2026"}</div>
+        <div style={{ fontSize: F.tiny, color: C.textMuted, marginTop: 10 }}>{UKI ? "v1.0 · Updated July 19, 2026" : AU ? "v1.0 · Updated July 21, 2026" : "v3.2 · Updated July 19, 2026"}</div>
       </div>
     </div>
   );

@@ -5,15 +5,20 @@ import { Icon } from '../components/Icons';
 
 // Build-time flag: '1' when built with `--mode embed`; sizing only.
 const EMBED = import.meta.env.VITE_EMBED === '1';
-import { KNOWN_SYSTEMS, systemCost } from '../calc/vendors.index.js';
-import { UKI } from '../market';
+import { KNOWN_SYSTEMS, systemCost, TIER_TYPES as TIER_TYPES_MKT, KNOWN_SYSTEMS_BY_SECTOR, TIER_TYPES_BY_SECTOR } from '../calc/vendors.index.js';
+import { UKI, AU } from '../market';
 import { PRESETS as PRESETS_UKI, ORG_TYPES } from '../calc/presets.uki';
+import { PRESETS as PRESETS_AU, SECTORS as SECTORS_AU, ORG_TYPES as ORG_TYPES_AU } from '../calc/presets.au';
 
-const TIER_TYPES = {
+// US tier-type map (historical local copy). The market builds override it:
+// vendors.index exports the UKI/AU maps; the US vendors module has none, so
+// TIER_TYPES_MKT is undefined for US and this literal stays in effect there.
+const TIER_TYPES_US_LOCAL = {
   enterprise: ["EHR","Legacy EHR","EHR/Integration","Ambulatory EHR","Ambulatory EHR/RCM","Revenue Cycle"],
   departmental: ["Pharmacy/Dispensing","Pharmacy","OB/Perinatal","Oncology","ICU/Critical Care","Behavioral Health","Post-Acute/Rehab","Laboratory","PACS","Radiology/RIS","Cardiology/CVIS"],
   niche: ["Document Management","Integration Engine","CDI/Coding","Clinical Documentation","Dictation/Transcription","Clinical Communication","Incident/Risk","Infection Control","Workforce/Scheduling","Data Warehouse"],
 };
+const TIER_TYPES = TIER_TYPES_MKT || TIER_TYPES_US_LOCAL;
 
 // Cost slider ranges per tier - matches tierCost() in engine for typical values
 const TIER_COST_RANGE = {
@@ -155,9 +160,12 @@ export function ProviderStep({ providerType, onSelect, reimbursementModel, setRe
 // STEP 2: Journey
 export function JourneyStep({ journey, onSelect }) {
   return <div>
-    <SectionTitle number="2">{UKI ? "Where are you on your EPR journey?" : "Where are you on your EHR journey?"}</SectionTitle>
+    <SectionTitle number="2">{UKI ? "Where are you on your EPR journey?" : AU ? "Where are you on your EMR journey?" : "Where are you on your EHR journey?"}</SectionTitle>
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {(UKI ? [
+      {(AU ? [
+        { key: "HAVE_EPR", label: "We want to decommission systems", desc: "You have (or are keeping) your core platform. Retire and archive the legacy estate around it.", iconKey: "check", focus: "Archiving + decommission savings" },
+        { key: "EVALUATING", label: "We're evaluating enterprise EMRs", desc: "Assessing migration to a single EMR platform. Need the full case for migration and archiving.", iconKey: "search", focus: "Migration safety + archiving savings" },
+      ] : UKI ? [
         { key: "HAVE_EPR", label: "We want to decommission systems", desc: "You have (or are keeping) your EPR. Retire and archive the legacy estate around it.", iconKey: "check", focus: "Archiving + decommission savings" },
         { key: "EVALUATING", label: "We're evaluating enterprise EPRs", desc: "Assessing migration to a single EPR platform. Need the full case for migration and archiving.", iconKey: "search", focus: "Migration safety + archiving savings" },
       ] : [
@@ -242,14 +250,35 @@ export function FacilitiesStep({ inputs, update, facilities, setFacility }) {
 }
 
 // STEP 4: Systems
-export function SystemsStep({ inputs, updateTier, flagships, addFlagship, removeFlagship, updateFlagshipCost, updateFlagshipInstances, costMode, setCostMode, knownSpend, setKnownSpend }) {
+export function SystemsStep({ inputs, updateTier, flagships, addFlagship, removeFlagship, updateFlagshipCost, updateFlagshipInstances, costMode, setCostMode, knownSpend, setKnownSpend, sector = null }) {
   const [openTier, setOpenTier] = useState(null);
   const [selected, setSelected] = useState([]);
   const [customTier, setCustomTier] = useState(null); // when set, modal is open for that tier
+  // AU: tier labels, hints and system catalogues follow the sector.
+  const AU_TIER_COPY = {
+    hospital: {
+      enterprise: { label: "Enterprise", hint: "Including legacy EMR, PAS, patient portals" },
+      departmental: { label: "Departmental", hint: "Including theatres, LIMS, radiology, pharmacy, maternity, ICU, eMeds" },
+      niche: { label: "Standalone", hint: "Including document stores, rostering, analytics, patient flow" },
+    },
+    aged_care: {
+      enterprise: { label: "Care management platforms", hint: "e.g. Leecare, iCare, eCase, AlayaCare" },
+      departmental: { label: "Medication & rostering", hint: "e.g. MPS Connect, WebsterCare, Deputy" },
+      niche: { label: "Compliance & admin", hint: "e.g. QI reporting, SIRS, audit tools, finance" },
+    },
+    ndis: {
+      enterprise: { label: "Client management systems", hint: "e.g. ShiftCare, SupportAbility, Lumary" },
+      departmental: { label: "Rostering & scheduling", hint: "e.g. RotaWiz, Deputy" },
+      niche: { label: "Billing & compliance", hint: "e.g. NDIA claims, incident reporting, worker screening" },
+    },
+  };
+  const auCopy = AU ? (AU_TIER_COPY[sector || "hospital"] || AU_TIER_COPY.hospital) : null;
+  const tierTypesActive = AU && TIER_TYPES_BY_SECTOR ? (TIER_TYPES_BY_SECTOR[sector || "hospital"] || TIER_TYPES_BY_SECTOR.hospital) : TIER_TYPES;
+  const knownActive = AU && KNOWN_SYSTEMS_BY_SECTOR ? (KNOWN_SYSTEMS_BY_SECTOR[sector || "hospital"] || KNOWN_SYSTEMS_BY_SECTOR.hospital) : KNOWN_SYSTEMS;
   const tiers = [
-    { key: "enterprise", label: "Enterprise", color: C.accent, hint: UKI ? "Including legacy EPR / PAS" : "Including legacy EHR, ERP, RCM", max: Math.max(10, inputs.tiers.enterprise + 3) },
-    { key: "departmental", label: "Departmental", color: C.blue, hint: UKI ? "Including LIMS, PACS, pharmacy, maternity, theatres, e-obs" : "Including laboratory, pharmacy, perinatal, imaging/PACS, cardiology, and radiology", max: Math.max(30, inputs.tiers.departmental + 5) },
-    { key: "niche", label: "Standalone", color: C.purple, hint: UKI ? "Including document stores, ECM, scanned notes, rostering" : "Including document stores, data warehouses, scanned notes", max: Math.max(100, inputs.tiers.niche + 10) },
+    { key: "enterprise", label: auCopy ? auCopy.enterprise.label : "Enterprise", color: C.accent, hint: auCopy ? auCopy.enterprise.hint : UKI ? "Including legacy EPR / PAS" : "Including legacy EHR, ERP, RCM", max: Math.max(10, inputs.tiers.enterprise + 3) },
+    { key: "departmental", label: auCopy ? auCopy.departmental.label : "Departmental", color: C.blue, hint: auCopy ? auCopy.departmental.hint : UKI ? "Including LIMS, PACS, pharmacy, maternity, theatres, e-obs" : "Including laboratory, pharmacy, perinatal, imaging/PACS, cardiology, and radiology", max: Math.max(30, inputs.tiers.departmental + 5) },
+    { key: "niche", label: auCopy ? auCopy.niche.label : "Standalone", color: C.purple, hint: auCopy ? auCopy.niche.hint : UKI ? "Including document stores, ECM, scanned notes, rostering" : "Including document stores, data warehouses, scanned notes", max: Math.max(100, inputs.tiers.niche + 10) },
   ];
   const sliderTotal = inputs.tiers.enterprise + inputs.tiers.departmental + inputs.tiers.niche;
   // Count each flagship by its instances (default 1) so the totals reflect
@@ -287,7 +316,7 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
 
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {tiers.map(t => {
-        const tierSystems = KNOWN_SYSTEMS.filter(s => (TIER_TYPES[t.key] || []).includes(s.type));
+        const tierSystems = knownActive.filter(s => (tierTypesActive[t.key] || []).includes(s.type));
         const tierFlagships = flagships.filter(f => f.tier === t.key);
         return <Card key={t.key} style={{ border: `1px solid ${t.color}30`, ...(EMBED ? {} : { padding: "24px 28px" }) }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
@@ -399,7 +428,7 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
 }
 
 // STEP 5: Fine-tune
-export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigrationCost, galenAnnualCost, setGalenAnnualCost, occupancyRate, setOccupancyRate }) {
+export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigrationCost, galenAnnualCost, setGalenAnnualCost, occupancyRate, setOccupancyRate, sector = null }) {
   return <div>
     <SectionTitle number="5">Fine-tune your model</SectionTitle>
     <Card>
@@ -414,7 +443,7 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
         </div>
       </div>
       <TouchSlider label="Decommission target" value={inputs.decom_retire_rate} min={0} max={1} step={0.05} onChange={v => update("decom_retire_rate", v)} format={v => `${Math.round(v * 100)}%`} tip="What % of legacy systems will be retired?" />
-      {!UKI && <TouchSlider label="Bed occupancy" value={occupancyRate} min={0.3} max={1.0} step={0.01} onChange={setOccupancyRate} format={v => `${Math.round(v * 100)}%`} tip="Drives admission volume, revenue, and safety metrics." />}
+      {!UKI && <TouchSlider label={AU ? (sector === "aged_care" ? "Occupancy rate" : sector === "ndis" ? "Utilisation rate" : "Bed occupancy") : "Bed occupancy"} value={occupancyRate} min={0.3} max={1.0} step={0.01} onChange={setOccupancyRate} format={v => `${Math.round(v * 100)}%`} tip={AU ? (sector === "aged_care" ? "Average occupancy across your residential places. Typical 90-95%." : sector === "ndis" ? "Proportion of available staff hours that are billable. Typical 65-75%." : "Average bed occupancy. National average is ~90% (AMA). Drives admission volume, revenue, and safety metrics.") : "Drives admission volume, revenue, and safety metrics."} />}
     </Card>
     <Card style={{ marginTop: 16 }}>
       <div style={{ fontSize: F.body, fontWeight: 700, color: C.textMid, marginBottom: 16 }}>Galen Clinical Archive costs <span style={{ fontWeight: 400, color: C.textMuted }}>(optional)</span></div>
@@ -428,7 +457,7 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
           style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
         <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
           <button onClick={() => setGalenMigrationCost(Math.max(0, galenMigrationCost - 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1\u00a325k" : "\u00b1$25k"}</div>
+          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1\u00a325k" : AU ? "\u00b1A$25k" : "\u00b1$25k"}</div>
           <button onClick={() => setGalenMigrationCost(Math.min(20000000, galenMigrationCost + 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
         </div>
       </div>
@@ -442,7 +471,7 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
           style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
         <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
           <button onClick={() => setGalenAnnualCost(Math.max(0, galenAnnualCost - 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1\u00a325k" : "\u00b1$25k"}</div>
+          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1\u00a325k" : AU ? "\u00b1A$25k" : "\u00b1$25k"}</div>
           <button onClick={() => setGalenAnnualCost(Math.min(15000000, galenAnnualCost + 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
         </div>
       </div>
@@ -462,20 +491,44 @@ export function OrgTypeStep({ orgType, onSelect }) {
 }
 
 /* ── UKI STEP 3: organisation scale ────────────────────────────────────── */
-export function ScaleStep({ inputs, update }) {
+export function ScaleStep({ inputs, update, sector = null }) {
   const avg = Math.round(inputs.bed_count / Math.max(1, inputs.org_count));
+  // AU: unit labels follow the sector (beds / places / participants).
+  const auUnits = sector === "aged_care"
+    ? { orgs: "Facilities in scope", unit: "Residential places", unitWord: "places", orgTip: "The number of residential facilities covered by the programme.", unitTip: "Place count drives staffing, AN-ACC revenue, and harm exposure.", max: 10000, orgMax: 50 }
+    : sector === "ndis"
+    ? { orgs: "Sites / branches in scope", unit: "Active participants", unitWord: "participants", orgTip: "The number of sites or branches covered by the programme.", unitTip: "Participant count drives staffing, plan revenue, and claims volume.", max: 10000, orgMax: 20 }
+    : sector === "hospital"
+    ? { orgs: "Hospitals / facilities in scope", unit: "Total acute beds", unitWord: "beds", orgTip: "A single hospital, or the number of facilities in an LHD/HHS or statewide programme.", unitTip: "Bed count is the primary scaling factor: it drives staffing levels, admission volume, and harm exposure.", max: 25000, orgMax: 250 }
+    : null;
+  const orgLabel = auUnits ? auUnits.orgs : "Trusts / organisations in scope";
+  const unitLabel = auUnits ? auUnits.unit : "Total acute beds";
   return <div>
     <SectionTitle number="3">Organisation scale</SectionTitle>
     <Card>
-      <Stepper label="Trusts / organisations in scope" value={inputs.org_count} min={1} max={10}
+      <Stepper label={orgLabel} value={inputs.org_count} min={1} max={auUnits ? auUnits.orgMax : 10}
         onChange={v => update("org_count", v)}
-        tip="A single Trust, or the number of organisations in a multi-Trust or ICS-wide programme." />
-      <TouchSlider label="Total acute beds" value={inputs.bed_count} min={50} max={Math.max(8000, inputs.bed_count + 500)} step={10}
+        tip={auUnits ? auUnits.orgTip : "A single Trust, or the number of organisations in a multi-Trust or ICS-wide programme."} />
+      <TouchSlider label={unitLabel} value={inputs.bed_count} min={auUnits ? 10 : 50} max={Math.max(auUnits ? auUnits.max : 8000, inputs.bed_count + 500)} step={10}
         onChange={v => update("bed_count", v)} format={fmtNum}
-        tip="Bed count is the primary scaling factor: it drives staffing levels, clinical time at risk, and harm exposure." />
+        tip={auUnits ? auUnits.unitTip : "Bed count is the primary scaling factor: it drives staffing levels, clinical time at risk, and harm exposure."} />
       {inputs.org_count > 1 && <div style={{ fontSize: F.small, color: C.textMuted, background: C.bg, padding: "10px 14px", borderRadius: 10 }}>
-        Average: {fmtNum(avg)} beds per organisation
+        Average: {fmtNum(avg)} {auUnits ? auUnits.unitWord : "beds"} per organisation
       </div>}
     </Card>
+  </div>;
+}
+
+/* ── AU STEP 1: sector + organisation size (scope) ─────────────────────── */
+export function SectorOrgStep({ sector, onSelectSector, orgType, onSelectOrg }) {
+  const sizeCards = (ORG_TYPES_AU[sector] || []).map(o => ({
+    key: o.key, label: PRESETS_AU[o.key].label, desc: PRESETS_AU[o.key].desc, iconKey: o.iconKey,
+  }));
+  return <div>
+    <SectionTitle number="1">What type of organisation are you?</SectionTitle>
+    <BigChoice options={SECTORS_AU.map(sc => ({ key: sc.key, label: sc.label, desc: sc.desc, iconKey: sc.iconKey }))}
+      value={sector} onChange={onSelectSector} />
+    <div style={{ fontSize: F.body, fontWeight: 700, color: C.textMid, margin: "20px 0 12px" }}>And your size?</div>
+    <BigChoice options={sizeCards} value={orgType} onChange={onSelectOrg} />
   </div>;
 }

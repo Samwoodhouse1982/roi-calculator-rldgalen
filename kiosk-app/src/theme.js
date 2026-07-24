@@ -111,18 +111,15 @@ export const MAXW = 900;
 // build); the kiosk uses fixed 56px paddings instead.
 export const GUTTER = "clamp(16px, 4vw, 44px)";
 // Market formatters: US ($, en-US) is the default and the only set the
-// touchscreen build uses; UKI gets £/en-GB.
+// touchscreen build uses; UKI gets £/en-GB, AU gets A$/en-AU.
 const MARKET_UKI = import.meta.env.VITE_MARKET === 'uki';
-export const fmt = MARKET_UKI
-  ? (n => typeof n === "number" ? n.toLocaleString("en-GB") : n)
-  : (n => typeof n === "number" ? n.toLocaleString("en-US") : n);
-export const fmtK = MARKET_UKI
-  ? (n => n >= 1e6 ? `\u00a3${(n/1e6).toFixed(1)}m` : n >= 1000 ? `\u00a3${Math.round(n/1000).toLocaleString("en-GB")}k` : `\u00a3${fmt(n)}`)
-  : (n => n >= 1e6 ? `$${(n/1e6).toFixed(1)}m` : n >= 1000 ? `$${Math.round(n/1000).toLocaleString("en-US")}k` : `$${fmt(n)}`);
-export const fmtNum = MARKET_UKI
-  ? (n => typeof n === "number" ? n.toLocaleString("en-GB") : n)
-  : (n => typeof n === "number" ? n.toLocaleString("en-US") : n);
-export const KIOSK_STEPS = MARKET_UKI
+const MARKET_AU = import.meta.env.VITE_MARKET === 'au';
+const LOCALE = MARKET_UKI ? "en-GB" : MARKET_AU ? "en-AU" : "en-US";
+const CUR = MARKET_UKI ? "\u00a3" : MARKET_AU ? "A$" : "$";
+export const fmt = n => typeof n === "number" ? n.toLocaleString(LOCALE) : n;
+export const fmtK = n => n >= 1e6 ? `${CUR}${(n/1e6).toFixed(1)}m` : n >= 1000 ? `${CUR}${Math.round(n/1000).toLocaleString(LOCALE)}k` : `${CUR}${fmt(n)}`;
+export const fmtNum = n => typeof n === "number" ? n.toLocaleString(LOCALE) : n;
+export const KIOSK_STEPS = MARKET_UKI || MARKET_AU
   ? ["Scope", "Journey", "Scale", "Systems", "Fine-tune", "Results"]
   : ["Scope", "Journey", "Facilities", "Systems", "Fine-tune", "Results"];
 
