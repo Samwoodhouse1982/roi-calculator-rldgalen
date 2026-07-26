@@ -853,10 +853,40 @@ export default function App() {
   // Embed: the page scrolls at body level, so jump back to the top when the
   // step changes — otherwise tapping Next leaves the user mid-page on the
   // next step. (Kiosk scrolls inside its fixed-height container instead.)
+  // When framed, also tell the host page to scroll the iframe back into
+  // view — in auto-resize mode the iframe is full-height, so only the
+  // PARENT page can perform this scroll.
   useEffect(() => {
     if (!EMBED) return;
     window.scrollTo({ top: 0, behavior: 'auto' });
+    if (window.parent !== window) {
+      try { window.parent.postMessage({ type: 'roi-calculator-scroll-top' }, '*'); } catch (e) { /* ignore */ }
+    }
   }, [kioskStep, calibrating, showSplash]);
+
+  // Embed + iframed: report the content height to the host page so its
+  // iframe can auto-size (same postMessage contract as the full web
+  // calculators: roi-calculator-resize { height }). Harmless when not
+  // framed or when the host doesn't listen.
+  useEffect(() => {
+    if (!EMBED || typeof window === 'undefined' || window.parent === window) return;
+    let raf = 0;
+    const post = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        try {
+          const h = Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0);
+          window.parent.postMessage({ type: 'roi-calculator-resize', height: h }, '*');
+        } catch (e) { /* ignore */ }
+      });
+    };
+    post();
+    const ro = new ResizeObserver(post);
+    ro.observe(document.documentElement);
+    if (document.body) ro.observe(document.body);
+    window.addEventListener('load', post);
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); window.removeEventListener('load', post); };
+  }, []);
 
   // Embed: publish the sticky header's height as a CSS variable so the
   // sticky step title / timescale bar can pin themselves just below it.

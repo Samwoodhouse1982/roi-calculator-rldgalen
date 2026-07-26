@@ -1,0 +1,94 @@
+<!-- ===================================================================
+     RLDatix Galen Clinical Archive — UK & Ireland SHORT ROI Calculator
+     WordPress iframe embed snippet
+     ===================================================================
+
+     WHAT THIS IS
+       Copy-paste embed code for the short interactive UKI calculator
+       (the kiosk-style web flow deployed from `kiosk-embed-uki`).
+       Unlike the full calculator (which ships as an inline WordPress
+       fragment), this one embeds as an IFRAME — nothing from the
+       calculator runs on the host page.
+
+     HOW TO USE IN WORDPRESS
+       1. Edit the page in the block editor (Gutenberg).
+       2. Add a "Custom HTML" block where the calculator should appear.
+       3. Paste EVERYTHING between START SNIPPET and END SNIPPET below.
+       4. Replace YOUR-UKI-EMBED-DOMAIN with the deployed Vercel
+          production domain (e.g. roi-calculator-uki-embed.vercel.app,
+          or the custom domain once one is attached).
+       5. Preview: the calculator should render full-width and grow/shrink
+          with its content (no inner scrollbar).
+
+       Classic editor: paste the same snippet into the Text (HTML) tab.
+       If your WordPress strips <script> tags (some security plugins do),
+       use the fixed-height variant at the bottom instead — it needs no
+       script.
+
+     PROTOCOL
+       The embed posts two messages to the parent page:
+         • roi-calculator-resize     { height }  → auto-size the iframe
+         • roi-calculator-scroll-top {}          → scroll iframe into view
+                                                   when the user changes step
+       Same contract as the full web calculators.
+     =================================================================== -->
+
+
+<!-- ── START SNIPPET: auto-resizing (recommended) ──────────────────── -->
+<iframe
+  id="roi-calculator-uki"
+  src="https://YOUR-UKI-EMBED-DOMAIN/"
+  style="width: 100%; border: none; overflow: hidden; min-height: 900px; display: block;"
+  scrolling="no"
+  title="EPR Migration ROI Calculator"
+  loading="lazy"
+></iframe>
+
+<script>
+  (function () {
+    var frame = document.getElementById("roi-calculator-uki");
+    window.addEventListener("message", function (e) {
+      if (!e.data || typeof e.data !== "object") return;
+      if (e.data.type === "roi-calculator-resize" && e.data.height > 200) {
+        frame.style.height = e.data.height + "px";
+      }
+      if (e.data.type === "roi-calculator-scroll-top") {
+        frame.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  })();
+</script>
+<!-- ── END SNIPPET ─────────────────────────────────────────────────── -->
+
+
+<!-- ── Fixed-height variant (no script; iframe scrolls internally) ────
+<iframe
+  src="https://YOUR-UKI-EMBED-DOMAIN/"
+  style="width: 100%; height: 1100px; border: none; display: block;"
+  title="EPR Migration ROI Calculator"
+  loading="lazy"
+></iframe>
+──────────────────────────────────────────────────────────────────── -->
+
+
+<!-- ===================================================================
+     NOTES FOR THE WEB TEAM
+
+     HTTPS       The Vercel deployment is HTTPS; the host page must be too.
+
+     CSP         Only relevant if the host page sets a Content-Security-
+                 Policy: add  frame-src https://YOUR-UKI-EMBED-DOMAIN;
+                 Everything the calculator needs (React, fonts, jsPDF for
+                 the PDF download) is bundled and served from its own
+                 origin — no CDN allowances required on the host page.
+
+     PDF + LEAD  The "Download PDF report" button and the HubSpot lead
+                 submission run entirely inside the iframe and work
+                 without any sandbox attributes. If you must sandbox the
+                 iframe, use at minimum:
+                 sandbox="allow-scripts allow-same-origin allow-forms
+                          allow-downloads"
+
+     DO NOT      Point src at a preview deployment URL — use the
+                 production domain so the calculator updates with main.
+     =================================================================== -->
