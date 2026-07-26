@@ -46,13 +46,19 @@ const embedHtmlEntry = () => {
 
 export default defineConfig(({ mode }) => {
   const embed = mode.startsWith('embed') || process.env.VITE_EMBED === '1';
+  // WP_INLINE=1 produces a single-file bundle for the WordPress inline
+  // fragment: no code-splitting (jsPDF's lazy chunk is folded in) and every
+  // asset base64-inlined, so scripts/make-wp-fragment.mjs can emit one
+  // self-contained paste-in file with zero external requests.
+  const wpInline = process.env.WP_INLINE === '1';
   return {
     plugins: [react(), ...(embed ? [embedHtmlEntry()] : [])],
     build: {
       outDir: 'dist',
       target: 'es2015',
       cssTarget: 'chrome61',
-      ...(embed
+      ...(wpInline ? { assetsInlineLimit: 100000000, rollupOptions: { input: fileURLToPath(new URL('./index.embed.html', import.meta.url)), output: { inlineDynamicImports: true } } } : {}),
+      ...(embed && !wpInline
         ? { rollupOptions: { input: fileURLToPath(new URL('./index.embed.html', import.meta.url)) } }
         : {}),
     },

@@ -858,7 +858,12 @@ export default function App() {
   // PARENT page can perform this scroll.
   useEffect(() => {
     if (!EMBED) return;
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    // Scroll back to the top of the CALCULATOR, not the document: identical
+    // on the standalone page (the app starts at the top), but on a WordPress
+    // inline embed it returns to the calculator rather than the site header.
+    const mount = document.getElementById('galen-roi-root') || document.getElementById('root');
+    if (mount) mount.scrollIntoView({ behavior: 'auto', block: 'start' });
+    else window.scrollTo({ top: 0, behavior: 'auto' });
     if (window.parent !== window) {
       try { window.parent.postMessage({ type: 'roi-calculator-scroll-top' }, '*'); } catch (e) { /* ignore */ }
     }

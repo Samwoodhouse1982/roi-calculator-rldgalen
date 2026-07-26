@@ -11,7 +11,9 @@
     "dev:embed:uki": "vite --mode embed-uki",
     "build:embed:uki": "vite build --mode embed-uki",
     "dev:embed:au": "vite --mode embed-au",
-    "build:embed:au": "vite build --mode embed-au"
+    "build:embed:au": "vite build --mode embed-au",
+    "build:wp:uki": "WP_INLINE=1 vite build --mode embed-uki && node scripts/make-wp-fragment.mjs uki",
+    "build:wp:au": "WP_INLINE=1 vite build --mode embed-au && node scripts/make-wp-fragment.mjs au"
   },
   "dependencies": {
     "jspdf": "^4.2.1",
