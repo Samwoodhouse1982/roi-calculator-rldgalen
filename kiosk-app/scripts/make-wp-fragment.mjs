@@ -112,6 +112,7 @@ const popup = `<!-- ════════════════════
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet" />
 <style>${styles}
+  #galen-roi-launch-wrap { display: flex; justify-content: center; margin: 56px 0; }
   #galen-roi-launch { display: inline-block; padding: 16px 44px; border-radius: 999px; border: none; background: #0F4146; color: #fff; font-family: 'DM Sans', sans-serif; font-size: 17px; font-weight: 800; letter-spacing: .5px; cursor: pointer; box-shadow: 0 6px 28px rgba(15,65,70,0.25); }
   #galen-roi-launch:hover { background: #1A8A7A; }
   #galen-roi-overlay { display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(15,65,70,0.55); }
@@ -123,7 +124,7 @@ const popup = `<!-- ════════════════════
   @media (min-width: 900px) { #galen-roi-close { top: 34px; right: 38px; } }
   #galen-roi-modal #galen-roi-root { min-height: 100%; }
 </style>
-<button type="button" id="galen-roi-launch">${CTA_LABEL} →</button>
+<div id="galen-roi-launch-wrap"><button type="button" id="galen-roi-launch">${CTA_LABEL} →</button></div>
 <div id="galen-roi-overlay" role="dialog" aria-modal="true" aria-label="ROI calculator">
   <div id="galen-roi-modal">
     <div id="galen-roi-root">

@@ -29,6 +29,7 @@
   #galen-roi-root select { background: #fff; color: #0F4146; border-color: #D4E0DD; }
   #galen-roi-root input[type=number] { background: #fff; color: #0F4146; border-color: #D4E0DD; }
 
+  #galen-roi-launch-wrap { display: flex; justify-content: center; margin: 56px 0; }
   #galen-roi-launch { display: inline-block; padding: 16px 44px; border-radius: 999px; border: none; background: #0F4146; color: #fff; font-family: 'DM Sans', sans-serif; font-size: 17px; font-weight: 800; letter-spacing: .5px; cursor: pointer; box-shadow: 0 6px 28px rgba(15,65,70,0.25); }
   #galen-roi-launch:hover { background: #1A8A7A; }
   #galen-roi-overlay { display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(15,65,70,0.55); }
@@ -40,7 +41,7 @@
   @media (min-width: 900px) { #galen-roi-close { top: 34px; right: 38px; } }
   #galen-roi-modal #galen-roi-root { min-height: 100%; }
 </style>
-<button type="button" id="galen-roi-launch">Calculate your ROI →</button>
+<div id="galen-roi-launch-wrap"><button type="button" id="galen-roi-launch">Calculate your ROI →</button></div>
 <div id="galen-roi-overlay" role="dialog" aria-modal="true" aria-label="ROI calculator">
   <div id="galen-roi-modal">
     <div id="galen-roi-root">
