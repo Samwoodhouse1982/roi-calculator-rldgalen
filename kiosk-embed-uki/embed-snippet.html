@@ -5,10 +5,11 @@
 
      WHAT THIS IS
        Copy-paste embed code for the short interactive UKI calculator
-       (the kiosk-style web flow deployed from `kiosk-embed-uki`).
-       Unlike the full calculator (which ships as an inline WordPress
-       fragment), this one embeds as an IFRAME — nothing from the
-       calculator runs on the host page.
+       (`roi-calculator.html` in this folder, deployed as a static page).
+       This snippet embeds it as an IFRAME — nothing from the calculator
+       runs on the host page. Prefer the iframe when you want isolation;
+       use wordpress-embed.html / wordpress-embed-popup.html when the
+       calculator should live inline on the page instead.
 
      HOW TO USE IN WORDPRESS
        1. Edit the page in the block editor (Gutenberg).
@@ -78,9 +79,11 @@
 
      CSP         Only relevant if the host page sets a Content-Security-
                  Policy: add  frame-src https://YOUR-UKI-EMBED-DOMAIN;
-                 Everything the calculator needs (React, fonts, jsPDF for
-                 the PDF download) is bundled and served from its own
-                 origin — no CDN allowances required on the host page.
+                 That is all the HOST page needs — the calculator loads
+                 its libraries (React/Babel from cdnjs, jsPDF from
+                 jsdelivr/unpkg/cdnjs, DM Sans from Google Fonts) inside
+                 the iframe under its own origin's policy, so no CDN
+                 allowances are required on the host page.
 
      PDF + LEAD  The "Download PDF report" button and the HubSpot lead
                  submission run entirely inside the iframe and work

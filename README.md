@@ -9,30 +9,35 @@ branch.
 | `web/uki/` | UK / Ireland web (EPR, Trusts, NHS Reference Costs, GBP, `en-GB`) | Self-contained HTML | `roi-calculator.html` — no build step |
 | `web/us/` | US web (EHR, CMS, USD, `en-US`) | Self-contained HTML | `roi-calculator.html` — no build step |
 | `web/au/` | Australia web (EMR, ACSQHC, AUD, `en-AU`) | Self-contained HTML | `roi-calculator.html` — no build step |
+| `kiosk-embed-uki/` | UK & Ireland — **embed** (short interactive web flow, NHS model, GBP) | Self-contained HTML | `roi-calculator.html` — no build step |
 | `kiosk-app/` | US conference kiosk — **touchscreen** (fixed 1080×1920 portrait) | Vite + React | `npm run build` |
 | `kiosk-app/` | US kiosk — **embed** (responsive / iframe-friendly) | Vite + React (same app, build flag) | `npm run build:embed` |
-| `kiosk-app/` | UK & Ireland — **embed** (short interactive web flow, NHS model, GBP) | Vite + React (same app, market flag) | `npm run build:embed:uki` |
 | `kiosk-app/` | Australia — **embed** (short interactive web flow, 3 sectors, AUD) | Vite + React (same app, market flag) | `npm run build:embed:au` |
 
 ## The two codebases
 
-**Web calculators** (`web/uki`, `web/us`, `web/au`): each is a single
-self-contained `roi-calculator.html` (React + Babel from CDN, all styles
-inline, no build step). Open it in a browser and it runs. Each market
-folder also carries its own `vercel.json` routing and embed snippet. See
-the README inside each folder for market-specific editing notes and
-evidence-sourcing rules.
+**Single-file calculators** (`web/uki`, `web/us`, `web/au`,
+`kiosk-embed-uki`): each is a single self-contained `roi-calculator.html`
+(React + Babel from CDN, all styles inline, no build step). Open it in a
+browser and it runs. Each folder also carries its own `vercel.json`
+routing and embed snippet (and, for `web/uki` and `kiosk-embed-uki`,
+WordPress paste-in fragments). See the README inside each folder for
+market-specific editing notes and evidence-sourcing rules.
+`kiosk-embed-uki` is the short interactive flow — ported July 2026 from
+the kiosk-app's `embed-uki` build mode into a hand-editable single file
+(numeric parity verified); its two WordPress fragments are GENERATED from
+it via `node make-fragments.mjs`.
 
 **Kiosk app** (`kiosk-app/`): one Vite/React app with two build
 dimensions — surface (`VITE_EMBED=1` picks the responsive embed over the
-fixed 1080×1920 touchscreen) and market (`VITE_MARKET=uki` picks the
-NHS/Ireland engine, UK system catalogue, £ formatting and UK report
-content over the US defaults). Four shipped combinations: US touchscreen
-(`npm run build`), US embed (`npm run build:embed`), UKI embed
-(`npm run build:embed:uki`), and AU embed (`npm run build:embed:au` —
-three sectors: hospitals, residential aged care, NDIS). The UKI engine is a verbatim port of
-`web/uki/roi-calculator.html`'s model (numeric parity verified); the US
-builds are byte-for-byte unaffected by the UKI market code. See
+fixed 1080×1920 touchscreen) and market (`VITE_MARKET=au` picks the AU
+engine, catalogue and formatting over the US defaults). Three deployed
+combinations: US touchscreen (`npm run build`), US embed
+(`npm run build:embed`), and AU embed (`npm run build:embed:au` — three
+sectors: hospitals, residential aged care, NDIS). The `embed-uki` build
+mode still exists but no longer deploys anywhere — the UKI embed now
+ships from `kiosk-embed-uki/roi-calculator.html` (see `TO-REVIEW.md`).
+The US builds are byte-for-byte unaffected by the market code. See
 `kiosk-app/README.md` and `kiosk-app/README-EMBED.md`.
 
 ## Deploys
@@ -47,7 +52,7 @@ folder (Root Directory setting), all from this branch:
 | AU web | `web/au` | — (static) |
 | US touchscreen | `kiosk-app` | — (auto: `npm run build`) |
 | US embed | `kiosk-embed` | — (auto: builds `kiosk-app` in embed mode) |
-| UKI embed | `kiosk-embed-uki` | — (auto: builds `kiosk-app` in UKI embed mode) |
+| UKI embed | `kiosk-embed-uki` | — (static) |
 | AU embed | `kiosk-embed-au` | — (auto: builds `kiosk-app` in AU embed mode) |
 
 ## History

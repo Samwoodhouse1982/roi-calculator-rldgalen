@@ -3,6 +3,30 @@
 Open items deliberately deferred, with context. (See git history for the
 July 2026 US calculator alignment that produced this list.)
 
+## kiosk-app's `embed-uki` build mode is now orphaned source
+
+The UKI web embed was ported (Aug 2026) from the kiosk-app's
+`--mode embed-uki` build into the self-contained
+`kiosk-embed-uki/roi-calculator.html`, which is now what deploys. The
+kiosk-app still contains the full UKI market code (`engine.uki.js`,
+`vendors.uki.js`, `presets.uki.js`, the UKI branches in App/steps/results,
+and the `build:embed:uki` / `build:wp:uki` scripts), verified numerically
+and textually identical to the single file at port time — but nothing
+deploys from it any more, so edits there no longer reach the live UKI
+embed (and vice versa). Deliberately deferred: removing the UKI market
+code from kiosk-app (touches shared files; the US/AU builds' byte-for-byte
+guarantees would need re-verification) vs keeping it as a reference. Until
+that decision, treat `kiosk-embed-uki/roi-calculator.html` as canonical
+for the UKI embed and say so in any commit that touches either side.
+
+Deliberate deviations of the single file from the old embed-uki build
+(all cosmetic/packaging; the engine is verbatim): page title says "EPR"
+(was "EHR", shared entry file), RLDatix favicon added, known-spend nudge
+label "±£100k" (was "±$100k"), "Analysing"/"realisation" UK spellings
+(were "Analyzing"/"realization" in shared copy), admin stats overlay in
+£/en-GB with UKI org-type labels (was $/US labels), jsPDF loaded from CDN
+on demand (was bundled).
+
 ## US calculators: remaining structural divergences (kiosk-app vs web/us)
 
 The July 2026 alignment reconciled the calculation engines of the US kiosk

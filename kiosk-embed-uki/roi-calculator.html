@@ -1,60 +1,41 @@
-<!-- ═══════════════════════════════════════════════════════════════════
-     RLDatix Galen Clinical Archive — UK & Ireland SHORT ROI Calculator
-     WordPress POPUP fragment
-
-     A styled launch button; the calculator opens in a full-screen overlay
-     above the page. Paste this ENTIRE file into a "Custom HTML" block.
-     Same contents as wordpress-embed.html — only the launch wiring
-     differs. Esc, the ✕ button, or clicking the dark backdrop closes it;
-     page scroll is locked while open.
-
-     CDN SCRIPTS REQUIRED — same as wordpress-embed.html: cdnjs (React,
-     ReactDOM, Babel), jsdelivr/unpkg/cdnjs (jsPDF), Google Fonts.
-
-     NOTE: the overlay uses position:fixed. If a theme wrapper sets a CSS
-     transform/filter on an ancestor of the block, fixed positioning scopes
-     to that wrapper — in that (rare) case paste the block nearer the top
-     level of the page content.
-
-     UPDATING: generated file — edit roi-calculator.html, then
-       node make-fragments.mjs
-     ═══════════════════════════════════════════════════════════════════ -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet" />
-<style>
-  #galen-roi-root, #galen-roi-root *, #galen-roi-root *::before, #galen-roi-root *::after { box-sizing: border-box; }
-  #galen-roi-root { width: 100%; min-height: 100vh; background: #EEF7F2; font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
-  #galen-roi-root input[type=range] { -webkit-appearance: none; height: 12px; border-radius: 6px; background: #D4E0DD; }
-  #galen-roi-root input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%; background: #0F4146; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(15,65,70,0.35); }
-  #galen-roi-root input[type=range]::-moz-range-thumb { width: 30px; height: 30px; border-radius: 50%; background: #0F4146; cursor: pointer; border: 3px solid #fff; }
-  #galen-roi-root select { background: #fff; color: #0F4146; border-color: #D4E0DD; }
-  #galen-roi-root input[type=number] { background: #fff; color: #0F4146; border-color: #D4E0DD; }
-
-  #galen-roi-launch-wrap { display: flex; justify-content: center; margin: 56px 0; }
-  #galen-roi-launch { display: inline-block; padding: 16px 44px; border-radius: 999px; border: none; background: #0F4146; color: #fff; font-family: 'DM Sans', sans-serif; font-size: 17px; font-weight: 800; letter-spacing: .5px; cursor: pointer; box-shadow: 0 6px 28px rgba(15,65,70,0.25); }
-  #galen-roi-launch:hover { background: #1A8A7A; }
-  #galen-roi-overlay { display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(15,65,70,0.55); }
-  #galen-roi-overlay.galen-open { display: block; }
-  #galen-roi-modal { position: absolute; inset: 0; background: #EEF7F2; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  @media (min-width: 900px) { #galen-roi-modal { inset: 24px; border-radius: 18px; box-shadow: 0 24px 80px rgba(0,0,0,0.35); } }
-  #galen-roi-close { position: fixed; top: 10px; right: 14px; z-index: 1000000; width: 44px; height: 44px; border-radius: 50%; border: none; background: #0F4146; color: #fff; font-size: 20px; font-weight: 700; cursor: pointer; display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-  #galen-roi-overlay.galen-open ~ #galen-roi-close, #galen-roi-overlay.galen-open #galen-roi-close { display: block; }
-  @media (min-width: 900px) { #galen-roi-close { top: 34px; right: 38px; } }
-  #galen-roi-modal #galen-roi-root { min-height: 100%; }
-</style>
-<div id="galen-roi-launch-wrap"><button type="button" id="galen-roi-launch">Calculate your ROI →</button></div>
-<div id="galen-roi-overlay" role="dialog" aria-modal="true" aria-label="ROI calculator">
-  <div id="galen-roi-modal">
-    <div id="galen-roi-root">
-  <div style="color:#3D5A5E;text-align:center;padding:120px 32px;font-family:'DM Sans',sans-serif;font-size:16px;">
-    <div style="font-size:24px;font-weight:700;color:#0F4146;margin-bottom:16px;">Loading calculator...</div>
-    <div>This calculator needs JavaScript. If this message persists, please contact your RLDatix representative.</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EPR Migration &amp; Archiving — ROI Calculator</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg width=%2260%22 height=%2260%22 viewBox=%221567 119 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22><rect x=%221567%22 y=%22119%22 width=%2260%22 height=%2260%22 rx=%228%22 fill=%22%230F4146%22/><path d=%22M1610.88 130.002H1603.67V133.147H1611.08C1612.62 133.147 1613.87 134.406 1613.87 135.935V155.963C1613.87 157.501 1612.62 158.749 1611.08 158.75H1610.03L1606.1 151.945C1605.59 151.074 1604.66 150.536 1603.66 150.536H1590.34C1589.33 150.536 1588.4 151.072 1587.9 151.945L1583.97 158.765H1582.93C1581.39 158.763 1580.15 157.516 1580.14 155.977V135.933C1580.14 134.39 1581.4 133.146 1582.93 133.146H1590.33V130.002H1583.13C1579.75 130.005 1577 132.749 1577 136.133V155.762C1577 159.147 1579.75 161.89 1583.13 161.894H1594.34V169.542L1612.92 161.551C1613.15 161.465 1613.38 161.365 1613.6 161.266L1613.63 161.251C1615.7 160.219 1617 158.104 1617 155.791V136.133C1617 132.759 1614.25 130 1610.88 130V130.002Z%22 fill=%22white%22/><path d=%22M1597 147.19C1599.95 147.19 1602.35 144.797 1602.35 141.843C1602.35 138.888 1599.96 136.494 1597 136.492C1594.05 136.492 1591.65 138.886 1591.65 141.839V141.843C1591.65 144.796 1597 147.19 1597 147.19Z%22 fill=%22white%22/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    /* Responsive web embed: html/body fill the host viewport (or iframe),
+       and the React app's outer container handles the max-width centering.
+       Light web theme — RLDatix web-calculator design system (deep teal +
+       seafoam on white), matching the Smart Match web build. */
+    html, body { margin: 0; padding: 0; width: 100%; min-height: 100vh; -webkit-font-smoothing: antialiased; background: #EEF7F2; font-family: 'DM Sans', sans-serif; }
+    #root { width: 100%; min-height: 100vh; }
+    input[type=range] { -webkit-appearance: none; height: 12px; border-radius: 6px; background: #D4E0DD; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%; background: #0F4146; cursor: pointer; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(15,65,70,0.35); }
+    input[type=range]::-moz-range-thumb { width: 30px; height: 30px; border-radius: 50%; background: #0F4146; cursor: pointer; border: 3px solid #fff; }
+    select { background: #fff; color: #0F4146; border-color: #D4E0DD; }
+    input[type=number] { background: #fff; color: #0F4146; border-color: #D4E0DD; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #EEF7F2; }
+    ::-webkit-scrollbar-thumb { background: #C2D4D0; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div id="js-fallback" style="color:#3D5A5E;text-align:center;padding:120px 32px;font-family:DM Sans,sans-serif;font-size:16px;">
+      <div style="font-size:24px;font-weight:700;color:#0F4146;margin-bottom:16px;">Loading calculator...</div>
+      <div>This calculator needs JavaScript. If this message persists, please contact your RLDatix representative.</div>
+    </div>
   </div>
-</div>
-    <button type="button" id="galen-roi-close" aria-label="Close calculator">✕</button>
-  </div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script>window.onerror=function(m,s,l,c,e){var f=document.getElementById('js-fallback');if(f)f.innerHTML='<div style="color:#e74c3c;font-size:20px;font-weight:700;">JavaScript Error</div><div style="margin-top:12px;color:#8494a8;">'+m+'</div><div style="margin-top:8px;font-size:13px;color:#607080;">'+s+' line '+l+'</div>';}</script>
+
+  <!-- vendor-scripts:start (make-fragments.mjs copies this block into the WordPress fragments) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.4/babel.min.js"></script>
   <script>
@@ -77,7 +58,9 @@
       tryLoad(0);
     })();
   </script>
-<script type="text/babel">
+  <!-- vendor-scripts:end -->
+
+  <script type="text/babel">
 /* ═══════════════════════════════════════════════════════════════════════
    RLDatix Galen Clinical Archive — UK & Ireland SHORT ROI Calculator
    (the interactive web-embed flow: Scope → Journey → Scale → Systems →
@@ -3123,24 +3106,5 @@ function App() {
 // can't collide with host-page themes); the standalone page keeps #root.
 ReactDOM.createRoot(document.getElementById('galen-roi-root') || document.getElementById('root')).render(<App />);
   </script>
-<script>
-  (function () {
-    var overlay = document.getElementById('galen-roi-overlay');
-    var launch = document.getElementById('galen-roi-launch');
-    var close = document.getElementById('galen-roi-close');
-    var prevOverflow = '';
-    function open() {
-      overlay.classList.add('galen-open');
-      prevOverflow = document.documentElement.style.overflow;
-      document.documentElement.style.overflow = 'hidden';
-    }
-    function shut() {
-      overlay.classList.remove('galen-open');
-      document.documentElement.style.overflow = prevOverflow;
-    }
-    launch.addEventListener('click', open);
-    close.addEventListener('click', shut);
-    overlay.addEventListener('click', function (e) { if (e.target === overlay) shut(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && overlay.classList.contains('galen-open')) shut(); });
-  })();
-</script>
+</body>
+</html>
