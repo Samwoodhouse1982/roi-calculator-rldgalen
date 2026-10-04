@@ -357,22 +357,22 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
                 {/* Main row: name, cost adjuster, multi-instance checkbox, remove */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px" }}>
                   <span style={{ fontSize: F.tiny, fontWeight: 600, color: t.color, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
-                  <button onClick={() => updateFlagshipCost(fIdx, f.cost - step)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 20, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", flexShrink: 0 }}>−</button>
+                  <button onClick={() => updateFlagshipCost(fIdx, f.cost - step)} style={{ width: UKI_KIOSK ? 44 : 40, height: UKI_KIOSK ? 44 : 40, borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 20, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", flexShrink: 0 }}>−</button>
                   <span style={{ fontSize: F.small, fontWeight: 700, color: t.color, minWidth: 70, textAlign: "center" }}>{fmtK(f.cost)}</span>
-                  <button onClick={() => updateFlagshipCost(fIdx, f.cost + step)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 20, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", flexShrink: 0 }}>+</button>
+                  <button onClick={() => updateFlagshipCost(fIdx, f.cost + step)} style={{ width: UKI_KIOSK ? 44 : 40, height: UKI_KIOSK ? 44 : 40, borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 20, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", flexShrink: 0 }}>+</button>
                   <span style={{ fontSize: F.tiny, color: C.textMuted, flexShrink: 0 }}>/yr each</span>
                   {/* Multiple instances toggle. Checking it bumps instances 1→2 as a sensible
                       default (IDNs typically have 2+ duplicates); unchecking returns to 1. */}
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: F.tiny, color: hasMultiple ? t.color : C.textMuted, cursor: "pointer", padding: "6px 10px", borderRadius: 8, border: `1px solid ${hasMultiple ? t.color : C.borderLight}`, background: hasMultiple ? t.color + "12" : 'transparent', flexShrink: 0, fontWeight: 600 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: F.tiny, color: hasMultiple ? t.color : C.textMuted, cursor: "pointer", padding: "6px 10px", minHeight: UKI_KIOSK ? 44 : undefined, borderRadius: 8, border: `1px solid ${hasMultiple ? t.color : C.borderLight}`, background: hasMultiple ? t.color + "12" : 'transparent', flexShrink: 0, fontWeight: 600 }}>
                     <input
                       type="checkbox"
                       checked={hasMultiple}
                       onChange={e => updateFlagshipInstances(fIdx, e.target.checked ? 2 : 1)}
-                      style={{ width: 16, height: 16, accentColor: t.color, cursor: "pointer" }}
+                      style={{ width: UKI_KIOSK ? 22 : 16, height: UKI_KIOSK ? 22 : 16, accentColor: t.color, cursor: "pointer" }}
                     />
                     Multiple
                   </label>
-                  <button onClick={() => removeFlagship(fIdx)} style={{ width: 36, height: 36, border: "none", background: "none", color: C.textMuted, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
+                  <button onClick={() => removeFlagship(fIdx)} style={{ width: UKI_KIOSK ? 44 : 36, height: UKI_KIOSK ? 44 : 36, border: "none", background: "none", color: C.textMuted, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
                 </div>
                 {/* Instance counter row — only shown when 'Multiple' is checked.
                     Lets the user dial in 2, 3, 4 instances (e.g. an IDN with 4 hospitals
@@ -380,9 +380,9 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
                 {hasMultiple && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px 10px 12px", borderTop: `1px dashed ${C.borderLight}`, paddingTop: 10, marginTop: 2 }}>
                     <span style={{ fontSize: F.tiny, fontWeight: 600, color: C.textMuted, flex: 1 }}>Number of instances across your network:</span>
-                    <button onClick={() => updateFlagshipInstances(fIdx, instances - 1)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 20, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", flexShrink: 0 }}>−</button>
+                    <button onClick={() => updateFlagshipInstances(fIdx, instances - 1)} style={{ width: UKI_KIOSK ? 44 : 40, height: UKI_KIOSK ? 44 : 40, borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 20, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", flexShrink: 0 }}>−</button>
                     <span style={{ fontSize: F.small, fontWeight: 800, color: t.color, minWidth: 36, textAlign: "center" }}>{instances}</span>
-                    <button onClick={() => updateFlagshipInstances(fIdx, instances + 1)} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 20, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", flexShrink: 0 }}>+</button>
+                    <button onClick={() => updateFlagshipInstances(fIdx, instances + 1)} style={{ width: UKI_KIOSK ? 44 : 40, height: UKI_KIOSK ? 44 : 40, borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 20, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", flexShrink: 0 }}>+</button>
                     <span style={{ fontSize: F.tiny, color: C.textMid, flexShrink: 0, marginLeft: 8 }}>= <strong style={{ color: t.color }}>{fmtK(f.cost * instances)}/yr</strong> total</span>
                   </div>
                 )}
@@ -403,11 +403,11 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
             }}>+ Enter your own system</button>
           </div>
           {tierSystems.length > 0 && openTier === t.key && <div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: UKI_KIOSK ? 10 : 6, marginTop: 12 }}>
               {tierSystems.filter(sys => !tierFlagships.some(f => f.name === sys.label)).map(sys => {
                 const isSel = selected.some(s => s.label === sys.label);
                 return <button key={sys.label} onClick={() => setSelected(p => isSel ? p.filter(s => s.label !== sys.label) : [...p, sys])} style={{
-                  padding: "8px 14px", fontSize: F.tiny, fontWeight: 600, borderRadius: 10, cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
+                  padding: UKI_KIOSK ? "13px 16px" : "8px 14px", fontSize: F.tiny, fontWeight: 600, borderRadius: 10, cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
                   border: isSel ? `2px solid ${t.color}` : `1px solid ${C.borderLight}`,
                   background: isSel ? t.color + "18" : C.bg,
                   color: isSel ? t.color : C.textMid,

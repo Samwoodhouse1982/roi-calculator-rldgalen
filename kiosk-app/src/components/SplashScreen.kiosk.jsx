@@ -225,7 +225,10 @@ export function SplashScreen({ onStart, onAdminReveal }) {
         background: 'radial-gradient(ellipse at 30% 50%, rgba(0,212,170,0.06) 0%, transparent 60%), radial-gradient(ellipse at 70% 30%, rgba(0,180,255,0.04) 0%, transparent 50%)',
       }} />
 
-      <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: 1000, padding: '75px 80px', marginTop: '14vh',
+      <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: 1000, padding: '75px 80px',
+        // UKI touchscreen: 14% of the fixed 1920 design height. 14vh would be
+        // zoomed along with the page (kioskFit.js) and push the content down.
+        marginTop: UKI_KIOSK ? 269 : '14vh',
         // Subtle fade-out of content while the wipe expands, so the title doesn't bleed through
         opacity: launching ? 0.3 : 1,
         transition: 'opacity 600ms ease-out',
@@ -240,7 +243,7 @@ export function SplashScreen({ onStart, onAdminReveal }) {
           fontSize: 80, fontWeight: 800, lineHeight: 1.15, color: '#fff',
           margin: '0 0 30px', letterSpacing: '-1.25px',
         }}>
-          {UKI ? "Switch off legacy systems, without clinical compromise" : "Decommission legacy systems."}
+          {UKI ? "Switch off legacy systems, without clinical compromise." : "Decommission legacy systems."}
           <br />
           <span style={{ color: '#00d4aa' }}>{UKI ? "Discover your archiving ROI." : "Discover your ROI."}</span>
         </h1>

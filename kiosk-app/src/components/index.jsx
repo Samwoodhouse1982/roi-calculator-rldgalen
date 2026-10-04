@@ -12,11 +12,16 @@ export function Card({ children, style }) {
   return <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: EMBED ? 20 : 24, padding: EMBED ? "clamp(18px, 3vw, 34px)" : "36px 40px 32px", ...style }}>{children}</div>;
 }
 
+// UKI touchscreen: grows an element's tap area to at least 44 design px
+// (about 12mm on the 2K screen) without moving anything, by padding it out
+// and pulling the surrounding layout back in with an equal negative margin.
+const KIOSK_HIT_PAD = { padding: "8px 0", margin: "-8px 0" };
+
 export function StepIndicator({ steps, current, onJump }) {
   return <div style={{ display: "flex", gap: 10, marginBottom: 36 }}>
     {steps.map((label, i) => {
       const active = current === i, done = current > i;
-      return <div key={i} style={{ flex: 1, cursor: done ? "pointer" : "default" }} onClick={() => done && onJump(i)}>
+      return <div key={i} style={{ flex: 1, cursor: done ? "pointer" : "default", ...(UKI_KIOSK ? KIOSK_HIT_PAD : null) }} onClick={() => done && onJump(i)}>
         <div style={{ height: 8, borderRadius: 4, background: active ? C.accent : done ? C.accent + "60" : C.border, transition: "background .4s" }} />
         <div style={{ fontSize: F.tiny, fontWeight: active ? 700 : 500, marginTop: 10, color: active ? C.accent : done ? C.textMid : C.textMuted, textAlign: "center" }}>{label}</div>
       </div>;
@@ -80,7 +85,7 @@ export function NavButtons({ step, totalSteps, onBack, onNext, onCalculate, onSt
           Deliberately understated (no background, muted text colour, smaller
           font) so it doesn't compete with the primary navigation. */}
       {onStartOver && <button onClick={onStartOver} style={{
-        padding: "10px 18px", borderRadius: 12, border: "none",
+        padding: UKI_KIOSK ? "13px 22px" : "10px 18px", borderRadius: 12, border: "none",
         background: "transparent", color: C.textMuted, fontSize: F.small,
         fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
         letterSpacing: 0.3, opacity: 0.75, transition: "opacity .15s, color .15s"
@@ -179,7 +184,12 @@ export function InfoTip({ text }) {
   }, [show]);
 
   return <span ref={iconRef} style={{ position: "relative", display: "inline-flex" }}>
-    <span onClick={() => setShow(!show)} style={{ width: EMBED ? 28 : 30, height: EMBED ? 28 : 30, borderRadius: "50%", background: C.border, color: C.textMid, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: F.small, fontWeight: 700, cursor: "pointer" }}>i</span>
+    {UKI_KIOSK
+      // UKI touchscreen: same 30px circle, inside a 46px tap area.
+      ? <span onClick={() => setShow(!show)} style={{ padding: 8, margin: -8, display: "inline-flex", cursor: "pointer" }}>
+          <span style={{ width: 30, height: 30, borderRadius: "50%", background: C.border, color: C.textMid, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: F.small, fontWeight: 700 }}>i</span>
+        </span>
+      : <span onClick={() => setShow(!show)} style={{ width: EMBED ? 28 : 30, height: EMBED ? 28 : 30, borderRadius: "50%", background: C.border, color: C.textMid, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: F.small, fontWeight: 700, cursor: "pointer" }}>i</span>}
     {show && <>
       <div onClick={() => setShow(false)} style={{ position: "fixed", inset: 0, zIndex: 99996 }} />
       <span style={{
