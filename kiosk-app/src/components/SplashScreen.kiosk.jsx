@@ -240,7 +240,7 @@ export function SplashScreen({ onStart, onAdminReveal }) {
           fontSize: 80, fontWeight: 800, lineHeight: 1.15, color: '#fff',
           margin: '0 0 30px', letterSpacing: '-1.25px',
         }}>
-          {UKI ? "Switch off legacy system, without clinical compromise" : "Decommission legacy systems."}
+          {UKI ? "Switch off legacy systems, without clinical compromise" : "Decommission legacy systems."}
           <br />
           <span style={{ color: '#00d4aa' }}>{UKI ? "Discover your archiving ROI." : "Discover your ROI."}</span>
         </h1>
