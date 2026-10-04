@@ -952,7 +952,7 @@ export default function App() {
   return (
     <div style={EMBED
       ? { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: "100%", maxWidth: MAXW, margin: "0 auto", minHeight: "100vh", color: C.text, lineHeight: 1.55, display: "flex", flexDirection: "column", position: "relative", zIndex: 0 }
-      : { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: W, minHeight: H, color: C.text, lineHeight: 1.55, display: "flex", flexDirection: "column", position: "relative", zIndex: 0 }}>
+      : { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: W, minHeight: H, height: UKI_KIOSK ? H : undefined, color: C.text, lineHeight: 1.55, display: "flex", flexDirection: "column", position: "relative", zIndex: 0 }}>
       {EMBED && <EmbedStyles />}
       {!EMBED && <BackgroundParticles />}
       <div ref={embedHeaderRef} className={EMBED ? "embed-header-pad" : undefined} style={{ padding: "48px 56px 0" }}>
@@ -966,7 +966,11 @@ export default function App() {
           scrollable content area. Only renders on the report screen
           (kioskStep === 5). */}
       {kioskStep === 5 && <TimescaleBar viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} scenarioMode={(UKI || AU) ? scenarioMode : null} setScenarioMode={setScenarioMode} />}
-      <div className={EMBED ? "embed-scroll-area" : undefined} style={{ flex: 1, overflowY: "auto", padding: "0 56px 32px" }}>
+      {/* UKI touchscreen: the column is capped at the design height so the long
+          report scrolls inside this area, not the whole page. That keeps the
+          step bar, timescale bar and the report's pinned "New case" row on
+          screen while scrolling. */}
+      <div className={EMBED ? "embed-scroll-area" : undefined} style={{ flex: 1, overflowY: "auto", padding: "0 56px 32px", ...(UKI_KIOSK ? { minHeight: 0, overscrollBehavior: "contain" } : null) }}>
         <PageTransition step={kioskStep}>{renderStep()}</PageTransition>
       </div>
       <NavButtons step={kioskStep} totalSteps={KIOSK_STEPS.length} onBack={() => setKioskStep(p => p - 1)} onNext={() => setKioskStep(p => p + 1)} onCalculate={handleCalculate} onStartOver={handleStartOver} />

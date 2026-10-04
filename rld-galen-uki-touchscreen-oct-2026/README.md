@@ -20,6 +20,15 @@ the same numbers as the UKI embed.
 Requires the project's "Include source files outside of the Root
 Directory" setting to be enabled — it is by default.
 
+## Deploying on Netlify instead
+
+`netlify.toml` here does the same build on Netlify. In Netlify choose
+**Add new site → Import an existing project**, pick this repo and set
+**Base directory** to `rld-galen-uki-touchscreen-oct-2026`. The build
+command, publish folder, Node version and SPA redirect all come from
+`netlify.toml`. Netlify skips the build when a push doesn't touch this
+folder or `kiosk-app/`.
+
 ## Running it on the UPERFECT 24.5" 2K screen
 
 See [`windows/SETUP-WINDOWS.md`](windows/SETUP-WINDOWS.md) for mounting,

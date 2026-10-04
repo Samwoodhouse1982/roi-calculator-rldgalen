@@ -5,7 +5,7 @@ rem  Opens the calculator full screen in Microsoft Edge kiosk mode on the
 rem  main display. See SETUP-WINDOWS.md in this folder before first use.
 rem ----------------------------------------------------------------------
 
-rem  1. Set this to the touchscreen's live address (the Vercel URL).
+rem  1. Set this to the touchscreen's live address (the Netlify or Vercel URL).
 set "KIOSK_URL=https://REPLACE-WITH-THE-UKI-TOUCHSCREEN-URL"
 
 rem  2. Close any Edge windows using the kiosk profile, then launch.

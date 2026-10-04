@@ -70,7 +70,9 @@ function Methodology({ children, formula, plug, source }) {
   // If new props provided, use the structured layout; otherwise fall back to children
   const structured = formula || plug || source;
   return <div style={{ marginTop: 8 }}>
-    <div onClick={() => setOpen(!open)} style={{ fontSize: F.tiny, color: C.accent, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+    <div onClick={() => setOpen(!open)} style={{ fontSize: F.tiny, color: C.accent, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
+      // UKI touchscreen: 44px+ tap height without moving the text.
+      ...(UKI_KIOSK ? { padding: "11px 0", margin: "-11px 0" } : null) }}>
       <span style={{ transition: "transform .2s", transform: open ? "rotate(90deg)" : "none" }}>▶</span> How we calculated this
     </div>
     {open && <div style={{ marginTop: 8, padding: "14px 18px", background: C.bg, borderRadius: 14, fontSize: F.tiny, color: C.textMid, lineHeight: 1.7, border: `1px solid ${C.borderLight}` }}>
@@ -666,8 +668,10 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
 
     </div>
 
-    {/* Actions */}
-    <div style={{ display: "flex", gap: 16, justifyContent: "center", padding: "16px 0 24px" }}>
+    {/* Actions. UKI touchscreen: pinned to the bottom of the screen so the
+        next visitor can start a new case without scrolling the whole report. */}
+    <div style={{ display: "flex", gap: 16, justifyContent: "center", padding: "16px 0 24px",
+      ...(UKI_KIOSK ? { position: "sticky", bottom: 0, zIndex: 20, background: C.bg, borderTop: `1px solid ${C.borderLight}`, boxShadow: "0 -4px 12px -4px rgba(0,0,0,0.5)", margin: "0 -56px", padding: "16px 56px 24px" } : null) }}>
       <button onClick={onAdjust} style={{
         padding: EMBED ? "14px 32px" : "22px 44px", borderRadius: EMBED ? 14 : 18, border: `2px solid ${C.accent}`,
         background: "transparent", color: C.accent, fontSize: F.body, fontWeight: 700,
