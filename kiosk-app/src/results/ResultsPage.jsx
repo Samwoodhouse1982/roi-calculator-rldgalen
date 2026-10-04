@@ -160,6 +160,9 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
     : (v => v < 1 ? v.toFixed(1) : fmtNum(v));
   const hasGalen = galenMigrationCost > 0;
   const payback = hasGalen ? galenMigrationCost / Math.max(1, r.decomSave - galenAnnualCost) : 0;
+  // UKI touchscreen: payback is never reached when the archive's annual cost
+  // matches or exceeds the decommission savings it unlocks.
+  const paybackLabel = UKI_KIOSK && hasGalen && r.decomSave - galenAnnualCost <= 0 ? "Not reached" : payback.toFixed(1) + " yrs";
 
   return <div style={{ animation: "rfade .5s ease-out" }}>
     <style>{`@keyframes rfade { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
@@ -536,11 +539,14 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <Met label="Migration cost" value={fmtK(galenMigrationCost)} />
         <Met label="Clinical archive annual cost" value={fmtK(galenAnnualCost) + "/yr"} />
-        <Met label="Payback period" value={payback.toFixed(1) + " yrs"} />
+        <Met label="Payback period" value={paybackLabel} />
         <Met label={projYears + "-year return"} value={(() => {
           const yr3 = r.yr3R || r.yr3 || 0;
+          // UKI touchscreen: the 5-year return uses the same 20/40/60/80/100
+          // ramp as the rest of the report (3.0x annual), not 3-year ramp + 2
+          // full years (4.2x).
           const totalSav = projYears === 5
-            ? (r.total3WithReimbursement || r.total3 || 0) + yr3 + yr3
+            ? (UKI_KIOSK ? (r.total5WithReimbursement || 0) : (r.total3WithReimbursement || r.total3 || 0) + yr3 + yr3)
             : (r.total3WithReimbursement || r.total3 || 0);
           const totalCost = galenMigrationCost + galenAnnualCost * projYears;
           return Math.round((totalSav - totalCost) / Math.max(1, totalCost) * 100) + "% ROI";

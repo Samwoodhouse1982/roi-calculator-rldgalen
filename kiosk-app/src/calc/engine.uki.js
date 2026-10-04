@@ -4,7 +4,13 @@
 // results UI renders either market. Numeric parity with the web/uki
 // calculator is verified by the comparison harness (see repo history).
 
+import { UKI_KIOSK } from '../market';
+
 const RAMP5 = [0.20, 0.40, 0.60, 0.80, 1.00];
+// Named systems can be marked "Multiple" (e.g. Epic x 3) on the kiosk Systems
+// step. The UKI touchscreen counts and costs every instance, as the US engine
+// does; the UKI web embed keeps the web calculator's one-per-entry behaviour.
+const instancesOf = f => (UKI_KIOSK ? (f.instances || 1) : 1);
 
 // ── Model constants ──
 const STAFF_PER_BED = 2.8;
@@ -79,10 +85,10 @@ export function calc(inp, mode, ov = {}, flagships = []) {
   }
   const tieredEstate = ent * entCost + dep * depCost + nic * nicCost;
   // Flagships
-  const flagshipTotal = flagships.reduce((s,f) => s + (f.cost || 0), 0);
-  const flagshipDecomSave = flagships.filter(f => f.retire).reduce((s,f) => s + (f.cost || 0), 0);
-  const flagshipCount = flagships.length;
-  const flagshipRetireCount = flagships.filter(f => f.retire).length;
+  const flagshipTotal = flagships.reduce((s,f) => s + (f.cost || 0) * instancesOf(f), 0);
+  const flagshipDecomSave = flagships.filter(f => f.retire).reduce((s,f) => s + (f.cost || 0) * instancesOf(f), 0);
+  const flagshipCount = flagships.reduce((s,f) => s + instancesOf(f), 0);
+  const flagshipRetireCount = flagships.filter(f => f.retire).reduce((s,f) => s + instancesOf(f), 0);
   const legacy = tieredLegacy + flagshipCount;
   const totalEstate = tieredEstate + flagshipTotal;
   const blendedCost = legacy > 0 ? Math.round(totalEstate / legacy) : 0;

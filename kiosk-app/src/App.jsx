@@ -763,6 +763,7 @@ export default function App() {
   const handleAdjust = useCallback(() => setKioskStep(4), []);
   const handleStartOver = useCallback(() => {
     setShowSplash(true);
+    if (UKI_KIOSK) setViewTimescale('annual'); // next visitor starts on the default view
     setKioskStep(0);
     setProviderType("community");
     setOrgType("TYPICAL");
@@ -820,6 +821,7 @@ export default function App() {
     const IDLE_MS = 15 * 60 * 1000; // 15 minutes
     const goToSplash = () => {
       setShowSplash(true);
+      if (UKI_KIOSK) setViewTimescale('annual');
       setKioskStep(0);
       setCalibrating(false);
       setProviderType("community");
