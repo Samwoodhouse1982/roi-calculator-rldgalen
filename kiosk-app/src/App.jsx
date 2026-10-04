@@ -633,7 +633,10 @@ export default function App() {
   const updateTier = useCallback((tier, val) => setInputs(p => ({ ...p, tiers: { ...p.tiers, [tier]: val } })), []);
   const setFacility = useCallback((key, val) => setFacilitiesState(p => ({ ...p, [key]: val })), []);
   const applyPreset = useCallback((key) => { const p = PRESETS[key]; if (!p) return; setInputs({ ...p.data, tiers: { ...p.data.tiers } }); setFlagships([]); setFacilitiesState({}); }, []);
-  const selectProvider = useCallback((key) => { setProviderType(key); const pk = PROVIDER_PRESET_MAP[key]; if (pk) applyPreset(pk); setFacilitiesState(key === 'multi_hospital' ? { ...IDN_FACILITIES } : {}); }, [applyPreset]);
+  // Switching scope clears the non-acute facility portfolio (applyPreset
+  // already does too). IDNs start empty like every other scope, matching the
+  // US web calculator; the visitor adds their sites on the Facilities step.
+  const selectProvider = useCallback((key) => { setProviderType(key); const pk = PROVIDER_PRESET_MAP[key]; if (pk) applyPreset(pk); setFacilitiesState({}); }, [applyPreset]);
   const selectOrgType = useCallback((key) => {
     setOrgType(key); applyPreset(key);
     if (AU) { const pr = PRESETS_AU[key]; if (pr) { setSector(pr.sector); setOccupancyRate(SECTOR_OCCUPANCY[pr.sector] ?? 0.90); } }
