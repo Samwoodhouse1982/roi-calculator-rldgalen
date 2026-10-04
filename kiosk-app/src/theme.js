@@ -1,6 +1,7 @@
 // Build-time flag: '1' when built with `--mode embed` (see .env.embed).
 // Selects the responsive/iframe variant; default is the fixed 1080×1920 kiosk.
 const EMBED = import.meta.env.VITE_EMBED === '1';
+import { activeProfile } from './calc/profiles.uki';
 
 // DARK palette — the kiosk's original navy theme, unchanged.
 // The extra tokens at the bottom (onAccent, scrim, …) carry the values that
@@ -120,8 +121,11 @@ const MARKET_UKI = import.meta.env.VITE_MARKET === 'uki';
 const MARKET_AU = import.meta.env.VITE_MARKET === 'au';
 const LOCALE = MARKET_UKI ? "en-GB" : MARKET_AU ? "en-AU" : "en-US";
 const CUR = MARKET_UKI ? "\u00a3" : MARKET_AU ? "A$" : "$";
+// UKI: the touchscreen's audience profile can switch £ to € (Ireland); the
+// embed always runs the NHS profile, so it stays £.
+const cur = () => MARKET_UKI ? activeProfile().currency : CUR;
 export const fmt = n => typeof n === "number" ? n.toLocaleString(LOCALE) : n;
-export const fmtK = n => n >= 1e6 ? `${CUR}${(n/1e6).toFixed(1)}m` : n >= 1000 ? `${CUR}${Math.round(n/1000).toLocaleString(LOCALE)}k` : `${CUR}${fmt(n)}`;
+export const fmtK = n => { const c = cur(); return n >= 1e6 ? `${c}${(n/1e6).toFixed(1)}m` : n >= 1000 ? `${c}${Math.round(n/1000).toLocaleString(LOCALE)}k` : `${c}${fmt(n)}`; };
 export const fmtNum = n => typeof n === "number" ? n.toLocaleString(LOCALE) : n;
 export const KIOSK_STEPS = MARKET_UKI || MARKET_AU
   ? ["Scope", "Journey", "Scale", "Systems", "Fine-tune", "Results"]

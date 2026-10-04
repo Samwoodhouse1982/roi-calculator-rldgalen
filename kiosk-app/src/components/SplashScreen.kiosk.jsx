@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { C } from '../theme';
 import { UKI, UKI_KIOSK } from '../market';
+import { activeProfile } from '../calc/profiles.uki';
 import { getKioskZoom } from '../kioskFit';
 import rldatixLogo from '../assets/rldatix-logo.png';
 import klasBadge from '../assets/best-in-klas-2025-data-archiving.svg';
@@ -253,7 +254,7 @@ export function SplashScreen({ onStart, onAdminReveal }) {
           lineHeight: 1.6, margin: '0 auto 75px', maxWidth: 750,
         }}>
           {UKI
-            ? "See how much your Trust or ICS could save by retiring legacy systems and consolidating clinical data into a single archive."
+            ? (UKI_KIOSK ? activeProfile().splash : "See how much your Trust or ICS could save by retiring legacy systems and consolidating clinical data into a single archive.")
             : "See exactly how much your health system could save by retiring legacy applications and consolidating clinical data into a single archive."}
         </p>
 

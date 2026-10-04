@@ -8,6 +8,7 @@ const EMBED = import.meta.env.VITE_EMBED === '1';
 import { KNOWN_SYSTEMS, systemCost, TIER_TYPES as TIER_TYPES_MKT, KNOWN_SYSTEMS_BY_SECTOR, TIER_TYPES_BY_SECTOR } from '../calc/vendors.index.js';
 import { UKI, AU, UKI_KIOSK } from '../market';
 import { PRESETS as PRESETS_UKI, ORG_TYPES } from '../calc/presets.uki';
+import { PROFILES, activeProfile } from '../calc/profiles.uki';
 import { PRESETS as PRESETS_AU, SECTORS as SECTORS_AU, ORG_TYPES as ORG_TYPES_AU } from '../calc/presets.au';
 
 // US tier-type map (historical local copy). The market builds override it:
@@ -275,7 +276,8 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
   };
   const auCopy = AU ? (AU_TIER_COPY[sector || "hospital"] || AU_TIER_COPY.hospital) : null;
   const tierTypesActive = AU && TIER_TYPES_BY_SECTOR ? (TIER_TYPES_BY_SECTOR[sector || "hospital"] || TIER_TYPES_BY_SECTOR.hospital) : TIER_TYPES;
-  const knownActive = AU && KNOWN_SYSTEMS_BY_SECTOR ? (KNOWN_SYSTEMS_BY_SECTOR[sector || "hospital"] || KNOWN_SYSTEMS_BY_SECTOR.hospital) : KNOWN_SYSTEMS;
+  const knownActive = AU && KNOWN_SYSTEMS_BY_SECTOR ? (KNOWN_SYSTEMS_BY_SECTOR[sector || "hospital"] || KNOWN_SYSTEMS_BY_SECTOR.hospital)
+    : UKI_KIOSK && !activeProfile().nhs ? KNOWN_SYSTEMS.filter(sys => !sys.nhsOnly) : KNOWN_SYSTEMS;
   const tiers = [
     { key: "enterprise", label: auCopy ? auCopy.enterprise.label : "Enterprise", color: C.accent, hint: auCopy ? auCopy.enterprise.hint : UKI ? "Including legacy EPR / PAS" : "Including legacy EHR, ERP, RCM", max: Math.max(10, inputs.tiers.enterprise + 3) },
     { key: "departmental", label: auCopy ? auCopy.departmental.label : "Departmental", color: C.blue, hint: auCopy ? auCopy.departmental.hint : UKI ? "Including LIMS, PACS, pharmacy, maternity, theatres, e-obs" : "Including laboratory, pharmacy, perinatal, imaging/PACS, cardiology, and radiology", max: Math.max(30, inputs.tiers.departmental + 5) },
@@ -311,7 +313,7 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
         style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
       <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
         <button onClick={() => setKnownSpend(Math.max(0, knownSpend - 100000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-        <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI_KIOSK ? "\u00b1\u00a3100k" : "±$100k"}</div>
+        <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI_KIOSK ? "\u00b1" + activeProfile().currency + "100k" : "±$100k"}</div>
         <button onClick={() => setKnownSpend(Math.min(20000000, knownSpend + 100000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
       </div>
       {UKI_KIOSK && flagships.length > 0 && <div style={{ marginTop: 18 }}>
@@ -476,7 +478,7 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
           style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
         <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
           <button onClick={() => setGalenMigrationCost(Math.max(0, galenMigrationCost - 25000))} style={{ width: UKI_KIOSK ? 64 : 48, height: UKI_KIOSK ? 64 : 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1\u00a325k" : AU ? "\u00b1A$25k" : "\u00b1$25k"}</div>
+          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1" + activeProfile().currency + "25k" : AU ? "\u00b1A$25k" : "\u00b1$25k"}</div>
           <button onClick={() => setGalenMigrationCost(Math.min(20000000, galenMigrationCost + 25000))} style={{ width: UKI_KIOSK ? 64 : 48, height: UKI_KIOSK ? 64 : 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
         </div>
       </div>
@@ -490,7 +492,7 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
           style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
         <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
           <button onClick={() => setGalenAnnualCost(Math.max(0, galenAnnualCost - 25000))} style={{ width: UKI_KIOSK ? 64 : 48, height: UKI_KIOSK ? 64 : 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1\u00a325k" : AU ? "\u00b1A$25k" : "\u00b1$25k"}</div>
+          <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1" + activeProfile().currency + "25k" : AU ? "\u00b1A$25k" : "\u00b1$25k"}</div>
           <button onClick={() => setGalenAnnualCost(Math.min(15000000, galenAnnualCost + 25000))} style={{ width: UKI_KIOSK ? 64 : 48, height: UKI_KIOSK ? 64 : 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
         </div>
       </div>
@@ -500,11 +502,18 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
 
 
 /* ── UKI STEP 1: organisation type (scope) ─────────────────────────────── */
-export function OrgTypeStep({ orgType, onSelect }) {
+export function OrgTypeStep({ orgType, onSelect, profile = "nhs", onSelectProfile }) {
+  // UKI touchscreen: an audience profile choice above the size tiles, which
+  // then show that profile's presets (calc/profiles.uki.js).
+  const presets = UKI_KIOSK ? PROFILES[profile].presets : PRESETS_UKI;
   return <div>
     <SectionTitle number="1">What type of organisation are you?</SectionTitle>
+    {UKI_KIOSK && <div style={{ marginBottom: 36 }}>
+      <SegmentedControl label="Your sector" value={profile} onChange={onSelectProfile}
+        options={Object.values(PROFILES).map(p => ({ key: p.key, label: p.label }))} />
+    </div>}
     <BigChoice options={ORG_TYPES.map(o => ({
-      key: o.key, label: PRESETS_UKI[o.key].label, desc: PRESETS_UKI[o.key].desc, iconKey: o.iconKey,
+      key: o.key, label: presets[o.key].label, desc: presets[o.key].desc, iconKey: o.iconKey,
     }))} value={orgType} onChange={onSelect} />
   </div>;
 }
@@ -524,20 +533,22 @@ export function ScaleStep({ inputs, update, sector = null }) {
   const unitLabel = auUnits ? auUnits.unit : "Total acute beds";
   return <div>
     <SectionTitle number="3">Organisation scale</SectionTitle>
-    {UKI_KIOSK ? <>
-      {/* UKI touchscreen: the two questions as headed sections of one card,
-          with larger controls since they are the only ones on the page. */}
-      <Card>
-        <Stepper xl label={orgLabel} value={inputs.org_count} min={1} max={10} onChange={v => update("org_count", v)}
-          tip="A single Trust, or the number of organisations in a multi-Trust or ICS-wide programme." />
+    {UKI_KIOSK ? (() => {
+      // UKI touchscreen: the two questions as headed sections of one card,
+      // with larger controls since they are the only ones on the page.
+      // Wording and the site limit follow the audience profile.
+      const p = activeProfile();
+      return <Card>
+        <Stepper xl label={p.orgLabel} value={inputs.org_count} min={1} max={Math.max(p.orgMax, inputs.org_count)} onChange={v => update("org_count", v)}
+          tip={p.orgTip} />
         <div style={{ borderTop: `1px solid ${C.border}`, margin: "48px 0" }} />
-        <TouchSlider xl label={unitLabel} value={inputs.bed_count} min={50} max={Math.max(8000, inputs.bed_count + 500)} step={10}
-          onChange={v => update("bed_count", v)} format={fmtNum} tip="The total across all the organisations in scope." />
+        <TouchSlider xl label={p.unitLabel} value={inputs.bed_count} min={50} max={Math.max(8000, inputs.bed_count + 500)} step={10}
+          onChange={v => update("bed_count", v)} format={fmtNum} tip={p.unitTip} />
         {inputs.org_count > 1 && <div style={{ fontSize: F.body, color: C.textMuted, background: C.bg, padding: "14px 20px", borderRadius: 12, marginTop: 28 }}>
-          Average: {fmtNum(avg)} beds per organisation
+          Average: {fmtNum(avg)} {p.avgUnit}
         </div>}
-      </Card>
-    </> : <Card>
+      </Card>;
+    })() : <Card>
       <Stepper label={orgLabel} value={inputs.org_count} min={1} max={auUnits ? auUnits.orgMax : 10}
         onChange={v => update("org_count", v)}
         tip={auUnits ? auUnits.orgTip : "A single Trust, or the number of organisations in a multi-Trust or ICS-wide programme."} />

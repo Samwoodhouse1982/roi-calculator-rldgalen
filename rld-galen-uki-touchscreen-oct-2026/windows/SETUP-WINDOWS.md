@@ -53,6 +53,10 @@ changing orientation.
 1. `start-kiosk.cmd` already points at the live touchscreen,
    https://galen-uki-touchscreen.netlify.app/. If the address ever changes,
    open it in Notepad and update the `KIOSK_URL` value.
+   - The touchscreen starts in the NHS sector. For an event aimed at
+     private providers or Ireland, open `start-kiosk.cmd` in Notepad and
+     set `SECTOR` to `uk-private`, `hse` or `ie-private`. Every new visitor
+     then starts in that sector, and can still switch on the first step.
 2. Double-click `start-kiosk.cmd`. Edge opens the calculator full screen
    with pinch-zoom and swipe-back turned off.
 3. To start it automatically when the laptop signs in: Win+R →

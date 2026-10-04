@@ -334,15 +334,15 @@ async function generatePDF(r, lead, ctx) {
   doc.text("ABOUT THESE FIGURES", M, y); y += 5;
   const explain = AU ? [
     ["System costs", "per-system estimates by tier (enterprise / departmental / standalone), scaled by size and complexity with per-type market caps. Sources: AU state contract-derived pricing, NSW SDPR programme data."],
-    ["Staff capacity", "staff time freed by eliminating context-switching across legacy systems, valued at a blended A$65/hr (hospitals) or A$42/hr (aged care / NDIS) with a conservative realisation factor. Sources: Bartek et al JIMI 2023, Sinsky et al 2016."],
+    ["Staff capacity", "staff time freed by eliminating context-switching across legacy systems, valued at a blended A$65/hr (hospitals) or A$42/hr (aged care / NDIS) with a conservative realisation factor. Sources: Bartek et al J Biomed Inform 2023, Sinsky et al 2016."],
     ["Funding & quality", "sector modules: ABF consolidation efficiency + private revenue recovery (hospitals, VAGO 2019 / APRA); AN-ACC uplift + agency + compliance with 30% attribution (aged care); claims + utilisation + retention (NDIS). Quality lines are cost avoidance (QAHCS/AIHW, IHACPA, VMIA)."],
   ] : UKI ? [
     ["System costs", "per-system estimates by tier (enterprise / departmental / standalone), scaled by bed count and complexity. Calibrated against the contract register of a large acute NHS Trust (~1,385 beds, 42 legacy systems, 2024/25)."],
-    ["Clinical capacity", "clinician time freed by eliminating context-switching across legacy systems, valued at a £55/hr blended NHS Agenda for Change rate with a conservative realisation factor. Sources: Bartek et al JIMI 2023 (2.78M EHR audit-log events), Nuffield Trust 2020."],
+    ["Clinical capacity", "clinician time freed by eliminating context-switching across legacy systems, valued at a £55/hr fully loaded clinical rate with a conservative realisation factor. Sources: Bartek et al J Biomed Inform 2023 (2.78M EHR audit-log events), Nuffield Trust 2020."],
     ["Patient safety", "cost avoidance from transition medication errors: excess bed days at £400/day (NHS Reference Costs), clinical negligence indemnity reduction (NHS Resolution / NAO Oct 2025), duplicate testing avoided. Source: Camacho et al 2024, BMJ Quality & Safety."],
   ] : [
     ["System costs", "per-system estimates by tier (enterprise / departmental / standalone), scaled by bed count. Sources: KLAS 2025 benchmarks, Becker's Hospital Review."],
-    ["Clinical capacity", "clinician time freed by eliminating context-switching across legacy systems, valued at a $95/hr blended rate with a conservative 30% realization factor. Sources: Bartek et al JIMI 2023 (2.78M EHR audit-log events), Sinsky et al 2016."],
+    ["Clinical capacity", "clinician time freed by eliminating context-switching across legacy systems, valued at a $95/hr blended rate with a conservative 30% realization factor. Sources: Bartek et al J Biomed Inform 2023 (2.78M EHR audit-log events), Sinsky et al 2016."],
     ["Reimbursement", "CMS penalty programs (HRRP 0.33% avg, HAC, VBP) plus denial recovery: 4.8% net revenue loss (HFMA), 30% attributed to documentation fragmentation, 20% recoverable through consolidation."],
   ];
   doc.setFontSize(7.5);

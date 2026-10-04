@@ -14,6 +14,13 @@ import { PRESETS as PRESETS_UKI } from './calc/presets.uki';
 import { PRESETS as PRESETS_AU, SECTOR_OCCUPANCY } from './calc/presets.au';
 import { PROVIDER_MULTIPLIERS as PM_AU, REIMBURSE_MULTIPLIERS as RM_AU } from './calc/engine.au';
 const PRESETS = UKI ? PRESETS_UKI : AU ? PRESETS_AU : PRESETS_US;
+import { PROFILES, initialProfileKey, setActiveProfile } from './calc/profiles.uki';
+// UKI touchscreen: the audience profile it starts in and returns to after a
+// reset (?sector= on the launcher URL, otherwise NHS), and that profile's
+// size presets. Every other build keeps PRESETS.
+const INITIAL_PROFILE = UKI_KIOSK ? initialProfileKey() : "nhs";
+const START_PRESETS = UKI_KIOSK ? PROFILES[INITIAL_PROFILE].presets : PRESETS;
+const presetsFor = key => UKI_KIOSK ? PROFILES[key].presets : PRESETS;
 import { systemCost } from './calc/vendors.index.js';
 import { StepIndicator, NavButtons, PageTransition } from './components';
 import { ProviderStep, JourneyStep, FacilitiesStep, SystemsStep, FineTuneStep, OrgTypeStep, ScaleStep, SectorOrgStep } from './steps';
@@ -71,8 +78,14 @@ function computeStats() {
   const last = sessions.length ? sessions[sessions.length - 1].ts : null;
 
   // Group by provider type
+  // UKI touchscreen: NHS sessions are keyed by preset ("TYPICAL"), the other
+  // audience profiles by "<profile>:<preset>" (see handleCalibrationDone).
   const PROVIDER_LABELS = UKI_KIOSK
-    ? Object.fromEntries(Object.entries(PRESETS_UKI).map(([k, p]) => [k, p.label]))
+    ? Object.fromEntries([
+      ...Object.entries(PRESETS_UKI).map(([k, p]) => [k, p.label]),
+      ...Object.values(PROFILES).filter(pr => !pr.nhs).flatMap(pr =>
+        Object.entries(pr.presets).map(([k, p]) => [`${pr.key}:${k}`, `${pr.label} \u00b7 ${p.label}`])),
+    ])
     : {
       critical_access: 'Critical Access / Rural',
       community: 'Community Hospital',
@@ -83,7 +96,7 @@ function computeStats() {
   const byProvider = {};
   for (const s of sessions) {
     const k = s.providerType || 'unknown';
-    if (!byProvider[k]) byProvider[k] = { count: 0, beds: 0, systems: 0, savings: 0, fte: 0 };
+    if (!byProvider[k]) byProvider[k] = { count: 0, beds: 0, systems: 0, savings: 0, fte: 0, cur: s.cur };
     byProvider[k].count++;
     byProvider[k].beds += s.beds || 0;
     byProvider[k].systems += s.systems || 0;
@@ -98,6 +111,7 @@ function computeStats() {
     avgSystems: Math.round(byProvider[k].systems / byProvider[k].count),
     avgSavings: Math.round(byProvider[k].savings / byProvider[k].count),
     avgFte: Math.round(byProvider[k].fte / byProvider[k].count * 10) / 10,
+    cur: byProvider[k].cur,
   })).sort((a, b) => b.count - a.count);
 
   // Cumulative impact across all sessions
@@ -108,6 +122,12 @@ function computeStats() {
     bedDays: acc.bedDays + (s.bedDays || 0),
     savings: acc.savings + (s.savings || 0),
   }), { fte: 0, medErrors: 0, patients: 0, bedDays: 0, savings: 0 });
+  // UKI touchscreen: euro sessions (Irish profiles) are totalled separately
+  // rather than added to pounds. Sessions saved before profiles have no cur.
+  if (UKI_KIOSK) {
+    cum.savingsEur = sessions.filter(s => s.cur === '\u20ac').reduce((t, s) => t + (s.savings || 0), 0);
+    cum.savings -= cum.savingsEur;
+  }
 
   return { total, today, last, providerRows, cum };
 }
@@ -116,11 +136,11 @@ function computeStats() {
    ADMIN STATS OVERLAY
    ──────────────────────────────────────────────────────────────────────── */
 const ADMIN_CUR = UKI_KIOSK ? '\u00a3' : '$';
-function fmtMoney(n) {
-  if (n >= 1e9) return ADMIN_CUR + (n/1e9).toFixed(1) + 'b';
-  if (n >= 1e6) return ADMIN_CUR + (n/1e6).toFixed(1) + 'm';
-  if (n >= 1e3) return ADMIN_CUR + Math.round(n/1e3) + 'k';
-  return ADMIN_CUR + n;
+function fmtMoney(n, cur = ADMIN_CUR) {
+  if (n >= 1e9) return cur + (n/1e9).toFixed(1) + 'b';
+  if (n >= 1e6) return cur + (n/1e6).toFixed(1) + 'm';
+  if (n >= 1e3) return cur + Math.round(n/1e3) + 'k';
+  return cur + n;
 }
 function fmtNum(n) { return (n || 0).toLocaleString(UKI_KIOSK ? 'en-GB' : 'en-US'); }
 
@@ -259,7 +279,7 @@ function AdminOverlay({ onClose }) {
                 <div style={{ textAlign: 'right', color: C.accent, fontWeight: 700 }}>{r.count}</div>
                 <div style={{ textAlign: 'right', color: C.textMid }}>{fmtNum(r.avgBeds)}</div>
                 <div style={{ textAlign: 'right', color: C.textMid }}>{r.avgSystems}</div>
-                <div style={{ textAlign: 'right', color: C.textMid, fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(r.avgSavings)}</div>
+                <div style={{ textAlign: 'right', color: C.textMid, fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(r.avgSavings, r.cur || ADMIN_CUR)}</div>
                 <div style={{ textAlign: 'right', color: C.textMid }}>{r.avgFte}</div>
               </div>
             ))}
@@ -272,7 +292,7 @@ function AdminOverlay({ onClose }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
             <div style={{ padding: '14px 16px', background: C.bg, borderRadius: 12, border: '1px solid ' + C.borderLight }}>
               <div style={{ fontSize: 11, color: C.textMuted }}>Total annual savings shown</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: C.accent, marginTop: 4 }}>{fmtMoney(stats.cum.savings)}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: C.accent, marginTop: 4 }}>{fmtMoney(stats.cum.savings)}{stats.cum.savingsEur > 0 ? ' + ' + fmtMoney(stats.cum.savingsEur, '\u20ac') : null}</div>
             </div>
             <div style={{ padding: '14px 16px', background: C.bg, borderRadius: 12, border: '1px solid ' + C.borderLight }}>
               <div style={{ fontSize: 11, color: C.textMuted }}>FTEs freed (cumulative)</div>
@@ -630,19 +650,33 @@ export default function App() {
   // UKI touchscreen: are named systems part of the "I know my spend" total
   // (true) or extra to it (false)? Only shown once named systems exist.
   const [knownIncludesNamed, setKnownIncludesNamed] = useState(true);
-  const [inputs, setInputs] = useState({ ...PRESETS.TYPICAL.data, tiers: { ...PRESETS.TYPICAL.data.tiers } });
+  const [inputs, setInputs] = useState({ ...START_PRESETS.TYPICAL.data, tiers: { ...START_PRESETS.TYPICAL.data.tiers } });
+  // UKI touchscreen audience profile (calc/profiles.uki.js). Published to the
+  // profile store on every render, before any child renders, so currency
+  // formatting and the system catalogue follow it.
+  const [profile, setProfile] = useState(INITIAL_PROFILE);
+  if (UKI_KIOSK) setActiveProfile(profile);
 
   const update = useCallback((key, val) => setInputs(p => ({ ...p, [key]: val })), []);
   const updateTier = useCallback((tier, val) => setInputs(p => ({ ...p, tiers: { ...p.tiers, [tier]: val } })), []);
   const setFacility = useCallback((key, val) => setFacilitiesState(p => ({ ...p, [key]: val })), []);
-  const applyPreset = useCallback((key) => { const p = PRESETS[key]; if (!p) return; setInputs({ ...p.data, tiers: { ...p.data.tiers } }); setFlagships([]); setFacilitiesState({}); }, []);
+  const applyPreset = useCallback((key, presets = PRESETS) => { const p = presets[key]; if (!p) return; setInputs({ ...p.data, tiers: { ...p.data.tiers } }); setFlagships([]); setFacilitiesState({}); }, []);
   // Switching scope clears the non-acute facility portfolio (applyPreset
   // already does too). IDNs start empty like every other scope, matching the
   // US web calculator; the visitor adds their sites on the Facilities step.
   const selectProvider = useCallback((key) => { setProviderType(key); const pk = PROVIDER_PRESET_MAP[key]; if (pk) applyPreset(pk); setFacilitiesState({}); }, [applyPreset]);
   const selectOrgType = useCallback((key) => {
-    setOrgType(key); applyPreset(key);
+    setOrgType(key); applyPreset(key, presetsFor(profile));
     if (AU) { const pr = PRESETS_AU[key]; if (pr) { setSector(pr.sector); setOccupancyRate(SECTOR_OCCUPANCY[pr.sector] ?? 0.90); } }
+  }, [applyPreset, profile]);
+  // UKI touchscreen: switching audience profile starts that profile's
+  // typical size preset (and clears named systems, as any preset does). It
+  // also clears the money the visitor typed (known spend, Galen costs), which
+  // would otherwise carry over into the new profile's currency.
+  const selectProfile = useCallback((key) => {
+    setProfile(key); setOrgType("TYPICAL"); applyPreset("TYPICAL", presetsFor(key));
+    setCostMode("estimate"); setKnownSpend(0); setKnownIncludesNamed(true);
+    setGalenMigrationCost(0); setGalenAnnualCost(0);
   }, [applyPreset]);
   // AU: picking a sector applies that sector's default size preset.
   const AU_SECTOR_DEFAULT = { hospital: "TYPICAL", aged_care: "AC_MID", ndis: "NDIS_MID" };
@@ -672,7 +706,7 @@ export default function App() {
 
   const calcInputs = useMemo(() => {
     if (UKI) {
-      return { ...inputs, _knownSpend: costMode === "known" && knownSpend > 0 ? knownSpend : 0, ...(UKI_KIOSK ? { _knownSpendIncludesNamed: knownIncludesNamed } : {}) };
+      return { ...inputs, _knownSpend: costMode === "known" && knownSpend > 0 ? knownSpend : 0, ...(UKI_KIOSK ? { _knownSpendIncludesNamed: knownIncludesNamed, _fig: PROFILES[profile].figures } : {}) };
     }
     if (AU) {
       const preset = PRESETS_AU[orgType] || PRESETS_AU.TYPICAL;
@@ -738,7 +772,7 @@ export default function App() {
       // Issue 1: Known spend override
       _knownSpend: costMode === "known" && knownSpend > 0 ? knownSpend : 0,
     };
-  }, [inputs, providerType, reimbursementModel, occupancyRate, facilities, costMode, knownSpend, knownIncludesNamed]);
+  }, [inputs, providerType, reimbursementModel, occupancyRate, facilities, costMode, knownSpend, knownIncludesNamed, profile]);
 
   const r = useMemo(() => calc(calcInputs, (UKI || AU) ? scenarioMode : "EXPECTED", {}, flagships), [calcInputs, flagships, scenarioMode]);
 
@@ -749,7 +783,10 @@ export default function App() {
     // Capture session metadata so the admin overlay can break stats down by
     // organisation type and report cumulative impact across all assessments.
     recordCompletion({
-      providerType: UKI ? orgType : AU ? `${sector}:${orgType}` : providerType,
+      // UKI touchscreen: non-NHS profiles are keyed "<profile>:<orgType>"
+      // and record their currency, so the admin stats keep £ and € apart.
+      providerType: UKI ? (UKI_KIOSK && profile !== "nhs" ? `${profile}:${orgType}` : orgType) : AU ? `${sector}:${orgType}` : providerType,
+      ...(UKI_KIOSK ? { cur: PROFILES[profile].currency } : null),
       beds: inputs.bed_count,
       orgs: inputs.org_count,
       systems: r.legacy || 0,
@@ -762,7 +799,7 @@ export default function App() {
       decomSave: r.decomSave || 0,
       timeSave: r.timeSave || 0,
     });
-  }, [providerType, orgType, sector, inputs, r]);
+  }, [providerType, orgType, sector, inputs, r, profile]);
   const handleAdjust = useCallback(() => setKioskStep(4), []);
   const handleStartOver = useCallback(() => {
     setShowSplash(true);
@@ -770,6 +807,7 @@ export default function App() {
     setKioskStep(0);
     setProviderType("community");
     setOrgType("TYPICAL");
+    if (UKI_KIOSK) setProfile(INITIAL_PROFILE);
     setScenarioMode("EXPECTED");
     setReimbursementModel("mixed");
     setOccupancyRate(0.65);
@@ -780,7 +818,7 @@ export default function App() {
     setCostMode("estimate");
     setKnownSpend(0);
     setKnownIncludesNamed(true);
-    setInputs({ ...PRESETS.TYPICAL.data, tiers: { ...PRESETS.TYPICAL.data.tiers } });
+    setInputs({ ...START_PRESETS.TYPICAL.data, tiers: { ...START_PRESETS.TYPICAL.data.tiers } });
   }, []);
 
   // Resets all inputs and jumps to step 0 (Scope) without showing the splash.
@@ -791,6 +829,7 @@ export default function App() {
     setCalibrating(false);
     setProviderType("community");
     setOrgType("TYPICAL");
+    if (UKI_KIOSK) setProfile(INITIAL_PROFILE);
     setScenarioMode("EXPECTED");
     setReimbursementModel("mixed");
     setOccupancyRate(0.65);
@@ -801,12 +840,12 @@ export default function App() {
     setCostMode("estimate");
     setKnownSpend(0);
     setKnownIncludesNamed(true);
-    setInputs({ ...PRESETS.TYPICAL.data, tiers: { ...PRESETS.TYPICAL.data.tiers } });
+    setInputs({ ...START_PRESETS.TYPICAL.data, tiers: { ...START_PRESETS.TYPICAL.data.tiers } });
   }, []);
 
   const renderStep = () => {
     switch (kioskStep) {
-      case 0: return AU ? <SectorOrgStep sector={sector} onSelectSector={selectSector} orgType={orgType} onSelectOrg={selectOrgType} /> : UKI ? <OrgTypeStep orgType={orgType} onSelect={selectOrgType} /> : <ProviderStep providerType={providerType} onSelect={selectProvider} reimbursementModel={reimbursementModel} setReimbursementModel={setReimbursementModel} />;
+      case 0: return AU ? <SectorOrgStep sector={sector} onSelectSector={selectSector} orgType={orgType} onSelectOrg={selectOrgType} /> : UKI ? <OrgTypeStep orgType={orgType} onSelect={selectOrgType} profile={profile} onSelectProfile={selectProfile} /> : <ProviderStep providerType={providerType} onSelect={selectProvider} reimbursementModel={reimbursementModel} setReimbursementModel={setReimbursementModel} />;
       case 1: return <JourneyStep journey={inputs.journey} onSelect={v => update("journey", v)} />;
       case 2: return (UKI || AU) ? <ScaleStep inputs={inputs} update={update} sector={AU ? sector : null} /> : <FacilitiesStep inputs={inputs} update={update} facilities={facilities} setFacility={setFacility} />;
       case 3: return <SystemsStep inputs={inputs} updateTier={updateTier} flagships={flagships} addFlagship={addFlagship} removeFlagship={removeFlagship} updateFlagshipCost={updateFlagshipCost} updateFlagshipInstances={updateFlagshipInstances} costMode={costMode} setCostMode={setCostMode} knownSpend={knownSpend} setKnownSpend={setKnownSpend} knownIncludesNamed={knownIncludesNamed} setKnownIncludesNamed={setKnownIncludesNamed} sector={AU ? sector : null} />;
@@ -831,6 +870,7 @@ export default function App() {
       setCalibrating(false);
       setProviderType("community");
       setOrgType("TYPICAL");
+      if (UKI_KIOSK) setProfile(INITIAL_PROFILE);
       setScenarioMode("EXPECTED");
       setReimbursementModel("mixed");
       setOccupancyRate(0.65);
@@ -841,7 +881,7 @@ export default function App() {
       setCostMode("estimate");
       setKnownSpend(0);
       setKnownIncludesNamed(true);
-      setInputs({ ...PRESETS.TYPICAL.data, tiers: { ...PRESETS.TYPICAL.data.tiers } });
+      setInputs({ ...START_PRESETS.TYPICAL.data, tiers: { ...START_PRESETS.TYPICAL.data.tiers } });
     };
     const reset = () => {
       if (timeoutId) clearTimeout(timeoutId);
