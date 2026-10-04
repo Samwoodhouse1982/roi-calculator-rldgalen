@@ -627,6 +627,9 @@ export default function App() {
   const [facilities, setFacilitiesState] = useState({});
   const [costMode, setCostMode] = useState("estimate");
   const [knownSpend, setKnownSpend] = useState(0);
+  // UKI touchscreen: are named systems part of the "I know my spend" total
+  // (true) or extra to it (false)? Only shown once named systems exist.
+  const [knownIncludesNamed, setKnownIncludesNamed] = useState(true);
   const [inputs, setInputs] = useState({ ...PRESETS.TYPICAL.data, tiers: { ...PRESETS.TYPICAL.data.tiers } });
 
   const update = useCallback((key, val) => setInputs(p => ({ ...p, [key]: val })), []);
@@ -669,7 +672,7 @@ export default function App() {
 
   const calcInputs = useMemo(() => {
     if (UKI) {
-      return { ...inputs, _knownSpend: costMode === "known" && knownSpend > 0 ? knownSpend : 0 };
+      return { ...inputs, _knownSpend: costMode === "known" && knownSpend > 0 ? knownSpend : 0, ...(UKI_KIOSK ? { _knownSpendIncludesNamed: knownIncludesNamed } : {}) };
     }
     if (AU) {
       const preset = PRESETS_AU[orgType] || PRESETS_AU.TYPICAL;
@@ -735,7 +738,7 @@ export default function App() {
       // Issue 1: Known spend override
       _knownSpend: costMode === "known" && knownSpend > 0 ? knownSpend : 0,
     };
-  }, [inputs, providerType, reimbursementModel, occupancyRate, facilities, costMode, knownSpend]);
+  }, [inputs, providerType, reimbursementModel, occupancyRate, facilities, costMode, knownSpend, knownIncludesNamed]);
 
   const r = useMemo(() => calc(calcInputs, (UKI || AU) ? scenarioMode : "EXPECTED", {}, flagships), [calcInputs, flagships, scenarioMode]);
 
@@ -776,6 +779,7 @@ export default function App() {
     setFacilitiesState({});
     setCostMode("estimate");
     setKnownSpend(0);
+    setKnownIncludesNamed(true);
     setInputs({ ...PRESETS.TYPICAL.data, tiers: { ...PRESETS.TYPICAL.data.tiers } });
   }, []);
 
@@ -796,6 +800,7 @@ export default function App() {
     setFacilitiesState({});
     setCostMode("estimate");
     setKnownSpend(0);
+    setKnownIncludesNamed(true);
     setInputs({ ...PRESETS.TYPICAL.data, tiers: { ...PRESETS.TYPICAL.data.tiers } });
   }, []);
 
@@ -804,7 +809,7 @@ export default function App() {
       case 0: return AU ? <SectorOrgStep sector={sector} onSelectSector={selectSector} orgType={orgType} onSelectOrg={selectOrgType} /> : UKI ? <OrgTypeStep orgType={orgType} onSelect={selectOrgType} /> : <ProviderStep providerType={providerType} onSelect={selectProvider} reimbursementModel={reimbursementModel} setReimbursementModel={setReimbursementModel} />;
       case 1: return <JourneyStep journey={inputs.journey} onSelect={v => update("journey", v)} />;
       case 2: return (UKI || AU) ? <ScaleStep inputs={inputs} update={update} sector={AU ? sector : null} /> : <FacilitiesStep inputs={inputs} update={update} facilities={facilities} setFacility={setFacility} />;
-      case 3: return <SystemsStep inputs={inputs} updateTier={updateTier} flagships={flagships} addFlagship={addFlagship} removeFlagship={removeFlagship} updateFlagshipCost={updateFlagshipCost} updateFlagshipInstances={updateFlagshipInstances} costMode={costMode} setCostMode={setCostMode} knownSpend={knownSpend} setKnownSpend={setKnownSpend} sector={AU ? sector : null} />;
+      case 3: return <SystemsStep inputs={inputs} updateTier={updateTier} flagships={flagships} addFlagship={addFlagship} removeFlagship={removeFlagship} updateFlagshipCost={updateFlagshipCost} updateFlagshipInstances={updateFlagshipInstances} costMode={costMode} setCostMode={setCostMode} knownSpend={knownSpend} setKnownSpend={setKnownSpend} knownIncludesNamed={knownIncludesNamed} setKnownIncludesNamed={setKnownIncludesNamed} sector={AU ? sector : null} />;
       case 4: return <FineTuneStep inputs={inputs} update={update} galenMigrationCost={galenMigrationCost} setGalenMigrationCost={setGalenMigrationCost} galenAnnualCost={galenAnnualCost} setGalenAnnualCost={setGalenAnnualCost} occupancyRate={occupancyRate} setOccupancyRate={setOccupancyRate} sector={AU ? sector : null} />;
       case 5: return <ResultsPage r={r} galenMigrationCost={galenMigrationCost} galenAnnualCost={galenAnnualCost} viewTimescale={viewTimescale} setViewTimescale={setViewTimescale} onAdjust={handleAdjust} onStartOver={handleStartOver} leadContext={AU ? { sector, orgType, beds: inputs.bed_count, orgs: inputs.org_count, journey: inputs.journey, scenarioMode, calcInputs, flagships } : UKI ? { orgType, beds: inputs.bed_count, orgs: inputs.org_count, journey: inputs.journey, scenarioMode, calcInputs, flagships } : { providerType, beds: inputs.bed_count, orgs: inputs.org_count, reimbursementModel, calcInputs, flagships }} />;
       default: return null;
@@ -835,6 +840,7 @@ export default function App() {
       setFacilitiesState({});
       setCostMode("estimate");
       setKnownSpend(0);
+      setKnownIncludesNamed(true);
       setInputs({ ...PRESETS.TYPICAL.data, tiers: { ...PRESETS.TYPICAL.data.tiers } });
     };
     const reset = () => {
