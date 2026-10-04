@@ -5,3 +5,7 @@
 export const MARKET = import.meta.env.VITE_MARKET || 'us';
 export const UKI = MARKET === 'uki';
 export const AU = MARKET === 'au';
+// UKI touchscreen only. The UKI touchscreen and the UKI web embed are separate
+// products: touchscreen-specific UKI changes are gated on this so they never
+// alter the embed's output.
+export const UKI_KIOSK = UKI && import.meta.env.VITE_EMBED !== '1';

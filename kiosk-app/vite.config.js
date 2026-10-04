@@ -56,6 +56,9 @@ const ukiKioskTitle = () => ({
 export default defineConfig(({ mode }) => {
   const embed = mode.startsWith('embed') || process.env.VITE_EMBED === '1';
   const market = process.env.VITE_MARKET || loadEnv(mode, process.cwd(), 'VITE_').VITE_MARKET;
+  // The UKI touchscreen builds into its own folder so it can never overwrite
+  // the UKI web embed's (or any other product's) dist/ output.
+  const outDir = !embed && market === 'uki' ? 'dist-kiosk-uki' : 'dist';
   // WP_INLINE=1 produces a single-file bundle for the WordPress inline
   // fragment: no code-splitting (jsPDF's lazy chunk is folded in) and every
   // asset base64-inlined, so scripts/make-wp-fragment.mjs can emit one
@@ -64,7 +67,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), ...(embed ? [embedHtmlEntry()] : []), ...(!embed && market === 'uki' ? [ukiKioskTitle()] : [])],
     build: {
-      outDir: 'dist',
+      outDir,
       target: 'es2015',
       cssTarget: 'chrome61',
       ...(wpInline ? { assetsInlineLimit: 100000000, rollupOptions: { input: fileURLToPath(new URL('./index.embed.html', import.meta.url)), output: { inlineDynamicImports: true } } } : {}),

@@ -7,7 +7,7 @@ Dark theme, touch-optimized. One codebase, five shipped builds:
 |------|---------|--------|---------|
 | **US touchscreen** (default) | `npm run build` | `dist/` | Fixed portrait 1080×1920 (9:16) conference kiosk |
 | **US embed** | `npm run build:embed` | `dist/` | Responsive / iframe-friendly web version — light RLDatix web theme, scales from ~320px phones to desktop |
-| **UKI touchscreen** | `npm run build:kiosk:uki` | `dist/` | UK & Ireland market on the US touchscreen chassis — same 1080×1920 dark kiosk, UKI embed maths and content |
+| **UKI touchscreen** | `npm run build:kiosk:uki` | `dist-kiosk-uki/` | UK & Ireland market on the US touchscreen chassis — same 1080×1920 dark kiosk, UKI embed maths and content |
 | **UKI embed** | `npm run build:embed:uki` | `dist/` | UK & Ireland market variant of the embed — NHS/Ireland model, £, `en-GB` |
 | **AU embed** | `npm run build:embed:au` | `dist/` | Australia market variant of the embed — hospitals + aged care + NDIS, A$, `en-AU` |
 
@@ -38,10 +38,17 @@ UKI also ships as a touchscreen: `--mode kiosk-uki` loads
 touchscreen's layout, splash, idle reset and stats overlay with the UKI
 engine and copy. Same inputs give the same figures as the UKI embed
 (verified across every timescale and confidence level). Like the US
-touchscreen it has no lead form or PDF. Touchscreen-only UKI tweaks: the
-splash copy, an `EPR` page title (vite.config.js), and the Patient safety
-tile and card spanning the full row (UKI has no reimbursement section, so
-they would otherwise sit alone at half width).
+touchscreen it has no lead form or PDF.
+
+The UKI touchscreen and the UKI web embed are separate products. The
+touchscreen builds into its own folder (`dist-kiosk-uki/`, not `dist/`),
+so building it never overwrites the embed's output, and every
+touchscreen-only UKI change is gated on `UKI_KIOSK` (`src/market.js`) so
+it can't alter the embed. Those changes are: splash copy, an `EPR` page
+title (vite.config.js), UK spellings and £ in the stats overlay and a few
+labels, and the Patient safety tile and card spanning the full row (UKI
+has no reimbursement section, so they would otherwise sit alone at half
+width).
 
 The AU market (`--mode embed-au` → `.env.embed-au`) follows the same
 pattern with three sectors: the audited Australian engine

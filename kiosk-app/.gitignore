@@ -1,4 +1,5 @@
 node_modules/
 dist/
+dist-kiosk-uki/
 .DS_Store
 node_modules/
