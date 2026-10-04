@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { C, F, fmtNum, fmtK, FACILITY_TYPES, FACILITY_GROUPS } from '../theme';
-import { Card, BigChoice, SectionTitle, TouchSlider, Stepper, SegmentedControl, InfoTip } from '../components';
+import { Card, BigChoice, SectionTitle, TouchSlider, Stepper, SegmentedControl, InfoTip, KIOSK_TILE, KIOSK_GAP } from '../components';
 import { Icon } from '../components/Icons';
 
 // Build-time flag: '1' when built with `--mode embed`; sizing only.
@@ -161,7 +161,7 @@ export function ProviderStep({ providerType, onSelect, reimbursementModel, setRe
 export function JourneyStep({ journey, onSelect }) {
   return <div>
     <SectionTitle number="2">{UKI ? "Where are you on your EPR journey?" : AU ? "Where are you on your EMR journey?" : "Where are you on your EHR journey?"}</SectionTitle>
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: UKI_KIOSK ? KIOSK_GAP : 16 }}>
       {(AU ? [
         { key: "HAVE_EPR", label: "We want to decommission systems", desc: "You have (or are keeping) your core platform. Retire and archive the legacy estate around it.", iconKey: "check", focus: "Archiving + decommission savings" },
         { key: "EVALUATING", label: "We're evaluating enterprise EMRs", desc: "Assessing migration to a single EMR platform. Need the full case for migration and archiving.", iconKey: "search", focus: "Migration safety + archiving savings" },
@@ -174,12 +174,13 @@ export function JourneyStep({ journey, onSelect }) {
       ]).map(j => <button key={j.key} onClick={() => onSelect(j.key)} style={{
         padding: EMBED ? "clamp(18px, 2.6vw, 26px)" : "32px 30px", textAlign: "left", cursor: "pointer",
         border: journey === j.key ? `${EMBED ? 2 : 3}px solid ${C.accent}` : `1px solid ${C.border}`,
-        borderRadius: EMBED ? 16 : 22, background: journey === j.key ? C.accentPale : C.surface, transition: "all .2s"
+        borderRadius: EMBED ? 16 : 22, background: journey === j.key ? C.accentPale : C.surface, transition: "all .2s",
+        ...(UKI_KIOSK ? { ...KIOSK_TILE, display: "flex", flexDirection: "column", alignItems: "flex-start" } : null)
       }}>
-        <div style={{ marginBottom: 12 }}><Icon name={j.iconKey} size={36} stroke={journey === j.key ? C.accent : C.textMid} /></div>
-        <div style={{ fontSize: F.h3, fontWeight: 700, color: journey === j.key ? C.accent : C.text, marginBottom: 8 }}>{j.label}</div>
-        <div style={{ fontSize: F.body, color: C.textMuted, lineHeight: 1.6, marginBottom: 12 }}>{j.desc}</div>
-        <div style={{ fontSize: F.small, fontWeight: 600, color: journey === j.key ? C.accent : C.textMid, padding: "6px 14px", background: journey === j.key ? C.accent + "15" : C.bg, borderRadius: 8, display: "inline-block" }}>{j.focus}</div>
+        <div style={{ marginBottom: UKI_KIOSK ? 20 : 12 }}><Icon name={j.iconKey} size={UKI_KIOSK ? 64 : 36} stroke={journey === j.key ? C.accent : C.textMid} /></div>
+        <div style={{ fontSize: UKI_KIOSK ? F.h2 : F.h3, fontWeight: 700, color: journey === j.key ? C.accent : C.text, marginBottom: UKI_KIOSK ? 12 : 8 }}>{j.label}</div>
+        <div style={{ fontSize: F.body, color: C.textMuted, lineHeight: 1.6, marginBottom: UKI_KIOSK ? 20 : 12 }}>{j.desc}</div>
+        <div style={{ fontSize: F.small, fontWeight: 600, color: journey === j.key ? C.accent : C.textMid, padding: UKI_KIOSK ? "8px 16px" : "6px 14px", background: journey === j.key ? C.accent + "15" : C.bg, borderRadius: 8, display: "inline-block" }}>{j.focus}</div>
       </button>)}
     </div>
   </div>;
@@ -331,21 +332,21 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
       </div>)}
     </Card>}
 
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: UKI_KIOSK ? KIOSK_GAP : 14 }}>
       {tiers.map(t => {
         const tierSystems = knownActive.filter(s => (tierTypesActive[t.key] || []).includes(s.type));
         const tierFlagships = flagships.filter(f => f.tier === t.key);
-        return <Card key={t.key} style={{ border: `1px solid ${t.color}30`, ...(EMBED ? {} : { padding: "24px 28px" }) }}>
+        return <Card key={t.key} style={{ border: `1px solid ${t.color}30`, ...(EMBED ? {} : { padding: UKI_KIOSK ? "32px 36px" : "24px 28px" }) }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <div>
-              <span style={{ fontSize: F.h3, fontWeight: 700, color: t.color }}>{t.label}</span>
-              <div style={{ fontSize: F.tiny, color: C.textMuted, marginTop: 2 }}>{t.hint}</div>
+              <span style={{ fontSize: UKI_KIOSK ? F.h2 : F.h3, fontWeight: 700, color: t.color }}>{t.label}</span>
+              <div style={{ fontSize: UKI_KIOSK ? F.small : F.tiny, color: C.textMuted, marginTop: UKI_KIOSK ? 6 : 2 }}>{t.hint}</div>
             </div>
-            <span style={{ fontSize: 36, fontWeight: 800, color: t.color }}>{inputs.tiers[t.key]}</span>
+            <span style={{ fontSize: UKI_KIOSK ? 56 : 36, fontWeight: 800, color: t.color }}>{inputs.tiers[t.key]}</span>
           </div>
           <input type="range" min={0} max={t.max} step={1} value={inputs.tiers[t.key]}
             onChange={e => updateTier(t.key, Number(e.target.value))}
-            style={{ width: "100%", cursor: "pointer", accentColor: t.color }} />
+            style={{ width: "100%", cursor: "pointer", accentColor: t.color, ...(UKI_KIOSK ? { margin: "12px 0 24px" } : null) }} />
           {tierFlagships.length > 0 && <div style={{ marginTop: 8 }}>
             <div style={{ fontSize: F.tiny, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>In addition to the {inputs.tiers[t.key]} above:</div>
             {tierFlagships.map((f, fi) => {
@@ -392,13 +393,13 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
           {/* Two parallel ways to add a specific system: pick from common list, OR enter custom.
               Both buttons are always visible (when collapsed) so users can discover either path. */}
           <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-            {tierSystems.length > 0 && <div onClick={() => { setOpenTier(openTier === t.key ? null : t.key); setSelected([]); }} style={{ flex: 1, padding: "12px 16px", textAlign: "center", fontSize: F.tiny, color: C.accent, cursor: "pointer", fontWeight: 600, border: `1px solid ${C.border}`, borderRadius: 12, background: openTier === t.key ? C.accent + "10" : C.bg }}>
+            {tierSystems.length > 0 && <div onClick={() => { setOpenTier(openTier === t.key ? null : t.key); setSelected([]); }} style={{ flex: 1, padding: UKI_KIOSK ? "18px 16px" : "12px 16px", textAlign: "center", fontSize: UKI_KIOSK ? F.small : F.tiny, color: C.accent, cursor: "pointer", fontWeight: 600, border: `1px solid ${C.border}`, borderRadius: 12, background: openTier === t.key ? C.accent + "10" : C.bg }}>
               {openTier === t.key ? "▾" : "▸"} Pick from common systems
             </div>}
             <button onClick={() => setCustomTier(t.key)} style={{
-              flex: 1, padding: "12px 16px", borderRadius: 12,
+              flex: 1, padding: UKI_KIOSK ? "18px 16px" : "12px 16px", borderRadius: 12,
               border: `1px dashed ${t.color}`, background: 'transparent',
-              color: t.color, fontSize: F.tiny, fontWeight: 600, cursor: "pointer",
+              color: t.color, fontSize: UKI_KIOSK ? F.small : F.tiny, fontWeight: 600, cursor: "pointer",
               fontFamily: "inherit"
             }}>+ Enter your own system</button>
           </div>
@@ -463,34 +464,34 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
       <TouchSlider label="Decommission target" value={inputs.decom_retire_rate} min={0} max={1} step={0.05} onChange={v => update("decom_retire_rate", v)} format={v => `${Math.round(v * 100)}%`} tip="What % of legacy systems will be retired?" />
       {!UKI && <TouchSlider label={AU ? (sector === "aged_care" ? "Occupancy rate" : sector === "ndis" ? "Utilisation rate" : "Bed occupancy") : "Bed occupancy"} value={occupancyRate} min={0.3} max={1.0} step={0.01} onChange={setOccupancyRate} format={v => `${Math.round(v * 100)}%`} tip={AU ? (sector === "aged_care" ? "Average occupancy across your residential places. Typical 90-95%." : sector === "ndis" ? "Proportion of available staff hours that are billable. Typical 65-75%." : "Average bed occupancy. National average is ~90% (AMA). Drives admission volume, revenue, and safety metrics.") : "Drives admission volume, revenue, and safety metrics."} />}
     </Card>
-    <Card style={{ marginTop: 16 }}>
-      <div style={{ fontSize: F.body, fontWeight: 700, color: C.textMid, marginBottom: 16 }}>Galen Clinical Archive costs <span style={{ fontWeight: 400, color: C.textMuted }}>(optional)</span></div>
+    <Card style={{ marginTop: UKI_KIOSK ? KIOSK_GAP : 16 }}>
+      <div style={{ fontSize: UKI_KIOSK ? F.h2 : F.body, fontWeight: 700, color: C.textMid, marginBottom: 16 }}>Galen Clinical Archive costs <span style={{ fontWeight: 400, color: C.textMuted }}>(optional)</span></div>
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <span style={{ fontSize: F.small, fontWeight: 600, color: C.textMuted }}>Migration (one-time)</span>
-          <span style={{ fontSize: F.h2, fontWeight: 800, color: C.accent }}>{fmtK(galenMigrationCost)}</span>
+          <span style={{ fontSize: UKI_KIOSK ? F.h3 : F.small, fontWeight: 600, color: C.textMuted }}>Migration (one-time)</span>
+          <span style={{ fontSize: UKI_KIOSK ? 60 : F.h2, fontWeight: 800, color: C.accent }}>{fmtK(galenMigrationCost)}</span>
         </div>
         <input type="range" min={0} max={20000000} step={25000} value={galenMigrationCost}
           onChange={e => setGalenMigrationCost(Number(e.target.value))}
           style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
         <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
-          <button onClick={() => setGalenMigrationCost(Math.max(0, galenMigrationCost - 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+          <button onClick={() => setGalenMigrationCost(Math.max(0, galenMigrationCost - 25000))} style={{ width: UKI_KIOSK ? 64 : 48, height: UKI_KIOSK ? 64 : 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
           <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1\u00a325k" : AU ? "\u00b1A$25k" : "\u00b1$25k"}</div>
-          <button onClick={() => setGalenMigrationCost(Math.min(20000000, galenMigrationCost + 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+          <button onClick={() => setGalenMigrationCost(Math.min(20000000, galenMigrationCost + 25000))} style={{ width: UKI_KIOSK ? 64 : 48, height: UKI_KIOSK ? 64 : 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
         </div>
       </div>
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <span style={{ fontSize: F.small, fontWeight: 600, color: C.textMuted }}>Annual archive cost</span>
-          <span style={{ fontSize: F.h2, fontWeight: 800, color: C.accent }}>{fmtK(galenAnnualCost)}/yr</span>
+          <span style={{ fontSize: UKI_KIOSK ? F.h3 : F.small, fontWeight: 600, color: C.textMuted }}>Annual archive cost</span>
+          <span style={{ fontSize: UKI_KIOSK ? 60 : F.h2, fontWeight: 800, color: C.accent }}>{fmtK(galenAnnualCost)}/yr</span>
         </div>
         <input type="range" min={0} max={15000000} step={25000} value={galenAnnualCost}
           onChange={e => setGalenAnnualCost(Number(e.target.value))}
           style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
         <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
-          <button onClick={() => setGalenAnnualCost(Math.max(0, galenAnnualCost - 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+          <button onClick={() => setGalenAnnualCost(Math.max(0, galenAnnualCost - 25000))} style={{ width: UKI_KIOSK ? 64 : 48, height: UKI_KIOSK ? 64 : 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
           <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI ? "\u00b1\u00a325k" : AU ? "\u00b1A$25k" : "\u00b1$25k"}</div>
-          <button onClick={() => setGalenAnnualCost(Math.min(15000000, galenAnnualCost + 25000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+          <button onClick={() => setGalenAnnualCost(Math.min(15000000, galenAnnualCost + 25000))} style={{ width: UKI_KIOSK ? 64 : 48, height: UKI_KIOSK ? 64 : 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
         </div>
       </div>
     </Card>
@@ -523,7 +524,20 @@ export function ScaleStep({ inputs, update, sector = null }) {
   const unitLabel = auUnits ? auUnits.unit : "Total acute beds";
   return <div>
     <SectionTitle number="3">Organisation scale</SectionTitle>
-    <Card>
+    {UKI_KIOSK ? <>
+      {/* UKI touchscreen: the two questions as headed sections of one card,
+          with larger controls since they are the only ones on the page. */}
+      <Card>
+        <Stepper xl label={orgLabel} value={inputs.org_count} min={1} max={10} onChange={v => update("org_count", v)}
+          tip="A single Trust, or the number of organisations in a multi-Trust or ICS-wide programme." />
+        <div style={{ borderTop: `1px solid ${C.border}`, margin: "48px 0" }} />
+        <TouchSlider xl label={unitLabel} value={inputs.bed_count} min={50} max={Math.max(8000, inputs.bed_count + 500)} step={10}
+          onChange={v => update("bed_count", v)} format={fmtNum} tip="The total across all the organisations in scope." />
+        {inputs.org_count > 1 && <div style={{ fontSize: F.body, color: C.textMuted, background: C.bg, padding: "14px 20px", borderRadius: 12, marginTop: 28 }}>
+          Average: {fmtNum(avg)} beds per organisation
+        </div>}
+      </Card>
+    </> : <Card>
       <Stepper label={orgLabel} value={inputs.org_count} min={1} max={auUnits ? auUnits.orgMax : 10}
         onChange={v => update("org_count", v)}
         tip={auUnits ? auUnits.orgTip : "A single Trust, or the number of organisations in a multi-Trust or ICS-wide programme."} />
@@ -533,7 +547,7 @@ export function ScaleStep({ inputs, update, sector = null }) {
       {inputs.org_count > 1 && <div style={{ fontSize: F.small, color: C.textMuted, background: C.bg, padding: "10px 14px", borderRadius: 10 }}>
         Average: {fmtNum(avg)} {auUnits ? auUnits.unitWord : "beds"} per organisation
       </div>}
-    </Card>
+    </Card>}
   </div>;
 }
 

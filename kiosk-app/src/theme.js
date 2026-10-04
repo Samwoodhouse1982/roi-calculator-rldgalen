@@ -89,6 +89,10 @@ export const F = EMBED
       tiny:  "clamp(0.76rem, 1.35vw, 0.82rem)",
       label: "clamp(0.82rem, 1.5vw, 0.88rem)",
     }
+  // UKI touchscreen: about 30% larger, so text and tiles fill the 2K portrait
+  // screen and read comfortably from a step back.
+  : import.meta.env.VITE_MARKET === 'uki'
+  ? { hero: 108, h1: 52, h2: 36, h3: 29, body: 23, small: 20, tiny: 18, label: 19 }
   : { hero: 108, h1: 40, h2: 28, h3: 22, body: 18, small: 16, tiny: 14, label: 15 };
 
 /**
