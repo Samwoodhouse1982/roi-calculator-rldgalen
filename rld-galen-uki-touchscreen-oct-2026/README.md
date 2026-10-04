@@ -22,6 +22,9 @@ Directory" setting to be enabled — it is by default.
 
 ## Deploying on Netlify instead
 
+The live UKI touchscreen is the Netlify site at
+https://galen-uki-touchscreen.netlify.app/.
+
 `netlify.toml` here does the same build on Netlify. In Netlify choose
 **Add new site → Import an existing project**, pick this repo and set
 **Base directory** to `rld-galen-uki-touchscreen-oct-2026`. The build
