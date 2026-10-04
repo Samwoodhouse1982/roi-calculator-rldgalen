@@ -250,7 +250,7 @@ export function FacilitiesStep({ inputs, update, facilities, setFacility }) {
 }
 
 // STEP 4: Systems
-export function SystemsStep({ inputs, updateTier, flagships, addFlagship, removeFlagship, updateFlagshipCost, updateFlagshipInstances, costMode, setCostMode, knownSpend, setKnownSpend, sector = null }) {
+export function SystemsStep({ inputs, updateTier, flagships, addFlagship, removeFlagship, updateFlagshipCost, updateFlagshipInstances, costMode, setCostMode, knownSpend, setKnownSpend, knownIncludesNamed = true, setKnownIncludesNamed, sector = null }) {
   const [openTier, setOpenTier] = useState(null);
   const [selected, setSelected] = useState([]);
   const [customTier, setCustomTier] = useState(null); // when set, modal is open for that tier
@@ -285,6 +285,10 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
   // multi-instance entries like 'Epic × 3' as 3 systems, not 1.
   const flagshipInstanceCount = flagships.reduce((s, f) => s + (f.instances || 1), 0);
   const total = sliderTotal + flagshipInstanceCount;
+  // UKI touchscreen "I know my spend": annual cost of the named systems and
+  // how the stated total splits between them and the tier systems.
+  const namedTotal = flagships.reduce((s, f) => s + (f.cost || 0) * (f.instances || 1), 0);
+  const tierShare = knownIncludesNamed ? Math.max(0, knownSpend - namedTotal) : knownSpend;
 
   return <div>
     <SectionTitle number="4">Legacy systems</SectionTitle>
@@ -309,9 +313,22 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
         <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI_KIOSK ? "\u00b1\u00a3100k" : "±$100k"}</div>
         <button onClick={() => setKnownSpend(Math.min(20000000, knownSpend + 100000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
       </div>
-      {knownSpend > 0 && <div style={{ fontSize: F.small, color: C.textMuted, marginTop: 8, textAlign: "center" }}>
-        {total} systems · {fmtK(Math.round(knownSpend / Math.max(1, total)))}/system avg
+      {UKI_KIOSK && flagships.length > 0 && <div style={{ marginTop: 18 }}>
+        <SegmentedControl label="Named systems you've added are" value={knownIncludesNamed ? "included" : "extra"} onChange={v => setKnownIncludesNamed(v === "included")}
+          info="Choose 'Part of this total' if the figure above already covers the named systems (it's your whole legacy spend). Choose 'Extra to this total' if the figure above is for everything except the named systems."
+          options={[{ key: "included", label: "Part of this total" }, { key: "extra", label: "Extra to this total" }]} />
       </div>}
+      {knownSpend > 0 && (UKI_KIOSK && flagships.length > 0 ? <div style={{ fontSize: F.small, color: C.textMuted, marginTop: 12, textAlign: "center", lineHeight: 1.5 }}>
+        {knownIncludesNamed && namedTotal > knownSpend
+          ? <span style={{ color: C.amber }}>Your named systems cost {fmtK(namedTotal)}/yr, more than this total. The other {sliderTotal} systems are costed at {fmtK(0)}. Raise the total or choose 'Extra to this total'.</span>
+          : sliderTotal === 0 && tierShare > 0
+          ? <span style={{ color: C.amber }}>{fmtK(tierShare)}/yr of this total isn't assigned to any system. Use the tier sliders to add the systems it covers.</span>
+          : knownIncludesNamed
+          ? <>{fmtK(namedTotal)}/yr named systems + {fmtK(tierShare)}/yr across the other {sliderTotal} systems = {fmtK(knownSpend)}/yr</>
+          : <>{fmtK(knownSpend)}/yr across {sliderTotal} systems + {fmtK(namedTotal)}/yr named systems = {fmtK(knownSpend + namedTotal)}/yr</>}
+      </div> : <div style={{ fontSize: F.small, color: C.textMuted, marginTop: 8, textAlign: "center" }}>
+        {total} systems · {fmtK(Math.round(knownSpend / Math.max(1, total)))}/system avg
+      </div>)}
     </Card>}
 
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

@@ -72,20 +72,28 @@ export function calc(inp, mode, ov = {}, flagships = []) {
   let entCost = ov.entCost != null ? ov.entCost : tierCost("enterprise", inp.bed_count, cx);
   let depCost = ov.depCost != null ? ov.depCost : tierCost("departmental", inp.bed_count, cx);
   let nicCost = ov.nicCost != null ? ov.nicCost : tierCost("niche", inp.bed_count, cx);
+  // Flagships (named systems)
+  const flagshipTotal = flagships.reduce((s,f) => s + (f.cost || 0) * instancesOf(f), 0);
   // "I know my spend" mode: distribute the stated annual spend across tiers
   // with the web calculator's 5:2:1 per-system weighting, unless explicit
   // tier-cost overrides are present. (The App has always passed _knownSpend;
   // it was previously ignored here, so the mode had no effect on results.)
+  // UKI touchscreen: when the visitor says their named systems are part of
+  // the stated total (_knownSpendIncludesNamed), the named systems' cost is
+  // taken out of the total first and only the remainder goes to the tiers,
+  // so the estate equals the stated total instead of total + named. The web
+  // embed keeps the original behaviour (named systems on top).
   if ((inp._knownSpend || 0) > 0 && ov.entCost == null && ov.depCost == null && ov.nicCost == null) {
+    const tierSpend = UKI_KIOSK && inp._knownSpendIncludesNamed
+      ? Math.max(0, inp._knownSpend - flagshipTotal)
+      : inp._knownSpend;
     const wUnits = 5 * ent + 2 * dep + 1 * nic;
     if (wUnits > 0) {
-      const unit = inp._knownSpend / wUnits;
+      const unit = tierSpend / wUnits;
       entCost = Math.round(unit * 5); depCost = Math.round(unit * 2); nicCost = Math.round(unit);
     }
   }
   const tieredEstate = ent * entCost + dep * depCost + nic * nicCost;
-  // Flagships
-  const flagshipTotal = flagships.reduce((s,f) => s + (f.cost || 0) * instancesOf(f), 0);
   const flagshipDecomSave = flagships.filter(f => f.retire).reduce((s,f) => s + (f.cost || 0) * instancesOf(f), 0);
   const flagshipCount = flagships.reduce((s,f) => s + instancesOf(f), 0);
   const flagshipRetireCount = flagships.filter(f => f.retire).reduce((s,f) => s + instancesOf(f), 0);
