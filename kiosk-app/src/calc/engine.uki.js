@@ -50,11 +50,23 @@ const SCENARIO = {
 const CX = { LOW: 0.7, TYPICAL: 1.0, HIGH: 1.45 };
 const DQ = { CLEAN: 0.75, MIXED: 1.0, POOR: 1.4 };
 
-function tierCost(tier, beds, cx) {
+// costScale converts the £ benchmarks for a euro audience profile (UKI
+// touchscreen); it is 1 everywhere else.
+function tierCost(tier, beds, cx, costScale = 1) {
   const base = tier === "enterprise" ? 300000 : tier === "departmental" ? 75000 : 14000;
   const perBed = tier === "enterprise" ? 700 : tier === "departmental" ? 160 : 20;
-  return Math.round(((base + beds * perBed) * cx) / 1000) * 1000;
+  return Math.round(((base + beds * perBed) * cx * costScale) / 1000) * 1000;
 }
+
+// The NHS benchmark figures, as one object for the touchscreen's audience
+// profiles (calc/profiles.uki.js), which derive their figures from these.
+export const BENCHMARKS = {
+  hourlyRate: BLENDED_HOURLY_RATE,
+  bedDayCost: COST_PER_EXCESS_BED_DAY,
+  indemnityPerBed: INDEMNITY_COST_PER_BED,
+  testCost: COST_PER_DUPLICATE_TEST,
+  costScale: 1,
+};
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 
@@ -65,13 +77,15 @@ export function calc(inp, mode, ov = {}, flagships = []) {
   const decomPct = (ov.decom_pct != null) ? ov.decom_pct : sc.decom_pct;
   const safetyPct = (ov.safety != null) ? ov.safety : sc.safety;
   const isArchiveOnly = inp.journey === "HAVE_EPR";
+  // UKI touchscreen audience profile figures (_fig); absent means NHS.
+  const fig = inp._fig || BENCHMARKS;
   const ent = ov.enterprise != null ? ov.enterprise : inp.tiers.enterprise;
   const dep = ov.departmental != null ? ov.departmental : inp.tiers.departmental;
   const nic = ov.niche != null ? ov.niche : inp.tiers.niche;
   const tieredLegacy = ent + dep + nic;
-  let entCost = ov.entCost != null ? ov.entCost : tierCost("enterprise", inp.bed_count, cx);
-  let depCost = ov.depCost != null ? ov.depCost : tierCost("departmental", inp.bed_count, cx);
-  let nicCost = ov.nicCost != null ? ov.nicCost : tierCost("niche", inp.bed_count, cx);
+  let entCost = ov.entCost != null ? ov.entCost : tierCost("enterprise", inp.bed_count, cx, fig.costScale);
+  let depCost = ov.depCost != null ? ov.depCost : tierCost("departmental", inp.bed_count, cx, fig.costScale);
+  let nicCost = ov.nicCost != null ? ov.nicCost : tierCost("niche", inp.bed_count, cx, fig.costScale);
   // Flagships (named systems)
   const flagshipTotal = flagships.reduce((s,f) => s + (f.cost || 0) * instancesOf(f), 0);
   // "I know my spend" mode: distribute the stated annual spend across tiers
@@ -116,7 +130,7 @@ export function calc(inp, mode, ov = {}, flagships = []) {
   const minsWasted = ov.minsWasted != null ? ov.minsWasted : Math.round(baseMin * dq * cx * (1 + switchPenalty));
   const residual = isArchiveOnly ? 1 : 2;
   const hrsSaved = Math.round((clinicians * Math.max(0, minsWasted - residual) * WORKING_WEEKS) / 60);
-  const timeSave = Math.round(hrsSaved * BLENDED_HOURLY_RATE * realisation);
+  const timeSave = Math.round(hrsSaved * fig.hourlyRate * realisation);
   const ticketsBaselineMonthly = ov.ticketsBaseline != null ? ov.ticketsBaseline : Math.round(legacy * TICKETS_PER_SYSTEM * dq);
   const ticketsAfter = Math.min(Math.round((legacy - decom) * TICKETS_PER_SYSTEM * dq * SURVIVING_SYSTEM_TICKET_FACTOR), ticketsBaselineMonthly);
   const ticketsReductionPct = Math.round((ticketsBaselineMonthly - ticketsAfter) / Math.max(1, ticketsBaselineMonthly) * 100);
@@ -137,9 +151,9 @@ export function calc(inp, mode, ov = {}, flagships = []) {
   // Quality / safety financial value (only when clinical scope present)
   let excessDayCostAvoided = 0, malpracticeReduction = 0, duplicateTestSaving = 0;
   if (hasClinicalScope) {
-    excessDayCostAvoided = Math.round(safetyBedDaysAvoided * COST_PER_EXCESS_BED_DAY);
-    malpracticeReduction = Math.round(inp.bed_count * INDEMNITY_COST_PER_BED * INDEMNITY_REDUCTION_PCT * safetyPct);
-    duplicateTestSaving = Math.round(inp.bed_count * TESTS_PER_BED_PER_YEAR * DUPLICATE_TEST_RATE * COST_PER_DUPLICATE_TEST * safetyPct);
+    excessDayCostAvoided = Math.round(safetyBedDaysAvoided * fig.bedDayCost);
+    malpracticeReduction = Math.round(inp.bed_count * fig.indemnityPerBed * INDEMNITY_REDUCTION_PCT * safetyPct);
+    duplicateTestSaving = Math.round(inp.bed_count * TESTS_PER_BED_PER_YEAR * DUPLICATE_TEST_RATE * fig.testCost * safetyPct);
   }
   const qualitySavings = excessDayCostAvoided + malpracticeReduction + duplicateTestSaving;
 

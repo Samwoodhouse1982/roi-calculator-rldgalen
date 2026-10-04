@@ -4,6 +4,8 @@ import { C, F, fmtK, fmtNum } from '../theme';
 import { UKI, AU, UKI_KIOSK } from '../market';
 import { Icon } from '../components/Icons';
 import { Card } from '../components';
+import { activeProfile } from '../calc/profiles.uki';
+import { profileResultsCopy } from './profileCopy.uki';
 
 // Build-time flag: '1' when built with `--mode embed`. Used only to attach
 // embed-specific classNames; kiosk DOM is unchanged.
@@ -100,6 +102,11 @@ function JumpLink({ label, onClick }) {
 
 export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimescale, setViewTimescale, onAdjust, onStartOver, leadContext }) {
   if (!r) return null;
+  // UKI touchscreen, non-NHS audience profile: methodology copy and money
+  // figures from the profile (results/profileCopy.uki.jsx); null keeps the
+  // NHS copy below.
+  const profile = UKI_KIOSK ? activeProfile() : null;
+  const pc = profile && !profile.nhs ? profileResultsCopy(profile, r, { fmtK, fmtNum }) : null;
   // viewTimescale is controlled by the TimescaleBar in App.jsx and received
   // as a prop, so the bar can be rendered above the scroll container (where
   // it stays visible during scroll). The bar can't be inside ResultsPage with
@@ -360,7 +367,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         <Methodology
           formula={"\u03a3 (tier_count \u00d7 tier_cost) \u00d7 decom_rate \u00d7 scenario.decom + retired_flagships \u00d7 scenario.decom"}
           plug={`${r.entDecom} enterprise \u00d7 ${fmtK(r.entCost)} + ${r.depDecom} departmental \u00d7 ${fmtK(r.depCost)} + ${r.nicDecom} standalone \u00d7 ${fmtK(r.nicCost)}\n${r.flagshipRetireCount > 0 ? `+ ${r.flagshipRetireCount} retired flagship${r.flagshipRetireCount === 1 ? "" : "s"} \u00d7 scenario.decom (${Math.round((r.decomFactor||1) * 100)}%)` : ""}\n= ${fmtK(r.decomSave)}/yr (${Math.round(r.decom / Math.max(1, r.legacy) * 100)}% of ${r.legacy} systems retired)`}
-          source={UKI
+          source={pc ? pc.decomSource : UKI
             ? "Tier costs use bed-scaled annual benchmarks: Enterprise (£300k base + £700/bed), Departmental (£75k + £160/bed), Standalone (£14k + £20/bed), scaled by estate complexity. Calibrated against the contract register of a large acute NHS Trust (~1,385 beds, 42 legacy systems, 2024/25 data) — defaults cover ~80% of actual estate value."
             : AU
             ? "Tier costs use scale-adjusted annual benchmarks: Enterprise (A$250k base + A$600/bed), Departmental (A$65k + A$140/bed), Standalone (A$12k + A$18/bed), scaled by complexity and provider profile. Sources: AU state contract-derived pricing, NSW SDPR programme data, vendor case studies."
@@ -382,17 +389,17 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         <Row label="Full-time equivalent (FTE)" value={fmtFte(fte)} accent />
         <Row label="Capacity value" value={fmtKts(seg.capacity)} accent />
         <Methodology
-          formula={UKI
+          formula={pc ? pc.capFormula : UKI
             ? "clinicians \u00d7 (mins/wk - residual) \u00d7 48 working_weeks / 60 \u00d7 \u00a355 \u00d7 scenario.realisation"
             : AU
             ? `staff \u00d7 (mins/wk - residual) \u00d7 48 working_weeks / 60 \u00d7 A$${r.isAgedCare || r.isNDIS ? 42 : 65} \u00d7 scenario.realisation`
             : "clinicians \u00d7 (mins/wk - residual) \u00d7 working_weeks / 60 \u00d7 $95 \u00d7 scenario.realization"}
-          plug={UKI
+          plug={pc ? pc.capPlug : UKI
             ? `${fmtNum(r.clinicians)} active clinicians \u00d7 ${Math.max(0, r.minsWasted - (r.isArchiveOnly ? 1 : 2))} reducible mins/wk (${r.minsWasted} - ${r.isArchiveOnly ? 1 : 2} residual) \u00d7 48 working wks / 60\n= ${fmtNum(r.hrsSaved)} hrs \u00d7 \u00a355/hr \u00d7 ${Math.round((r.realization || 0.3) * 100)}% realisation\n= ${fmtK(r.timeSave)}/yr`
             : AU
             ? `${fmtNum(r.clinicians)} active system users \u00d7 ${Math.max(0, r.minsWasted - (r.isArchiveOnly ? 1 : 2))} reducible mins/wk (${r.minsWasted} - ${r.isArchiveOnly ? 1 : 2} residual) \u00d7 48 working wks / 60\n= ${fmtNum(r.hrsSaved)} hrs \u00d7 A$${r.isAgedCare || r.isNDIS ? 42 : 65}/hr \u00d7 ${Math.round((r.realization || 0.3) * 100)}% realisation\n= ${fmtK(r.timeSave)}/yr`
             : `${fmtNum(r.clinicians)} active clinicians \u00d7 ${Math.max(0, r.minsWasted - (r.isArchiveOnly ? 1 : 2))} reducible mins/wk (${r.minsWasted} - ${r.isArchiveOnly ? 1 : 2} residual) \u00d7 50 working wks / 60\n= ${fmtNum(r.hrsSaved)} hrs \u00d7 $95/hr \u00d7 ${Math.round((r.realization || 0.3) * 100)}% realization\n= ${fmtK(r.timeSave)}/yr`}
-          source={UKI
+          source={pc ? pc.capSource : UKI
             ? "Active clinicians = total staff (beds \u00d7 2.8, NHS Digital workforce statistics 2023/24) \u00d7 65% active rate (Sinsky et al 2016, KLAS Arch Collaborative 500k+ clinicians). Each clinician touches ~35% of legacy estate (role-based access, modelled). Switch penalty 4% per system: Bartek et al JIMI 2023 (PRIMARY: 2.78M EHR audit-log events, \u03b2=0.03), corroborated by Westbrook et al JAMIA 2010 and Nuffield Trust 2020. \u00a355/hr blended: NHS Agenda for Change mid-band including on-costs, weighted towards nursing. Realisation rate: NHS Productive Ward reported 20-40%."
             : AU
             ? (r.isAgedCare || r.isNDIS
@@ -465,19 +472,19 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         {UKI && (r.duplicateTestSaving || 0) > 0 && <Row label="Duplicate testing avoided" value={fmtKts(r.duplicateTestSaving)} />}
         {(r.qualitySavings || 0) > 0 && <Row label="Total cost avoidance" value={fmtKts(r.qualitySavings)} accent />}
         <Methodology
-          formula={UKI
+          formula={pc ? pc.safetyFormula : UKI
             ? "Excess bed days \u00d7 \u00a3400/day + Indemnity (beds \u00d7 \u00a37,500 \u00d7 5%) \u00d7 scenario.safety + Duplicate tests avoided \u00d7 \u00a335"
             : AU
             ? (r.isAgedCare ? "Places \u00d7 A$3,000 harm cost \u00d7 25% fragmentation \u00d7 scenario.safety + Places \u00d7 15% PPH \u00d7 A$8,000 \u00d7 30% \u00d7 scenario.safety"
               : "Excess bed days \u00d7 A$3,100 + Indemnity (beds \u00d7 A$20,000 \u00d7 3%) \u00d7 scenario.safety + Duplicate tests + e-Discovery + Readmissions \u00d7 A$11,500")
             : "Excess bed days \u00d7 $3,132/day + Malpractice premium \u00d7 5% \u00d7 scenario.safety + Readmissions avoided \u00d7 $15,200"}
-          plug={UKI
+          plug={pc ? pc.safetyPlug : UKI
             ? `Excess bed days: ${fmtNum(r.safetyBedDaysAvoided || 0)} days \u00d7 \u00a3400 = ${fmtK(r.excessDayCostAvoided || 0)}/yr\n${r.malpracticeReduction > 0 ? `Indemnity: beds \u00d7 \u00a37,500 exposure \u00d7 5% reduction \u00d7 scenario.safety = ${fmtK(r.malpracticeReduction)}/yr\n` : ""}${(r.duplicateTestSaving || 0) > 0 ? `Duplicate tests: beds \u00d7 22 tests/yr \u00d7 18% duplicate rate \u00d7 \u00a335 \u00d7 scenario.safety = ${fmtK(r.duplicateTestSaving)}/yr\n` : ""}= ${fmtK(r.qualitySavings || 0)}/yr total`
             : AU
             ? (r.isAgedCare ? `Avoidable harm: ${fmtK(r.acHarmAvoidance || 0)}/yr\nPreventable admissions: ${fmtK(r.acPPHAvoidance || 0)}/yr\n= ${fmtK(r.qualitySavings || 0)}/yr total`
               : `Excess bed days: ${fmtK(r.excessDayCostAvoided || 0)}/yr\nIndemnity: ${fmtK(r.malpracticeReduction || 0)}/yr\nDuplicate testing: ${fmtK(r.duplicateReduction || 0)}/yr\ne-Discovery: ${fmtK(r.ediscoverySaving || 0)}/yr\nReadmissions: ${fmtK(r.readmissionCostAvoidance || 0)}/yr\n= ${fmtK(r.qualitySavings || 0)}/yr total`)
             : `Excess bed days: ${fmtNum(r.safetyBedDaysAvoided || 0)} days \u00d7 $3,132 = ${fmtK(r.excessDayCostAvoided || 0)}/yr\n${r.malpracticeReduction > 0 ? `Malpractice: beds \u00d7 $8,500 premium \u00d7 5% reduction \u00d7 scenario.safety = ${fmtK(r.malpracticeReduction)}/yr\n` : ""}${r.readmissionCostAvoidance > 0 ? `Readmissions: ${r.readmissionsAvoided} avoided \u00d7 $15,200 = ${fmtK(r.readmissionCostAvoidance)}/yr\n` : ""}= ${fmtK(r.qualitySavings || 0)}/yr total`}
-          source={UKI
+          source={pc ? pc.safetySource : UKI
             ? "Harm rates: Camacho et al 2024 (BMJ Quality & Safety) \u2014 ~1.8M medication errors at care transitions across NHS England annually, 31,500 patients harmed, 36,500 excess bed days. Excess bed day cost: \u00a3400/day (NHS Reference Costs, general acute, conservative blended). Indemnity: NHS Resolution \u00a33.6bn annual settlements (NAO Oct 2025) with 30% communication-failure attribution (CRICO 2016). Duplicate testing: Bates et al (18% duplicate rate when records fragmented), \u00a335/test NHS pathology blended. Classification: cost avoidance \u2014 harm that doesn't occur, not direct budget reductions."
             : AU
             ? (r.isAgedCare ? "Harm cost A$3,000/place/yr blended (falls A$35k, pressure injuries A$10k, medication incidents A$15k; AIHW injury data), 25% attributed to information fragmentation (ACSQHC). Preventable admissions: 15% of residents/yr (AIHW Australian Health Performance Framework) at A$8,000 (IHACPA NWAU-derived), 30% attribution. Classification: cost avoidance."
@@ -586,7 +593,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
       <Methodology
         formula={"Tickets/mo: legacy \u00d7 2.5 \u00d7 dq_factor (before) vs surviving \u00d7 2.5 \u00d7 60% (after). SAR: 1.5 base + 0.4/system (before) vs 0.15/surviving (after)"}
         plug={`Tickets baseline: ${r.legacy} legacy systems \u00d7 2.5/mo = ${fmtNum(r.ticketsBaselineMonthly)}/month\nTickets after: ${r.legacy - r.decom} surviving \u00d7 2.5/mo \u00d7 60% = ${fmtNum(r.ticketsAfter)}/month (${r.ticketsReductionPct}% reduction)\n${UKI ? "SAR turnaround" : "Records request"}: ${r.sarDaysBefore}d \u2192 ${r.sarDaysAfter}d (${r.sarReductionPct}% faster)`}
-        source={UKI
+        source={pc ? pc.opsSource : UKI
           ? "Ticket benchmarks: ITIL service desk reporting in NHS trusts (2.5 tickets/system/month for legacy clinical systems); surviving systems generate fewer tickets through consolidated support. SAR turnaround: the ICO requires searching every system where patient data may be held \u2014 1.5 day base + 0.4 days per system, consistent with NHS information governance team reports and validated against a benchmarked Trust (42 systems \u2248 18 working days per SAR)."
           : AU
           ? "Ticket benchmarks: ITIL service desk metrics (2.5 tickets/system/month for legacy clinical systems); surviving systems generate fewer tickets through consolidated support. Records requests: 3.0 day base coordination (cross-LHD, redaction, quality review) + 0.8 days per system before consolidation vs 0.15 days per surviving system after."
@@ -633,10 +640,11 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
         <Icon name="lightbulb" size={22} stroke={C.accent} /> Full methodology
         <span style={{ fontSize: F.tiny, fontWeight: 400, color: C.textMuted, marginLeft: "auto" }}>Tap a tile to expand</span>
       </div>
+      {pc && <div style={{ fontSize: F.tiny, color: C.textMid, lineHeight: 1.5, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 18px", marginBottom: 14 }}>{profile.benchmarkNote}</div>}
       <MethodologyBento
         selectedIdx={methSelectedIdx}
         onSelect={setMethSelectedIdx}
-        tiles={UKI ? [
+        tiles={pc ? pc.tiles : UKI ? [
           { color: C.accent, title: "System costing", num: "01", body: <>Each legacy system is classified into three tiers with annual cost scaled by bed count and estate complexity: Enterprise (£300k base + £700/bed, e.g. a legacy PAS or EPR), Departmental (£75k + £160/bed), Standalone (£14k + £20/bed). The formulas were calibrated against the complete contract register of a large acute NHS Trust (~1,385 beds, 42 legacy systems, 2024/25 data) — defaults cover ~80% of actual estate value. Named flagship systems and "I know my spend" mode capture outlier contracts the generic formulas would miss.</> },
           { color: C.amber, title: "Clinical capacity", num: "02", body: <>Staffing uses 2.8 clinical FTEs per acute bed (NHS Digital workforce statistics 2023/24; Lord Carter review). Two evidence-based filters apply: 65% of staff are regular system users (Sinsky et al 2016; KLAS Arch Collaborative — 500k+ clinicians), and each user touches ~35% of the legacy estate. A 4% task-switching penalty per system (Bartek et al JIMI 2023, primary: 2.78M EHR audit-log events, β=0.03; corroborated by Westbrook et al JAMIA 2010 and Nuffield Trust 2020) determines minutes wasted. Hours freed are valued at £55/hr (NHS Agenda for Change mid-band with on-costs) with a 20-40% realisation rate (NHS Productive Ward), reflecting that freed time creates capacity, not automatic cash savings.</> },
           { color: C.purple, title: "Patient safety", num: "03", body: <>Harm rates come from Camacho et al 2024 (BMJ Quality & Safety): ~1.8M medication errors at care transitions across NHS England annually — 18 errors per bed/yr — with 31,500 patients harmed (0.315/bed) and 36,500 excess bed days (0.365/bed). A fragmentation index (0.6-1.2, capped at 20 systems) scales risk by the number of legacy systems, and your data quality setting adjusts it further. The error and patients-protected counts provide qualitative context; only the financial lines in the next tile enter the ROI total.</> },
@@ -766,7 +774,9 @@ function Met({ label, value }) {
  *                                  bottom-left, bottom-right.
  */
 function MethodologyBento({ tiles, selectedIdx, onSelect }) {
-  const LARGE_H = 380;
+  // UKI touchscreen: taller so the longest tile's text fits at its larger
+  // type size (the open tile clips anything past this height).
+  const LARGE_H = UKI_KIOSK ? 540 : 380;
   const BOTTOM_H = 240;
   const GAP = 14;
   const TOTAL_H = LARGE_H + GAP + BOTTOM_H;

@@ -15,3 +15,33 @@ export const ORG_TYPES = [
   { key: "LARGE", iconKey: "regional" },
   { key: "REGIONAL", iconKey: "idn" },
 ];
+
+// UKI touchscreen audience profiles (calc/profiles.uki.js): size presets for
+// the non-NHS profiles, keyed like PRESETS so the Scope step, its icons
+// (ORG_TYPES) and the TYPICAL default work the same. Bed and site counts are
+// rounded starting points the visitor adjusts on the Scale step, sized from
+// published bed counts (e.g. Irish private hospitals of ~110-250 beds,
+// groups of 3-5 hospitals).
+const preset = (label, desc, bed_count, org_count, journey, [enterprise, departmental, niche], complexity_level, data_quality_level, decom_retire_rate = 0.75) =>
+  ({ label, desc, data: { bed_count, org_count, journey, tiers: { enterprise, departmental, niche }, complexity_level, data_quality_level, decom_retire_rate } });
+
+export const PRESETS_UK_PRIVATE = {
+  SMALL: preset("Independent hospital", "~60 beds · 1 hospital · 7 systems", 60, 1, "HAVE_EPR", [0, 2, 5], "LOW", "MIXED"),
+  TYPICAL: preset("Larger independent hospital", "~150 beds · 1 hospital · 11 systems", 150, 1, "EVALUATING", [1, 4, 6], "TYPICAL", "MIXED"),
+  LARGE: preset("Regional hospital group", "~500 beds · 6 hospitals · 24 systems", 500, 6, "EVALUATING", [2, 8, 14], "TYPICAL", "MIXED"),
+  REGIONAL: preset("National hospital group", "~2000 beds · 30 hospitals · 50 systems", 2000, 30, "EVALUATING", [4, 16, 30], "HIGH", "POOR", 0.70),
+};
+
+export const PRESETS_HSE = {
+  SMALL: preset("Smaller acute hospital", "~200 beds · 1 hospital · 8 systems", 200, 1, "EVALUATING", [0, 3, 5], "LOW", "MIXED"),
+  TYPICAL: preset("Regional acute hospital", "~500 beds · 1 hospital · 14 systems", 500, 1, "EVALUATING", [1, 5, 8], "TYPICAL", "MIXED"),
+  LARGE: preset("Major teaching hospital", "~900 beds · 1 hospital · 24 systems", 900, 1, "EVALUATING", [2, 8, 14], "HIGH", "MIXED"),
+  REGIONAL: preset("Health region", "~2000 beds · 6 hospitals · 60 systems", 2000, 6, "EVALUATING", [4, 20, 36], "HIGH", "POOR", 0.70),
+};
+
+export const PRESETS_IE_PRIVATE = {
+  SMALL: preset("Private hospital", "~120 beds · 1 hospital · 8 systems", 120, 1, "HAVE_EPR", [0, 3, 5], "LOW", "MIXED"),
+  TYPICAL: preset("Large private hospital", "~250 beds · 1 hospital · 12 systems", 250, 1, "EVALUATING", [1, 4, 7], "TYPICAL", "MIXED"),
+  LARGE: preset("Private hospital group", "~450 beds · 3 hospitals · 22 systems", 450, 3, "EVALUATING", [2, 7, 13], "TYPICAL", "MIXED"),
+  REGIONAL: preset("National private group", "~900 beds · 5 hospitals · 35 systems", 900, 5, "EVALUATING", [3, 12, 20], "HIGH", "MIXED", 0.70),
+};

@@ -6,6 +6,7 @@ import { Icon } from './Icons';
 // Used only to attach embed-specific classNames; kiosk DOM is unchanged.
 const EMBED = import.meta.env.VITE_EMBED === '1';
 import { UKI, AU, UKI_KIOSK } from '../market';
+import { activeProfile } from '../calc/profiles.uki';
 import { getKioskZoom } from '../kioskFit';
 
 // UKI touchscreen: every choice tile (organisation type, EPR journey) has the
@@ -76,7 +77,9 @@ const STEP_CONTEXT = [
 
 export function NavButtons({ step, totalSteps, onBack, onNext, onCalculate, onStartOver }) {
   if (step >= totalSteps - 1) return null;
-  const ctx = (UKI ? STEP_CONTEXT_UKI : AU ? STEP_CONTEXT_AU : STEP_CONTEXT)[step];
+  let ctx = (UKI ? STEP_CONTEXT_UKI : AU ? STEP_CONTEXT_AU : STEP_CONTEXT)[step];
+  // UKI touchscreen: the Scale hint drops Trust/ICS for non-NHS profiles.
+  if (UKI_KIOSK && step === 2 && activeProfile().scaleContext) ctx = { ...ctx, text: activeProfile().scaleContext };
   return <div style={{ borderTop: `1px solid ${C.border}` }}>
     {ctx && <div className={EMBED ? "embed-nav-hint" : undefined} style={{ margin: EMBED ? `18px ${GUTTER} 0` : "20px 56px 0", padding: EMBED ? "14px 18px" : "16px 20px", background: `${C.accent}08`, border: `1px solid ${C.accent}20`, borderRadius: 14, display: "flex", gap: 12, alignItems: "flex-start" }}>
       <span style={{ flexShrink: 0, marginTop: 1 }}><Icon name="lightbulb" size={20} stroke={C.accent} /></span>

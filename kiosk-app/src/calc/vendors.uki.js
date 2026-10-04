@@ -1,5 +1,8 @@
 // UK & Ireland legacy-system catalogue - ported verbatim from
-// web/uki/roi-calculator.html.
+// web/uki/roi-calculator.html. nhsOnly marks NHS-specific entries the
+// touchscreen hides for its non-NHS audience profiles.
+
+import { activeProfile } from './profiles.uki';
 
 export const KNOWN_SYSTEMS = [
   // Cost = baseCost + (perBed * bed_count). Calibrated to UK NHS contract benchmarks.
@@ -55,11 +58,11 @@ export const KNOWN_SYSTEMS = [
   { label: "Asckey CAFM", baseCost: 35000, perBed: 40, type: "Estates" },
   { label: "Hicom Specialty Registries", baseCost: 40000, perBed: 50, type: "Specialty" },
   { label: "Apex Audiology", baseCost: 25000, perBed: 30, type: "Specialty" },
-  { label: "Bedrock (Leeds Care Record)", baseCost: 50000, perBed: 60, type: "Specialty" },
+  { label: "Bedrock (Leeds Care Record)", baseCost: 50000, perBed: 60, type: "Specialty", nhsOnly: true },
   { label: "Concentric Health (Consent)", baseCost: 20000, perBed: 25, type: "Consent" },
   { label: "Refero (Video Consultation)", baseCost: 30000, perBed: 30, type: "Consent" },
   { label: "Ardentia / Insource BI", baseCost: 60000, perBed: 80, type: "BI" },
-  { label: "QlikView NHS analytics", baseCost: 50000, perBed: 60, type: "BI" },
+  { label: "QlikView NHS analytics", baseCost: 50000, perBed: 60, type: "BI", nhsOnly: true },
   { label: "TeleTracking Patient Flow", baseCost: 80000, perBed: 100, type: "Patient Flow" },
   { label: "BedView Bed Management", baseCost: 40000, perBed: 50, type: "Patient Flow" },
   { label: "Allocate / RLDatix HealthRoster", baseCost: 90000, perBed: 110, type: "Workforce" },
@@ -70,7 +73,8 @@ export function tierCatMatch(sysType, tier) {
   if (tier === "departmental") return ["e-Obs", "LIMS", "PACS", "Oncology", "Maternity/Neonatal", "Pharmacy", "Dictation", "Theatres", "Endoscopy", "ED", "Cardiology"].includes(sysType);
   return ["Clinical", "ECM", "Risk Mgmt", "Estates", "Specialty", "Consent", "BI", "Patient Flow", "Workforce"].includes(sysType);
 }
-export function systemCost(sys, beds) { return Math.round(((sys.baseCost || 250000) + (sys.perBed || 0) * beds) / 1000) * 1000; }
+// costScale is 1 except for the touchscreen's euro profiles.
+export function systemCost(sys, beds) { return Math.round(((sys.baseCost || 250000) + (sys.perBed || 0) * beds) * activeProfile().figures.costScale / 1000) * 1000; }
 
 // Tier membership map in the same shape as the US vendors module.
 export const TIER_TYPES = {
