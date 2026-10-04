@@ -71,13 +71,15 @@ function computeStats() {
   const last = sessions.length ? sessions[sessions.length - 1].ts : null;
 
   // Group by provider type
-  const PROVIDER_LABELS = {
-    critical_access: 'Critical Access / Rural',
-    community: 'Community Hospital',
-    regional: 'Regional Medical Center',
-    academic: 'Academic Medical Center',
-    multi_hospital: 'IDN / Health System',
-  };
+  const PROVIDER_LABELS = UKI
+    ? Object.fromEntries(Object.entries(PRESETS_UKI).map(([k, p]) => [k, p.label]))
+    : {
+      critical_access: 'Critical Access / Rural',
+      community: 'Community Hospital',
+      regional: 'Regional Medical Center',
+      academic: 'Academic Medical Center',
+      multi_hospital: 'IDN / Health System',
+    };
   const byProvider = {};
   for (const s of sessions) {
     const k = s.providerType || 'unknown';
@@ -113,13 +115,14 @@ function computeStats() {
 /* ────────────────────────────────────────────────────────────────────────
    ADMIN STATS OVERLAY
    ──────────────────────────────────────────────────────────────────────── */
+const ADMIN_CUR = UKI ? '\u00a3' : '$';
 function fmtMoney(n) {
-  if (n >= 1e9) return '$' + (n/1e9).toFixed(1) + 'b';
-  if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'm';
-  if (n >= 1e3) return '$' + Math.round(n/1e3) + 'k';
-  return '$' + n;
+  if (n >= 1e9) return ADMIN_CUR + (n/1e9).toFixed(1) + 'b';
+  if (n >= 1e6) return ADMIN_CUR + (n/1e6).toFixed(1) + 'm';
+  if (n >= 1e3) return ADMIN_CUR + Math.round(n/1e3) + 'k';
+  return ADMIN_CUR + n;
 }
-function fmtNum(n) { return (n || 0).toLocaleString('en-US'); }
+function fmtNum(n) { return (n || 0).toLocaleString(UKI ? 'en-GB' : 'en-US'); }
 
 function PinKeypad({ onSubmit, onCancel, error }) {
   const [pin, setPin] = useState('');
@@ -240,7 +243,7 @@ function AdminOverlay({ onClose }) {
 
         {/* By provider type */}
         {stats.providerRows.length > 0 && <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 11, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 10 }}>By organization type</div>
+          <div style={{ fontSize: 11, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 10 }}>{UKI ? 'By organisation type' : 'By organization type'}</div>
           <div style={{ background: C.bg, borderRadius: 14, border: '1px solid ' + C.borderLight, overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 0.6fr 0.7fr 0.7fr 0.9fr 0.7fr', gap: 8, padding: '10px 16px', borderBottom: '1px solid ' + C.borderLight, fontSize: 10, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>
               <div>Type</div>
@@ -575,7 +578,7 @@ function CalibratingScreen({ onDone }) {
         <div style={{ position: 'absolute', inset: 16, border: '3px solid transparent', borderTopColor: C.tealLight, borderRadius: '50%', animation: 'calSpin 1.4s linear infinite reverse' }} />
       </div>
       <div style={{ fontSize: F.h1, fontWeight: 800, color: C.accent, marginBottom: 12, animation: 'calPulse 2s ease-in-out infinite', textAlign: 'center' }}>Calibrating your model</div>
-      <div style={{ fontSize: F.body, color: C.textMuted, marginBottom: 44, textAlign: 'center' }}>{'Analyzing ' + (step < 2 ? 'inputs' : 'clinical impact') + '...'}</div>
+      <div style={{ fontSize: F.body, color: C.textMuted, marginBottom: 44, textAlign: 'center' }}>{(UKI ? 'Analysing ' : 'Analyzing ') + (step < 2 ? 'inputs' : 'clinical impact') + '...'}</div>
       <div style={{ width: 420, maxWidth: '80%', height: 6, background: C.border, borderRadius: 3, marginBottom: 40, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: barW + '%', background: 'linear-gradient(90deg, ' + C.accent + ', ' + C.tealLight + ')', borderRadius: 3, transition: 'width .5s ease-out' }} />
       </div>
@@ -753,7 +756,7 @@ export default function App() {
       decomSave: r.decomSave || 0,
       timeSave: r.timeSave || 0,
     });
-  }, [providerType, inputs, r]);
+  }, [providerType, orgType, sector, inputs, r]);
   const handleAdjust = useCallback(() => setKioskStep(4), []);
   const handleStartOver = useCallback(() => {
     setShowSplash(true);
@@ -817,6 +820,8 @@ export default function App() {
       setKioskStep(0);
       setCalibrating(false);
       setProviderType("community");
+      setOrgType("TYPICAL");
+      setScenarioMode("EXPECTED");
       setReimbursementModel("mixed");
       setOccupancyRate(0.65);
       setGalenMigrationCost(0);

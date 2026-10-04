@@ -1,12 +1,14 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import { existsSync, renameSync } from 'node:fs';
 import path from 'node:path';
 
-// One app, two build modes:
+// One app, two surfaces:
 //   npm run build        -> touchscreen kiosk (fixed 1080×1920), entry index.html
 //   npm run build:embed  -> responsive/iframe embed,             entry index.embed.html
+// and a market flag on top (VITE_MARKET): e.g. `npm run build:kiosk:uki` is
+// the touchscreen surface with the UK & Ireland market.
 //
 // `--mode embed` loads .env.embed (VITE_EMBED=1), which the source reads via
 // import.meta.env.VITE_EMBED to pick the embed variants. Both modes emit
@@ -44,15 +46,23 @@ const embedHtmlEntry = () => {
   };
 };
 
+// UKI touchscreen (`--mode kiosk-uki`): the shared kiosk index.html says
+// "EHR" in its <title>; the UK build calls it an EPR.
+const ukiKioskTitle = () => ({
+  name: 'uki-kiosk-title',
+  transformIndexHtml: html => html.replace('<title>EHR Migration', '<title>EPR Migration'),
+});
+
 export default defineConfig(({ mode }) => {
   const embed = mode.startsWith('embed') || process.env.VITE_EMBED === '1';
+  const market = process.env.VITE_MARKET || loadEnv(mode, process.cwd(), 'VITE_').VITE_MARKET;
   // WP_INLINE=1 produces a single-file bundle for the WordPress inline
   // fragment: no code-splitting (jsPDF's lazy chunk is folded in) and every
   // asset base64-inlined, so scripts/make-wp-fragment.mjs can emit one
   // self-contained paste-in file with zero external requests.
   const wpInline = process.env.WP_INLINE === '1';
   return {
-    plugins: [react(), ...(embed ? [embedHtmlEntry()] : [])],
+    plugins: [react(), ...(embed ? [embedHtmlEntry()] : []), ...(!embed && market === 'uki' ? [ukiKioskTitle()] : [])],
     build: {
       outDir: 'dist',
       target: 'es2015',

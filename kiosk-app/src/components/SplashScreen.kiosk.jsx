@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { C } from '../theme';
+import { UKI } from '../market';
 import rldatixLogo from '../assets/rldatix-logo.png';
 import klasBadge from '../assets/best-in-klas-2025-data-archiving.svg';
 
@@ -233,16 +234,18 @@ export function SplashScreen({ onStart, onAdminReveal }) {
           fontSize: 80, fontWeight: 800, lineHeight: 1.15, color: '#fff',
           margin: '0 0 30px', letterSpacing: '-1.25px',
         }}>
-          Decommission legacy systems.
+          {UKI ? "Migrating to a new EPR?" : "Decommission legacy systems."}
           <br />
-          <span style={{ color: '#00d4aa' }}>Discover your ROI.</span>
+          <span style={{ color: '#00d4aa' }}>{UKI ? "Discover your archiving ROI." : "Discover your ROI."}</span>
         </h1>
 
         <p style={{
           fontSize: 28, fontWeight: 400, color: 'rgba(255,255,255,0.78)',
           lineHeight: 1.6, margin: '0 auto 75px', maxWidth: 750,
         }}>
-          See exactly how much your health system could save by retiring legacy applications and consolidating clinical data into a single archive.
+          {UKI
+            ? "See how much your Trust or ICS could save by retiring legacy systems and consolidating clinical data into a single archive."
+            : "See exactly how much your health system could save by retiring legacy applications and consolidating clinical data into a single archive."}
         </p>
 
         <button ref={buttonRef} onClick={handleStart} style={{
@@ -308,7 +311,7 @@ export function SplashScreen({ onStart, onAdminReveal }) {
         fontSize: 14, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, zIndex: 3, whiteSpace: 'nowrap',
         transition: 'opacity 600ms ease-out',
         opacity: launching ? 0.2 : 1,
-      }}>v3.0 · Updated May 17, 2026</div>
+      }}>{UKI ? "v1.0 · Updated 4 October 2026" : "v3.0 · Updated May 17, 2026"}</div>
 
       {/* Radial wipe overlay — expands from the button position to cover the screen.
           Becomes visible after WIPE_DELAY_MS (overlapping the tail of particle convergence),

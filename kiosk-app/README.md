@@ -1,12 +1,13 @@
 # ROI Calculator — Kiosk App (Touchscreen + Embed, US + UKI + AU)
 
 Conference kiosk app for RLDatix Galen Clinical Archive ROI estimation.
-Dark theme, touch-optimized. One codebase, four shipped builds:
+Dark theme, touch-optimized. One codebase, five shipped builds:
 
 | Mode | Command | Output | Surface |
 |------|---------|--------|---------|
 | **US touchscreen** (default) | `npm run build` | `dist/` | Fixed portrait 1080×1920 (9:16) conference kiosk |
 | **US embed** | `npm run build:embed` | `dist/` | Responsive / iframe-friendly web version — light RLDatix web theme, scales from ~320px phones to desktop |
+| **UKI touchscreen** | `npm run build:kiosk:uki` | `dist/` | UK & Ireland market on the US touchscreen chassis — same 1080×1920 dark kiosk, UKI embed maths and content |
 | **UKI embed** | `npm run build:embed:uki` | `dist/` | UK & Ireland market variant of the embed — NHS/Ireland model, £, `en-GB` |
 | **AU embed** | `npm run build:embed:au` | `dist/` | Australia market variant of the embed — hospitals + aged care + NDIS, A$, `en-AU` |
 
@@ -30,7 +31,17 @@ org-type Scope step + Scale step, UK report content (Camacho et al BMJ
 2024 safety model, SAR turnaround, NHS sources), an on-screen
 Conservative/Moderate/Optimistic confidence toggle, and a £ PDF. All UKI
 code is behind `UKI` build-flag gates so the US builds are unaffected
-(verified DOM-identical). There is no UKI touchscreen build.
+(verified DOM-identical).
+
+UKI also ships as a touchscreen: `--mode kiosk-uki` loads
+`.env.kiosk-uki` (`VITE_MARKET=uki`, no `VITE_EMBED`), so it gets the US
+touchscreen's layout, splash, idle reset and stats overlay with the UKI
+engine and copy. Same inputs give the same figures as the UKI embed
+(verified across every timescale and confidence level). Like the US
+touchscreen it has no lead form or PDF. Touchscreen-only UKI tweaks: the
+splash copy, an `EPR` page title (vite.config.js), and the Patient safety
+tile and card spanning the full row (UKI has no reimbursement section, so
+they would otherwise sit alone at half width).
 
 The AU market (`--mode embed-au` → `.env.embed-au`) follows the same
 pattern with three sectors: the audited Australian engine
@@ -68,6 +79,7 @@ config works for either.
 npm install
 npm run dev            # touchscreen mode
 npm run dev:embed      # embed/responsive mode
+npm run dev:kiosk:uki  # UK & Ireland touchscreen
 ```
 
 Opens at `http://localhost:5173`. For touchscreen preview, use browser
