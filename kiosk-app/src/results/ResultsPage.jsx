@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LeadCapture } from '../components/LeadCapture';
 import { C, F, fmtK, fmtNum } from '../theme';
-import { UKI, AU } from '../market';
+import { UKI, AU, UKI_KIOSK } from '../market';
 import { Icon } from '../components/Icons';
 import { Card } from '../components';
 
@@ -212,7 +212,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
       <KpiCard label="Legacy decommission" amount={Math.round(seg.decom * ts.mult)} sub={`${r.decom} of ${r.legacy} systems retired`} color={C.accent} iconKey="unlock" onClick={() => scrollTo(decomRef)} />
       <KpiCard label="Clinical capacity" value={<AnimVal value={Math.round(fte * 10)} format={(v) => fmtFte(v / 10) + " FTE freed"} />} sub={<><AnimK value={Math.round(seg.capacity * ts.mult)} /> value</>} color={C.amber} iconKey="clock" onClick={() => scrollTo(capacityRef)} />
       {seg.reimb > 0 && <KpiCard label={AU ? (r.isAgedCare ? "Funding & efficiency" : r.isNDIS ? "Revenue & efficiency" : "ABF & revenue") : "Reimbursement impact"} amount={Math.round(seg.reimb * ts.mult)} sub={AU ? (r.isAgedCare ? "AN-ACC + agency + compliance" : r.isNDIS ? "Claims + utilisation + retention" : "ABF efficiency + private revenue") : "CMS penalties + denial recovery"} color={C.blue} iconKey="dollar" onClick={() => scrollTo(reimbRef)} />}
-      {seg.safety > 0 && <KpiCard label={AU && r.isAgedCare ? "Quality & harm avoided" : "Patient safety"} amount={Math.round(seg.safety * ts.mult)} sub={AU && r.isAgedCare ? "Avoidable harm + preventable admissions" : <><AnimVal value={Math.round(r.safetyPatientsProtected * ts.mult)} format={fmtNum} /> patients protected{r.readmissionsAvoided > 0 ? <>, <AnimVal value={Math.round(r.readmissionsAvoided * ts.mult)} format={(v) => v.toString()} /> readmissions avoided</> : ""}</>} color={C.purple} iconKey="shield" onClick={() => scrollTo(safetyRef)} />}
+      {seg.safety > 0 && <KpiCard label={AU && r.isAgedCare ? "Quality & harm avoided" : "Patient safety"} amount={Math.round(seg.safety * ts.mult)} sub={AU && r.isAgedCare ? "Avoidable harm + preventable admissions" : <><AnimVal value={Math.round(r.safetyPatientsProtected * ts.mult)} format={fmtNum} /> patients protected{r.readmissionsAvoided > 0 ? <>, <AnimVal value={Math.round(r.readmissionsAvoided * ts.mult)} format={(v) => v.toString()} /> readmissions avoided</> : ""}</>} color={C.purple} iconKey="shield" onClick={() => scrollTo(safetyRef)} span={UKI_KIOSK} />}
       {seg.network > 0 && <KpiCard label="Network consolidation" amount={Math.round(seg.network * ts.mult)} sub={`${r.duplicateSystems} duplicate systems across ${r.org_count || ""} facilities`} color="#8e44ad" iconKey="network" onClick={() => scrollTo(networkRef)} />}
       {seg.academic > 0 && <KpiCard label={AU ? "Academic programme" : "Academic program"} amount={Math.round(seg.academic * ts.mult)} sub={AU ? "Research + teaching efficiency" : "Research + GME + teaching"} color="#e67e22" iconKey="graduation" onClick={() => scrollTo(academicRef)} />}
     </div>
@@ -368,7 +368,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
     <div ref={capacityRef}>
       <Card style={{ height: '100%', borderLeft: `3px solid ${C.amber}` }}>
         <CTitle iconKey="clock" color={C.amber}>Clinical capacity</CTitle>
-        <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>Clinician time freed by eliminating context-switching between legacy systems, valued at blended hourly rate with conservative realization.</div>
+        <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>Clinician time freed by eliminating context-switching between legacy systems, valued at blended hourly rate with conservative {UKI_KIOSK ? "realisation" : "realization"}.</div>
         <Row label="Total staff" value={fmtNum(r.totalStaff)} />
         <Row label="Active system users (65%)" value={fmtNum(r.clinicians)} />
         <Row label="Systems per user (~35% exposure)" value={r.systemsPerUser} />
@@ -437,8 +437,10 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
       </Card>
     </div>}
 
-    {/* Patient safety — hidden for AU NDIS (no quality module) */}
-    {(!AU || (r.qualitySavings || 0) > 0) && <div ref={safetyRef}>
+    {/* Patient safety — hidden for AU NDIS (no quality module). UKI has no
+        reimbursement card, so on the touchscreen safety spans the full row
+        rather than leaving an empty half beside it. */}
+    {(!AU || (r.qualitySavings || 0) > 0) && <div ref={safetyRef} style={UKI_KIOSK ? { gridColumn: "1 / -1" } : undefined}>
       <Card style={{ height: '100%', borderLeft: `3px solid ${C.purple}` }}>
         <CTitle iconKey="shield" color={C.purple}>{AU && r.isAgedCare ? "Quality & avoidable harm" : "Patient safety impact"}</CTitle>
         <div style={{ fontSize: F.tiny, color: C.textMid, marginBottom: 14, lineHeight: 1.5 }}>{AU && r.isAgedCare ? "Cost avoidance from reducing falls, pressure injuries, medication incidents and preventable hospital admissions - 25-30% attributed to information fragmentation." : "Cost avoidance from preventing adverse events attributable to fragmented clinical information across legacy systems."}</div>
@@ -691,8 +693,8 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
  *
  * Same fix applied to CompositionItem below.
  */
-function KpiCard({ label, amount, value, sub, color, iconKey, onClick }) {
-  return <div onClick={onClick} style={{ padding: "24px 22px", background: C.surface, borderRadius: 18, border: `1px solid ${color}25`, cursor: "pointer", transition: "border-color .2s" }}>
+function KpiCard({ label, amount, value, sub, color, iconKey, onClick, span }) {
+  return <div onClick={onClick} style={{ ...(span ? { gridColumn: "1 / -1" } : {}), padding: "24px 22px", background: C.surface, borderRadius: 18, border: `1px solid ${color}25`, cursor: "pointer", transition: "border-color .2s" }}>
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
       <Icon name={iconKey} size={26} stroke={color} />
       <span style={{ fontSize: F.tiny, fontWeight: 600, color: C.textMuted }}>{label}</span>

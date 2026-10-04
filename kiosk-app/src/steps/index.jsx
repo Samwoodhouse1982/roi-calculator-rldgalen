@@ -6,7 +6,7 @@ import { Icon } from '../components/Icons';
 // Build-time flag: '1' when built with `--mode embed`; sizing only.
 const EMBED = import.meta.env.VITE_EMBED === '1';
 import { KNOWN_SYSTEMS, systemCost, TIER_TYPES as TIER_TYPES_MKT, KNOWN_SYSTEMS_BY_SECTOR, TIER_TYPES_BY_SECTOR } from '../calc/vendors.index.js';
-import { UKI, AU } from '../market';
+import { UKI, AU, UKI_KIOSK } from '../market';
 import { PRESETS as PRESETS_UKI, ORG_TYPES } from '../calc/presets.uki';
 import { PRESETS as PRESETS_AU, SECTORS as SECTORS_AU, ORG_TYPES as ORG_TYPES_AU } from '../calc/presets.au';
 
@@ -306,7 +306,7 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
         style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
       <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 8 }}>
         <button onClick={() => setKnownSpend(Math.max(0, knownSpend - 100000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-        <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>±$100k</div>
+        <div style={{ fontSize: F.tiny, color: C.textMuted, display: "flex", alignItems: "center" }}>{UKI_KIOSK ? "\u00b1\u00a3100k" : "±$100k"}</div>
         <button onClick={() => setKnownSpend(Math.min(20000000, knownSpend + 100000))} style={{ width: 48, height: 48, borderRadius: 12, border: "1px solid " + C.border, background: C.surface, color: C.textMid, fontSize: 22, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
       </div>
       {knownSpend > 0 && <div style={{ fontSize: F.small, color: C.textMuted, marginTop: 8, textAlign: "center" }}>
@@ -428,13 +428,14 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
 }
 
 // STEP 5: Fine-tune
+const COMPLEXITY_TIP = "How tightly your legacy systems are interwoven with workflows, interfaces, and customizations. Low: mostly standalone systems with simple data structures, straightforward to migrate. Typical: standard interfaces with some customization, the most common situation. High: heavily customized integrations and complex workflows that need careful migration planning. Affects per-system migration cost (High adds ~45%, Low subtracts ~30% from baseline).";
 export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigrationCost, galenAnnualCost, setGalenAnnualCost, occupancyRate, setOccupancyRate, sector = null }) {
   return <div>
     <SectionTitle number="5">Fine-tune your model</SectionTitle>
     <Card>
       <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 28 }}>
         <div style={{ flex: "1 1 240px" }}>
-          <SegmentedControl label="System complexity" info="How tightly your legacy systems are interwoven with workflows, interfaces, and customizations. Low: mostly standalone systems with simple data structures, straightforward to migrate. Typical: standard interfaces with some customization, the most common situation. High: heavily customized integrations and complex workflows that need careful migration planning. Affects per-system migration cost (High adds ~45%, Low subtracts ~30% from baseline)." value={inputs.complexity_level} onChange={v => update("complexity_level", v)}
+          <SegmentedControl label="System complexity" info={UKI_KIOSK ? COMPLEXITY_TIP.replace(/customiz/g, "customis") : COMPLEXITY_TIP} value={inputs.complexity_level} onChange={v => update("complexity_level", v)}
             options={[{ key: "LOW", label: "Low" }, { key: "TYPICAL", label: "Typical" }, { key: "HIGH", label: "High" }]} />
         </div>
         <div style={{ flex: "1 1 240px" }}>

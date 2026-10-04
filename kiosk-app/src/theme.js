@@ -110,8 +110,8 @@ export const MAXW = 900;
 // Embed build fluid horizontal gutter (ported from the Smart Match web
 // build); the kiosk uses fixed 56px paddings instead.
 export const GUTTER = "clamp(16px, 4vw, 44px)";
-// Market formatters: US ($, en-US) is the default and the only set the
-// touchscreen build uses; UKI gets £/en-GB, AU gets A$/en-AU.
+// Market formatters: US ($, en-US) is the default; UKI gets £/en-GB (embed
+// and touchscreen), AU gets A$/en-AU.
 const MARKET_UKI = import.meta.env.VITE_MARKET === 'uki';
 const MARKET_AU = import.meta.env.VITE_MARKET === 'au';
 const LOCALE = MARKET_UKI ? "en-GB" : MARKET_AU ? "en-AU" : "en-US";
