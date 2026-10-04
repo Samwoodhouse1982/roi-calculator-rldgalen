@@ -50,8 +50,9 @@ changing orientation.
 
 ## 5. Launch
 
-1. Open `start-kiosk.cmd` in Notepad and replace the `KIOSK_URL` value
-   with the touchscreen's live address.
+1. `start-kiosk.cmd` already points at the live touchscreen,
+   https://galen-uki-touchscreen.netlify.app/. If the address ever changes,
+   open it in Notepad and update the `KIOSK_URL` value.
 2. Double-click `start-kiosk.cmd`. Edge opens the calculator full screen
    with pinch-zoom and swipe-back turned off.
 3. To start it automatically when the laptop signs in: Win+R →
@@ -60,7 +61,7 @@ changing orientation.
 
 ## 6. Network
 
-The calculator loads from the internet (Vercel), and its font comes from
+The calculator loads from the internet (Netlify), and its font comes from
 Google Fonts. Once loaded it keeps working if the connection drops, but:
 
 - If the laptop restarts, or the calculator reloads itself after an error,
