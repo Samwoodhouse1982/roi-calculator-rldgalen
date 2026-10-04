@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { C, F, fmtNum, fmtK, FACILITY_TYPES, FACILITY_GROUPS } from '../theme';
-import { Card, BigChoice, SectionTitle, TouchSlider, Stepper, SegmentedControl, InfoTip, KIOSK_FILL, KIOSK_GROW } from '../components';
+import { Card, BigChoice, SectionTitle, TouchSlider, Stepper, SegmentedControl, InfoTip, KIOSK_TILE, KIOSK_GAP } from '../components';
 import { Icon } from '../components/Icons';
 
 // Build-time flag: '1' when built with `--mode embed`; sizing only.
@@ -159,9 +159,9 @@ export function ProviderStep({ providerType, onSelect, reimbursementModel, setRe
 
 // STEP 2: Journey
 export function JourneyStep({ journey, onSelect }) {
-  return <div style={KIOSK_FILL}>
+  return <div>
     <SectionTitle number="2">{UKI ? "Where are you on your EPR journey?" : AU ? "Where are you on your EMR journey?" : "Where are you on your EHR journey?"}</SectionTitle>
-    <div style={{ display: "flex", flexDirection: "column", gap: UKI_KIOSK ? 20 : 16, ...(UKI_KIOSK ? { flex: 1 } : null) }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: UKI_KIOSK ? KIOSK_GAP : 16 }}>
       {(AU ? [
         { key: "HAVE_EPR", label: "We want to decommission systems", desc: "You have (or are keeping) your core platform. Retire and archive the legacy estate around it.", iconKey: "check", focus: "Archiving + decommission savings" },
         { key: "EVALUATING", label: "We're evaluating enterprise EMRs", desc: "Assessing migration to a single EMR platform. Need the full case for migration and archiving.", iconKey: "search", focus: "Migration safety + archiving savings" },
@@ -175,12 +175,12 @@ export function JourneyStep({ journey, onSelect }) {
         padding: EMBED ? "clamp(18px, 2.6vw, 26px)" : "32px 30px", textAlign: "left", cursor: "pointer",
         border: journey === j.key ? `${EMBED ? 2 : 3}px solid ${C.accent}` : `1px solid ${C.border}`,
         borderRadius: EMBED ? 16 : 22, background: journey === j.key ? C.accentPale : C.surface, transition: "all .2s",
-        ...(UKI_KIOSK ? { ...KIOSK_GROW, alignItems: "flex-start", padding: "40px 40px" } : null)
+        ...(UKI_KIOSK ? { ...KIOSK_TILE, display: "flex", flexDirection: "column", alignItems: "flex-start" } : null)
       }}>
-        <div style={{ marginBottom: UKI_KIOSK ? 24 : 12 }}><Icon name={j.iconKey} size={UKI_KIOSK ? 84 : 36} stroke={journey === j.key ? C.accent : C.textMid} /></div>
-        <div style={{ fontSize: UKI_KIOSK ? F.h1 : F.h3, fontWeight: 700, color: journey === j.key ? C.accent : C.text, marginBottom: UKI_KIOSK ? 16 : 8 }}>{j.label}</div>
-        <div style={{ fontSize: UKI_KIOSK ? F.h3 : F.body, color: C.textMuted, lineHeight: 1.6, marginBottom: UKI_KIOSK ? 24 : 12 }}>{j.desc}</div>
-        <div style={{ fontSize: UKI_KIOSK ? F.body : F.small, fontWeight: 600, color: journey === j.key ? C.accent : C.textMid, padding: UKI_KIOSK ? "10px 20px" : "6px 14px", background: journey === j.key ? C.accent + "15" : C.bg, borderRadius: 8, display: "inline-block" }}>{j.focus}</div>
+        <div style={{ marginBottom: UKI_KIOSK ? 20 : 12 }}><Icon name={j.iconKey} size={UKI_KIOSK ? 64 : 36} stroke={journey === j.key ? C.accent : C.textMid} /></div>
+        <div style={{ fontSize: UKI_KIOSK ? F.h2 : F.h3, fontWeight: 700, color: journey === j.key ? C.accent : C.text, marginBottom: UKI_KIOSK ? 12 : 8 }}>{j.label}</div>
+        <div style={{ fontSize: F.body, color: C.textMuted, lineHeight: 1.6, marginBottom: UKI_KIOSK ? 20 : 12 }}>{j.desc}</div>
+        <div style={{ fontSize: F.small, fontWeight: 600, color: journey === j.key ? C.accent : C.textMid, padding: UKI_KIOSK ? "8px 16px" : "6px 14px", background: journey === j.key ? C.accent + "15" : C.bg, borderRadius: 8, display: "inline-block" }}>{j.focus}</div>
       </button>)}
     </div>
   </div>;
@@ -291,7 +291,7 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
   const namedTotal = flagships.reduce((s, f) => s + (f.cost || 0) * (f.instances || 1), 0);
   const tierShare = knownIncludesNamed ? Math.max(0, knownSpend - namedTotal) : knownSpend;
 
-  return <div style={KIOSK_FILL}>
+  return <div>
     <SectionTitle number="4">Legacy systems</SectionTitle>
 
     {/* Cost mode toggle */}
@@ -332,17 +332,17 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
       </div>)}
     </Card>}
 
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, ...(UKI_KIOSK ? { flex: 1 } : null) }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: UKI_KIOSK ? KIOSK_GAP : 14 }}>
       {tiers.map(t => {
         const tierSystems = knownActive.filter(s => (tierTypesActive[t.key] || []).includes(s.type));
         const tierFlagships = flagships.filter(f => f.tier === t.key);
-        return <Card key={t.key} style={{ border: `1px solid ${t.color}30`, ...(EMBED ? {} : { padding: "24px 28px" }), ...KIOSK_GROW }}>
+        return <Card key={t.key} style={{ border: `1px solid ${t.color}30`, ...(EMBED ? {} : { padding: UKI_KIOSK ? "32px 36px" : "24px 28px" }) }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <div>
               <span style={{ fontSize: UKI_KIOSK ? F.h2 : F.h3, fontWeight: 700, color: t.color }}>{t.label}</span>
               <div style={{ fontSize: UKI_KIOSK ? F.small : F.tiny, color: C.textMuted, marginTop: UKI_KIOSK ? 6 : 2 }}>{t.hint}</div>
             </div>
-            <span style={{ fontSize: UKI_KIOSK ? 64 : 36, fontWeight: 800, color: t.color }}>{inputs.tiers[t.key]}</span>
+            <span style={{ fontSize: UKI_KIOSK ? 56 : 36, fontWeight: 800, color: t.color }}>{inputs.tiers[t.key]}</span>
           </div>
           <input type="range" min={0} max={t.max} step={1} value={inputs.tiers[t.key]}
             onChange={e => updateTier(t.key, Number(e.target.value))}
@@ -448,9 +448,9 @@ export function SystemsStep({ inputs, updateTier, flagships, addFlagship, remove
 // STEP 5: Fine-tune
 const COMPLEXITY_TIP = "How tightly your legacy systems are interwoven with workflows, interfaces, and customizations. Low: mostly standalone systems with simple data structures, straightforward to migrate. Typical: standard interfaces with some customization, the most common situation. High: heavily customized integrations and complex workflows that need careful migration planning. Affects per-system migration cost (High adds ~45%, Low subtracts ~30% from baseline).";
 export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigrationCost, galenAnnualCost, setGalenAnnualCost, occupancyRate, setOccupancyRate, sector = null }) {
-  return <div style={KIOSK_FILL}>
+  return <div>
     <SectionTitle number="5">Fine-tune your model</SectionTitle>
-    <Card style={UKI_KIOSK ? { ...KIOSK_GROW, justifyContent: "space-evenly" } : undefined}>
+    <Card>
       <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 28 }}>
         <div style={{ flex: "1 1 240px" }}>
           <SegmentedControl label="System complexity" info={UKI_KIOSK ? COMPLEXITY_TIP.replace(/customiz/g, "customis") : COMPLEXITY_TIP} value={inputs.complexity_level} onChange={v => update("complexity_level", v)}
@@ -464,7 +464,7 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
       <TouchSlider label="Decommission target" value={inputs.decom_retire_rate} min={0} max={1} step={0.05} onChange={v => update("decom_retire_rate", v)} format={v => `${Math.round(v * 100)}%`} tip="What % of legacy systems will be retired?" />
       {!UKI && <TouchSlider label={AU ? (sector === "aged_care" ? "Occupancy rate" : sector === "ndis" ? "Utilisation rate" : "Bed occupancy") : "Bed occupancy"} value={occupancyRate} min={0.3} max={1.0} step={0.01} onChange={setOccupancyRate} format={v => `${Math.round(v * 100)}%`} tip={AU ? (sector === "aged_care" ? "Average occupancy across your residential places. Typical 90-95%." : sector === "ndis" ? "Proportion of available staff hours that are billable. Typical 65-75%." : "Average bed occupancy. National average is ~90% (AMA). Drives admission volume, revenue, and safety metrics.") : "Drives admission volume, revenue, and safety metrics."} />}
     </Card>
-    <Card style={{ marginTop: 16, ...(UKI_KIOSK ? { ...KIOSK_GROW, justifyContent: "space-evenly" } : null) }}>
+    <Card style={{ marginTop: UKI_KIOSK ? KIOSK_GAP : 16 }}>
       <div style={{ fontSize: UKI_KIOSK ? F.h2 : F.body, fontWeight: 700, color: C.textMid, marginBottom: 16 }}>Galen Clinical Archive costs <span style={{ fontWeight: 400, color: C.textMuted }}>(optional)</span></div>
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
@@ -501,7 +501,7 @@ export function FineTuneStep({ inputs, update, galenMigrationCost, setGalenMigra
 
 /* ── UKI STEP 1: organisation type (scope) ─────────────────────────────── */
 export function OrgTypeStep({ orgType, onSelect }) {
-  return <div style={KIOSK_FILL}>
+  return <div>
     <SectionTitle number="1">What type of organisation are you?</SectionTitle>
     <BigChoice options={ORG_TYPES.map(o => ({
       key: o.key, label: PRESETS_UKI[o.key].label, desc: PRESETS_UKI[o.key].desc, iconKey: o.iconKey,
@@ -522,17 +522,17 @@ export function ScaleStep({ inputs, update, sector = null }) {
     : null;
   const orgLabel = auUnits ? auUnits.orgs : "Trusts / organisations in scope";
   const unitLabel = auUnits ? auUnits.unit : "Total acute beds";
-  return <div style={KIOSK_FILL}>
+  return <div>
     <SectionTitle number="3">Organisation scale</SectionTitle>
     {UKI_KIOSK ? <>
-      {/* UKI touchscreen: one large card per question, filling the screen. */}
-      <Card style={KIOSK_GROW}>
+      {/* UKI touchscreen: the two questions as headed sections of one card,
+          with larger controls since they are the only ones on the page. */}
+      <Card>
         <Stepper xl label={orgLabel} value={inputs.org_count} min={1} max={10} onChange={v => update("org_count", v)}
           tip="A single Trust, or the number of organisations in a multi-Trust or ICS-wide programme." />
-      </Card>
-      <Card style={{ ...KIOSK_GROW, marginTop: 20 }}>
+        <div style={{ borderTop: `1px solid ${C.border}`, margin: "48px 0" }} />
         <TouchSlider xl label={unitLabel} value={inputs.bed_count} min={50} max={Math.max(8000, inputs.bed_count + 500)} step={10}
-          onChange={v => update("bed_count", v)} format={fmtNum} />
+          onChange={v => update("bed_count", v)} format={fmtNum} tip="The total across all the organisations in scope." />
         {inputs.org_count > 1 && <div style={{ fontSize: F.body, color: C.textMuted, background: C.bg, padding: "14px 20px", borderRadius: 12, marginTop: 28 }}>
           Average: {fmtNum(avg)} beds per organisation
         </div>}
