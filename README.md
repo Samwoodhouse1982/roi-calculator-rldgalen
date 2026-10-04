@@ -49,7 +49,7 @@ folder (Root Directory setting), all from this branch:
 | AU web | `web/au` | — (static) |
 | US touchscreen | `kiosk-app` | — (auto: `npm run build`) |
 | US embed | `kiosk-embed` | — (auto: builds `kiosk-app` in embed mode) |
-| UKI touchscreen | `RLD Galen UKI touchscreen Oct 2026` | — (auto: builds `kiosk-app` in UKI touchscreen mode) |
+| UKI touchscreen | `rld-galen-uki-touchscreen-oct-2026` | — (auto: builds `kiosk-app` in UKI touchscreen mode) |
 | UKI embed | `kiosk-embed-uki` | — (auto: builds `kiosk-app` in UKI embed mode) |
 | AU embed | `kiosk-embed-au` | — (auto: builds `kiosk-app` in AU embed mode) |
 
