@@ -37,7 +37,7 @@ export class KioskErrorBoundary extends React.Component {
   render() {
     if (!this.state.failed) return this.props.children;
     return (
-      <div style={{ width: 1080, minHeight: 1920, height: '100vh', background: '#0a0f1a', color: '#e8edf5', fontFamily: "'DM Sans', sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 80, boxSizing: 'border-box' }}>
+      <div style={{ width: 1080, height: 1920, background: '#0a0f1a', color: '#e8edf5', fontFamily: "'DM Sans', sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 80, boxSizing: 'border-box' }}>
         <div style={{ fontSize: 40, fontWeight: 800, color: '#00d4aa', marginBottom: 20 }}>Restarting the calculator</div>
         <div style={{ fontSize: 22, color: '#a0b0c0', lineHeight: 1.6 }}>Something went wrong. The calculator will be back in a moment.</div>
       </div>

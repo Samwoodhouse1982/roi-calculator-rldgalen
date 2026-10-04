@@ -19,3 +19,10 @@ the same numbers as the UKI embed.
 
 Requires the project's "Include source files outside of the Root
 Directory" setting to be enabled — it is by default.
+
+## Running it on the UPERFECT 24.5" 2K screen
+
+See [`windows/SETUP-WINDOWS.md`](windows/SETUP-WINDOWS.md) for mounting,
+cabling, Windows display and touch settings, and the `windows/start-kiosk.cmd`
+launcher (Edge kiosk mode). The calculator scales itself to fill any portrait
+screen, whatever its resolution or Windows display scaling.

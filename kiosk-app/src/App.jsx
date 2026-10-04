@@ -941,7 +941,7 @@ export default function App() {
 
   return <div style={EMBED
       ? { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: "100%", maxWidth: MAXW, margin: "0 auto", minHeight: "100vh", color: C.text, position: "relative", zIndex: 0 }
-      : { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: W, minHeight: H, height: '100vh', color: C.text, position: "relative", zIndex: 0 }}>
+      : { fontFamily: "'DM Sans', sans-serif", background: C.bg, width: W, minHeight: H, height: UKI_KIOSK ? H : '100vh', color: C.text, position: "relative", zIndex: 0 }}>
       {EMBED && <EmbedStyles />}
       {!EMBED && <BackgroundParticles />}
       <CalibratingScreen onDone={handleCalibrationDone} />
