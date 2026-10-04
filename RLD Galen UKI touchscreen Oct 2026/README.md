@@ -3,7 +3,7 @@
 This folder exists so the **UK & Ireland touchscreen kiosk** can deploy on
 Vercel with zero dashboard configuration beyond the Root Directory.
 
-Point the UKI kiosk Vercel project's **Root Directory at `kiosk-uki`** and
+Point the UKI kiosk Vercel project's **Root Directory at `RLD Galen UKI touchscreen Oct 2026`** and
 you're done: the `vercel.json` here builds the UKI touchscreen variant of
 `../kiosk-app` (`npm run build:kiosk:uki`, i.e. `--mode kiosk-uki` →
 `VITE_MARKET=uki`, no `VITE_EMBED`) and serves its output. No Build Command
