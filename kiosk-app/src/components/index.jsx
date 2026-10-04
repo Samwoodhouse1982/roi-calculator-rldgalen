@@ -8,6 +8,14 @@ const EMBED = import.meta.env.VITE_EMBED === '1';
 import { UKI, AU, UKI_KIOSK } from '../market';
 import { getKioskZoom } from '../kioskFit';
 
+// UKI touchscreen: each input step stretches to the full height between the
+// step bar and the nav bar, and its main tiles or cards share that height,
+// instead of sitting at the top with an empty band below.
+export const KIOSK_FILL = UKI_KIOSK ? { flex: 1, display: "flex", flexDirection: "column" } : undefined;
+// A card or tile that takes an equal share of the step's height, with its
+// content centred vertically.
+export const KIOSK_GROW = UKI_KIOSK ? { flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" } : null;
+
 export function Card({ children, style }) {
   return <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: EMBED ? 20 : 24, padding: EMBED ? "clamp(18px, 3vw, 34px)" : "36px 40px 32px", ...style }}>{children}</div>;
 }
@@ -104,7 +112,7 @@ export function NavButtons({ step, totalSteps, onBack, onNext, onCalculate, onSt
 }
 
 export function PageTransition({ children, step }) {
-  return <div key={step} style={{ animation: "kSlideUp .4s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+  return <div key={step} style={{ animation: "kSlideUp .4s cubic-bezier(0.16, 1, 0.3, 1)", ...(UKI_KIOSK ? { minHeight: "100%", display: "flex", flexDirection: "column" } : null) }}>
     <style>{`
       @keyframes kSlideUp {
         0% { opacity: 0; transform: translateY(40px) scale(0.97); filter: blur(4px); }
@@ -112,32 +120,47 @@ export function PageTransition({ children, step }) {
         100% { transform: translateY(0) scale(1); }
       }
     `}</style>
+    {/* UKI touchscreen: larger slider track and thumb. */}
+    {UKI_KIOSK && <style>{`
+      input[type=range] { height: 20px; border-radius: 10px; }
+      input[type=range]::-webkit-slider-thumb { width: 60px; height: 60px; }
+    `}</style>}
     {children}
   </div>;
 }
 
-export function TouchSlider({ label, value, min, max, step = 1, onChange, format, tip }) {
-  return <div style={{ marginBottom: 24 }}>
-    {label && <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: F.body, fontWeight: 600, color: C.textMid }}>{label}</span>
-        {tip && <InfoTip text={tip} />}
-      </div>
-      <span style={{ fontSize: F.h1, fontWeight: 800, color: C.accent }}>{format ? format(value) : value}</span>
+// `xl` (UKI touchscreen only): a large heading, the tip shown as a subtitle
+// instead of behind an "i", and an oversized value, for a step whose one or
+// two controls fill the whole screen.
+export function TouchSlider({ label, value, min, max, step = 1, onChange, format, tip, xl = false }) {
+  return <div style={{ marginBottom: xl ? 0 : 24 }}>
+    {label && <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: xl ? 28 : 12, gap: UKI_KIOSK ? 20 : undefined }}>
+      {xl
+        ? <div><div style={{ fontSize: F.h1, fontWeight: 700, color: C.text }}>{label}</div>{tip && <div style={{ fontSize: F.body, color: C.textMuted, lineHeight: 1.5, marginTop: 10 }}>{tip}</div>}</div>
+        : <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: UKI_KIOSK ? F.h3 : F.body, fontWeight: 600, color: C.textMid }}>{label}</span>
+            {tip && <InfoTip text={tip} />}
+          </div>}
+      <span style={{ fontSize: xl ? 96 : UKI_KIOSK ? 60 : F.h1, fontWeight: 800, color: C.accent, flexShrink: UKI_KIOSK ? 0 : undefined }}>{format ? format(value) : value}</span>
     </div>}
     <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: "100%", cursor: "pointer", accentColor: C.accent }} />
   </div>;
 }
 
-export function Stepper({ label, value, min = 0, max = 999, step = 1, onChange, tip }) {
-  return <div className={EMBED ? "embed-stepper" : undefined} style={{ display: "flex", alignItems: "center", gap: EMBED ? 14 : 20, marginBottom: 20, flexWrap: EMBED ? "wrap" : undefined }}>
-    <div style={{ flex: EMBED ? "1 1 200px" : 1, display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontSize: F.body, fontWeight: 600, color: C.textMid }}>{label}</span>
-      {tip && <InfoTip text={tip} />}
-    </div>
-    <button className={EMBED ? "embed-stepper-btn" : undefined} onClick={() => onChange(Math.max(min, value - step))} style={{ width: 64, height: 64, borderRadius: 16, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 32, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>−</button>
-    <span className={EMBED ? "embed-stepper-val" : undefined} style={{ fontSize: F.h1, fontWeight: 800, color: C.accent, minWidth: EMBED ? 64 : 90, textAlign: "center" }}>{value}</span>
-    <button className={EMBED ? "embed-stepper-btn" : undefined} onClick={() => onChange(Math.min(max, value + step))} style={{ width: 64, height: 64, borderRadius: 16, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: 32, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>+</button>
+export function Stepper({ label, value, min = 0, max = 999, step = 1, onChange, tip, xl = false }) {
+  const btn = xl ? 120 : UKI_KIOSK ? 80 : 64;
+  return <div className={EMBED ? "embed-stepper" : undefined} style={{ display: "flex", alignItems: "center", gap: EMBED ? 14 : 20, marginBottom: xl ? 0 : 20, flexWrap: EMBED ? "wrap" : xl ? "wrap" : undefined }}>
+    {xl
+      ? <div style={{ flex: "1 1 100%", marginBottom: 28 }}><div style={{ fontSize: F.h1, fontWeight: 700, color: C.text }}>{label}</div>{tip && <div style={{ fontSize: F.body, color: C.textMuted, lineHeight: 1.5, marginTop: 10 }}>{tip}</div>}</div>
+      : <div style={{ flex: EMBED ? "1 1 200px" : 1, display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: F.body, fontWeight: 600, color: C.textMid }}>{label}</span>
+          {tip && <InfoTip text={tip} />}
+        </div>}
+    {xl && <div style={{ flex: 1 }} />}
+    <button className={EMBED ? "embed-stepper-btn" : undefined} onClick={() => onChange(Math.max(min, value - step))} style={{ width: btn, height: btn, borderRadius: xl ? 24 : 16, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: xl ? 56 : 32, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>−</button>
+    <span className={EMBED ? "embed-stepper-val" : undefined} style={{ fontSize: xl ? 96 : F.h1, fontWeight: 800, color: C.accent, minWidth: EMBED ? 64 : xl ? 200 : 90, textAlign: "center" }}>{value}</span>
+    <button className={EMBED ? "embed-stepper-btn" : undefined} onClick={() => onChange(Math.min(max, value + step))} style={{ width: btn, height: btn, borderRadius: xl ? 24 : 16, border: `1px solid ${C.border}`, background: C.surface, color: C.textMid, fontSize: xl ? 56 : 32, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>+</button>
+    {xl && <div style={{ flex: 1 }} />}
   </div>;
 }
 
@@ -208,7 +231,7 @@ export function InfoTip({ text }) {
 }
 
 export function BigChoice({ options, value, onChange }) {
-  return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+  return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: UKI_KIOSK ? 20 : 16, ...(UKI_KIOSK ? { flex: 1, gridAutoRows: "1fr" } : null) }}>
     {options.map((opt, i) => {
       const isLastOdd = options.length % 2 === 1 && i === options.length - 1;
       return <button key={opt.key} onClick={() => onChange(opt.key)} style={{
@@ -216,13 +239,14 @@ export function BigChoice({ options, value, onChange }) {
         padding: EMBED ? "clamp(18px, 2.6vw, 26px)" : "32px 30px", textAlign: "left", cursor: "pointer",
         border: value === opt.key ? `${EMBED ? 2 : 3}px solid ${C.accent}` : `1px solid ${C.border}`,
         borderRadius: EMBED ? 16 : 22, background: value === opt.key ? C.accentPale : C.surface,
-        transition: "all .2s", display: "flex", flexDirection: "column", alignItems: "flex-start"
+        transition: "all .2s", display: "flex", flexDirection: "column", alignItems: "flex-start",
+        ...(UKI_KIOSK ? { justifyContent: "center", padding: "40px 40px" } : null)
       }}>
-        <div style={{ marginBottom: EMBED ? 10 : 14 }}>
-          {opt.iconKey ? <Icon name={opt.iconKey} size={EMBED ? 34 : 42} stroke={value === opt.key ? C.accent : C.textMid} /> : opt.icon && <span style={{ fontSize: 42 }}>{opt.icon}</span>}
+        <div style={{ marginBottom: UKI_KIOSK ? 22 : EMBED ? 10 : 14 }}>
+          {opt.iconKey ? <Icon name={opt.iconKey} size={UKI_KIOSK ? 88 : EMBED ? 34 : 42} stroke={value === opt.key ? C.accent : C.textMid} /> : opt.icon && <span style={{ fontSize: 42 }}>{opt.icon}</span>}
         </div>
-        <div style={{ fontSize: F.h3, fontWeight: 700, color: value === opt.key ? C.accent : C.text, marginBottom: 8, lineHeight: 1.2 }}>{opt.label}</div>
-        <div style={{ fontSize: F.small, color: C.textMuted, lineHeight: 1.5 }}>{opt.desc}</div>
+        <div style={{ fontSize: UKI_KIOSK ? F.h1 : F.h3, fontWeight: 700, color: value === opt.key ? C.accent : C.text, marginBottom: UKI_KIOSK ? 16 : 8, lineHeight: 1.2 }}>{opt.label}</div>
+        <div style={{ fontSize: UKI_KIOSK ? F.h3 : F.small, color: C.textMuted, lineHeight: 1.5 }}>{opt.desc}</div>
       </button>;
     })}
   </div>;
@@ -237,12 +261,12 @@ export function SectionTitle({ number, children }) {
 
 export function SegmentedControl({ options, value, onChange, label, info }) {
   return <div>
-    {label && <div style={{ fontSize: F.body, fontWeight: 600, color: C.textMid, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+    {label && <div style={{ fontSize: UKI_KIOSK ? F.h3 : F.body, fontWeight: 600, color: C.textMid, marginBottom: UKI_KIOSK ? 16 : 12, display: "flex", alignItems: "center", gap: 10 }}>
       <span>{label}</span>
       {info && <InfoTip text={info} />}
     </div>}
     <div style={{ display: "flex", gap: 10 }}>
-      {options.map(opt => <button key={opt.key} onClick={() => onChange(opt.key)} style={{ flex: 1, padding: EMBED ? "12px 14px" : "18px", borderRadius: EMBED ? 12 : 16, cursor: "pointer", border: value === opt.key ? `2px solid ${C.accent}` : `1px solid ${C.border}`, background: value === opt.key ? C.accentPale : C.surface, color: value === opt.key ? C.accent : C.textMid, fontSize: F.body, fontWeight: 600, fontFamily: "inherit" }}>{opt.label}</button>)}
+      {options.map(opt => <button key={opt.key} onClick={() => onChange(opt.key)} style={{ flex: 1, padding: EMBED ? "12px 14px" : UKI_KIOSK ? "26px 18px" : "18px", borderRadius: EMBED ? 12 : 16, cursor: "pointer", border: value === opt.key ? `2px solid ${C.accent}` : `1px solid ${C.border}`, background: value === opt.key ? C.accentPale : C.surface, color: value === opt.key ? C.accent : C.textMid, fontSize: F.body, fontWeight: 600, fontFamily: "inherit" }}>{opt.label}</button>)}
     </div>
   </div>;
 }

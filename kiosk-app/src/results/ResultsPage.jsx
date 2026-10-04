@@ -78,15 +78,15 @@ function Methodology({ children, formula, plug, source }) {
     {open && <div style={{ marginTop: 8, padding: "14px 18px", background: C.bg, borderRadius: 14, fontSize: F.tiny, color: C.textMid, lineHeight: 1.7, border: `1px solid ${C.borderLight}` }}>
       {structured ? <>
         {formula && <>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 4 }}>Formula</div>
+          <div style={{ fontSize: UKI_KIOSK ? 16 : 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 4 }}>Formula</div>
           <div style={{ fontFamily: "ui-monospace,monospace", fontSize: F.tiny, color: C.text, background: C.surface, padding: "8px 10px", borderRadius: 6, marginBottom: 12, lineHeight: 1.6 }}>{formula}</div>
         </>}
         {plug && <>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 4 }}>Your numbers</div>
+          <div style={{ fontSize: UKI_KIOSK ? 16 : 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 4 }}>Your numbers</div>
           <div style={{ fontFamily: "ui-monospace,monospace", fontSize: F.tiny, color: C.text, background: C.accentPale, padding: "8px 10px", borderRadius: 6, marginBottom: 12, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{plug}</div>
         </>}
         {source && <>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 4 }}>Source</div>
+          <div style={{ fontSize: UKI_KIOSK ? 16 : 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 4 }}>Source</div>
           <div style={{ fontSize: F.tiny, color: C.textMid, fontStyle: "italic", lineHeight: 1.6 }}>{source}</div>
         </>}
       </> : children}
@@ -272,7 +272,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
             {allYrs.map(y => <div key={y.yr} style={{ flex: 1, padding: projYears === 5 ? "14px 10px" : "18px 20px", background: C.bg, borderRadius: 16, textAlign: "center" }}>
               <div style={{ fontSize: F.tiny, color: C.textMuted, marginBottom: 4 }}>{y.yr}</div>
               <div style={{ fontSize: projYears === 5 ? F.body : F.h2, fontWeight: 800, color: C.accent }}>{fmtK(y.val)}</div>
-              <div style={{ fontSize: 10, color: C.textMuted }}>{y.pct}%</div>
+              <div style={{ fontSize: UKI_KIOSK ? 15 : 10, color: C.textMuted }}>{y.pct}%</div>
             </div>)}
           </div>;
         })()}
@@ -313,7 +313,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
                       {tappedBar === yi+"-"+si && <div style={{
                         position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)",
                         padding: "8px 14px", background: "#222", borderRadius: 10, whiteSpace: "nowrap", zIndex: 20,
-                        fontSize: 12, fontWeight: 700, color: "#fff", boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                        fontSize: UKI_KIOSK ? 17 : 12, fontWeight: 700, color: "#fff", boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
                         pointerEvents: "none"
                       }}>{s.key}: {fmtK(Math.round(s.val * y.pct))}</div>}
                     </div>)}
@@ -326,7 +326,7 @@ export function ResultsPage({ r, galenMigrationCost, galenAnnualCost, viewTimesc
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 12 }}>
               {segments.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: s.color }} />
-                <span style={{ fontSize: 10, color: C.textMuted }}>{s.key}</span>
+                <span style={{ fontSize: UKI_KIOSK ? 15 : 10, color: C.textMuted }}>{s.key}</span>
               </div>)}
             </div>
           </div>;
@@ -713,7 +713,7 @@ function KpiCard({ label, amount, value, sub, color, iconKey, onClick, span }) {
       {amount != null ? <AnimK value={amount} /> : value}
     </div>
     <div style={{ fontSize: F.tiny, color: C.textMid }}>{sub}</div>
-    <div style={{ fontSize: 11, color: C.accent, fontWeight: 600, marginTop: 8 }}>View details ↓</div>
+    <div style={{ fontSize: UKI_KIOSK ? 16 : 11, color: C.accent, fontWeight: 600, marginTop: 8 }}>View details ↓</div>
   </div>;
 }
 
@@ -891,7 +891,7 @@ function MethodologyBento({ tiles, selectedIdx, onSelect }) {
 
         {/* 'Tap to expand →' hint — only visible on small tiles. */}
         <div style={{
-          fontSize: 11,
+          fontSize: UKI_KIOSK ? 16 : 11,
           color: C.textMuted,
           fontWeight: 600,
           alignSelf: 'flex-end',
