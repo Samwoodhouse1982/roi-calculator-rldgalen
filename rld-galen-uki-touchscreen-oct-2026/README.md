@@ -14,8 +14,16 @@ portrait, dark theme, particle splash, on-screen keyboard, 15-minute idle
 reset, hidden PIN-protected stats overlay, no lead form) with the UKI
 embed's maths and content (NHS/Ireland engine `src/calc/engine.uki.js`, UK
 system catalogue, org-type presets, £/en-GB, UK report copy, and the
-Conservative / Moderate / Optimistic confidence toggle). Same inputs give
-the same numbers as the UKI embed.
+Conservative / Moderate / Optimistic confidence toggle).
+
+The touchscreen also has four audience profiles, picked under "Your sector"
+on the Scope step: NHS, UK private, HSE and Irish private
+(`src/calc/profiles.uki.js`). Each sets the wording, size presets, currency
+(€ for Ireland) and benchmark figures. The NHS profile matches the UKI embed,
+except that the touchscreen counts systems marked "Multiple" and lets "I know
+my spend" include named systems. `?sector=uk-private`, `hse` or `ie-private`
+on the URL picks the starting profile (see `SECTOR` in
+`windows/start-kiosk.cmd`).
 
 Requires the project's "Include source files outside of the Root
 Directory" setting to be enabled — it is by default.

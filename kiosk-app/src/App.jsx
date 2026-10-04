@@ -670,9 +670,13 @@ export default function App() {
     if (AU) { const pr = PRESETS_AU[key]; if (pr) { setSector(pr.sector); setOccupancyRate(SECTOR_OCCUPANCY[pr.sector] ?? 0.90); } }
   }, [applyPreset, profile]);
   // UKI touchscreen: switching audience profile starts that profile's
-  // typical size preset (and clears named systems, as any preset does).
+  // typical size preset (and clears named systems, as any preset does). It
+  // also clears the money the visitor typed (known spend, Galen costs), which
+  // would otherwise carry over into the new profile's currency.
   const selectProfile = useCallback((key) => {
     setProfile(key); setOrgType("TYPICAL"); applyPreset("TYPICAL", presetsFor(key));
+    setCostMode("estimate"); setKnownSpend(0); setKnownIncludesNamed(true);
+    setGalenMigrationCost(0); setGalenAnnualCost(0);
   }, [applyPreset]);
   // AU: picking a sector applies that sector's default size preset.
   const AU_SECTOR_DEFAULT = { hospital: "TYPICAL", aged_care: "AC_MID", ndis: "NDIS_MID" };

@@ -8,7 +8,14 @@ rem ----------------------------------------------------------------------
 rem  1. The touchscreen's live address. Only change this if the site moves.
 set "KIOSK_URL=https://galen-uki-touchscreen.netlify.app/"
 
-rem  2. Close any Edge windows using the kiosk profile, then launch.
+rem  2. The sector the touchscreen starts in, and returns to after each
+rem     visitor. Leave it empty for NHS, or set it to uk-private, hse or
+rem     ie-private for an event aimed at that audience. Visitors can still
+rem     change sector on the first step.
+set "SECTOR="
+if defined SECTOR set "KIOSK_URL=%KIOSK_URL%?sector=%SECTOR%"
+
+rem  3. Close any Edge windows using the kiosk profile, then launch.
 rem     --kiosk ... --edge-kiosk-type=fullscreen : full screen, no browser UI
 rem     --disable-pinch                          : no pinch-to-zoom
 rem     --overscroll-history-navigation=0        : no swipe-to-go-back
