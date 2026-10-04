@@ -19,26 +19,26 @@ const CORPORATE_STAFF_PER_BED = 0.12;  // Scales with size, caps at ~80 for larg
 const BLENDED_HOURLY_RATE = 55;
 const WORKING_WEEKS = 48;
 const TICKETS_PER_SYSTEM = 2.5;
-const SWITCH_PENALTY_PER_SYSTEM = 0.04;  // Bartek et al JIMI 2023: 3% switch cost (beta=0.03); 4% conservative
+const SWITCH_PENALTY_PER_SYSTEM = 0.04;  // Modelled; informed by Bartek et al J Biomed Inform 2023 (beta=0.03 for task switches within one EHR)
 const SURVIVING_SYSTEM_TICKET_FACTOR = 0.6;
 const SAR_BASE_DAYS = 1.5;
 const SAR_DAYS_PER_SYSTEM_BEFORE = 0.4;
 const SAR_DAYS_PER_SYSTEM_AFTER = 0.15;
 
 // Clinical engagement factors
-const ACTIVE_USER_PCT = 0.65;           // Sinsky et al 2016; KLAS Arch Collaborative (500k+ clinicians). 65% conservative
+const ACTIVE_USER_PCT = 0.65;           // Modelled assumption (no published source for the active-user share)
 const SYSTEM_EXPOSURE_PCT = 0.35;       // Modeled assumption: role-based access patterns
 const MED_ERRORS_PER_BED = 18;          // Camacho et al, BMJ Qual Saf 2024 (10.1136/bmjqs-2023-016675): transition medication errors per 100k admissions, scaled to per-bed
 const PATIENTS_HARMED_PER_BED = 0.315;  // Camacho et al 2024: patient episodes experiencing >=1 medication error at a transition, per-bed equivalent
 const EXCESS_BED_DAYS_PER_BED = 0.365;  // Camacho et al 2024: excess bed days from harm due to transition errors, per-bed equivalent
 // ── Quality / safety financial constants ──
-const COST_PER_EXCESS_BED_DAY = 400;          // £400/day NHS Reference Costs (general acute, conservative blended)
+const COST_PER_EXCESS_BED_DAY = 400;          // £400/day: conservative, about half the National Cost Collection 2024/25 non-elective bed-day cost (£791)
 const INDEMNITY_COST_PER_BED = 7500;          // £7,500/bed clinical negligence exposure attributable to fragmented information
-                                              // Source: NHS Resolution £3.6bn settlements (NAO Oct 2025) / ~140k acute beds × 30% communication failure attribution (CRICO 2016)
+                                              // Source: NHS Resolution £3.6bn settlements (NAO Oct 2025) / ~140k NHS beds (all types) × 30% communication failure attribution (CRICO Strategies 2016, US claims)
 const INDEMNITY_REDUCTION_PCT = 0.05;         // 5% reduction from clinical archive / consolidated EPR (conservative)
 const COST_PER_DUPLICATE_TEST = 35;           // £35/test - NHS pathology blended (lab + imaging average)
-const DUPLICATE_TEST_RATE = 0.18;             // 18% of tests potentially duplicate when records fragmented (Bates et al)
-const TESTS_PER_BED_PER_YEAR = 22;            // NHS Reference Costs: pathology/imaging tests per bed/year baseline
+const DUPLICATE_TEST_RATE = 0.18;             // Modelled: 18% of tests potentially duplicate when records fragmented (Bates et al 1998 found 8.6% redundant within one hospital)
+const TESTS_PER_BED_PER_YEAR = 22;            // Conservative modelled allowance, not a test count (NHS labs run over 1bn tests a year)
 
 
 

@@ -30,14 +30,14 @@ const CORPORATE_STAFF_PER_BED = 0.10;  // Scales with size, caps at ~100 for lar
 const BLENDED_HOURLY_RATE = 65;
 const WORKING_WEEKS = 48;
 const TICKETS_PER_SYSTEM = 2.5;
-const SWITCH_PENALTY_PER_SYSTEM = 0.04;  // Bartek et al JIMI 2023: 3% switch cost (beta=0.03); 4% conservative for multi-system switching
+const SWITCH_PENALTY_PER_SYSTEM = 0.04;  // Modelled; informed by Bartek et al J Biomed Inform 2023 (beta=0.03 for task switches within one EHR)
 const SURVIVING_SYSTEM_TICKET_FACTOR = 0.6;
 const SAR_BASE_DAYS = 3.0;              // Base coordination overhead (cross-LHD, redaction, quality review)
 const SAR_DAYS_PER_SYSTEM_BEFORE = 0.8;  // Per-system search, extraction, reconciliation
 const SAR_DAYS_PER_SYSTEM_AFTER = 0.15;
 
 // Clinical engagement factors
-const ACTIVE_USER_PCT = 0.65;           // Sinsky et al 2016 (49% physician time on EHR); KLAS Arch Collaborative (500k+ clinicians). 65% conservative
+const ACTIVE_USER_PCT = 0.65;           // Modelled assumption (no published source for the active-user share)
 const SYSTEM_EXPOSURE_PCT = 0.35;       // Modeled assumption: role-based access patterns mean each clinician touches ~1/3 of the legacy estate
 const MED_ERRORS_PER_BED = 14;  // ACSQHC sentinel event data
 const PATIENTS_HARMED_PER_BED = 3.2;   // AIHW admin data: 5.4% of separations; ~60 seps/bed at ALOS 5.5 * 5.4% = 3.2
