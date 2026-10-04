@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { C } from '../theme';
-import { UKI } from '../market';
+import { UKI, UKI_KIOSK } from '../market';
+import { getKioskZoom } from '../kioskFit';
 import rldatixLogo from '../assets/rldatix-logo.png';
 import klasBadge from '../assets/best-in-klas-2025-data-archiving.svg';
 
@@ -61,10 +62,13 @@ export function SplashScreen({ onStart, onAdminReveal }) {
         y: (btnCssY - cRect.top) * yRatio,
       };
 
-      // For the overlay: position relative to the container in CSS pixels
+      // For the overlay: position relative to the container in CSS pixels.
+      // UKI touchscreen: the page may be zoomed to fit the screen, and
+      // measured rects are in screen pixels, so convert back to layout px.
+      const z = UKI_KIOSK ? getKioskZoom() : 1;
       setWipeOrigin({
-        x: btnCssX - contRect.left,
-        y: btnCssY - contRect.top,
+        x: (btnCssX - contRect.left) / z,
+        y: (btnCssY - contRect.top) / z,
       });
     }
 
@@ -207,7 +211,9 @@ export function SplashScreen({ onStart, onAdminReveal }) {
 
   return (
     <div ref={containerRef} style={{
-      position: 'relative', zIndex: 100, width: 1080, minHeight: 1920, height: '100vh',
+      // UKI touchscreen: fixed design height. The page is zoomed to fit the
+      // screen (kioskFit.js) and 100vh would be zoomed too, overflowing it.
+      position: 'relative', zIndex: 100, width: 1080, minHeight: 1920, height: UKI_KIOSK ? 1920 : '100vh',
       background: 'linear-gradient(160deg, #060b14 0%, #0a1020 25%, #0c1825 50%, #091520 75%, #060b14 100%)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
       overflow: 'hidden', cursor: launching ? 'default' : 'pointer',

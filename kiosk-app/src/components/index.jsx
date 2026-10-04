@@ -5,7 +5,8 @@ import { Icon } from './Icons';
 // Build-time flag: '1' when built with `--mode embed` (see .env.embed).
 // Used only to attach embed-specific classNames; kiosk DOM is unchanged.
 const EMBED = import.meta.env.VITE_EMBED === '1';
-import { UKI, AU } from '../market';
+import { UKI, AU, UKI_KIOSK } from '../market';
+import { getKioskZoom } from '../kioskFit';
 
 export function Card({ children, style }) {
   return <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: EMBED ? 20 : 24, padding: EMBED ? "clamp(18px, 3vw, 34px)" : "36px 40px 32px", ...style }}>{children}</div>;
@@ -145,14 +146,20 @@ export function InfoTip({ text }) {
   // the kiosk's header bar at the top of the viewport.
   useEffect(() => {
     if (!show || !iconRef.current) return;
-    const rect = iconRef.current.getBoundingClientRect();
+    // UKI touchscreen: the page may be zoomed to fit the screen. Measured
+    // rects and window sizes are in screen pixels; the bubble is positioned
+    // in layout pixels, so convert everything to layout pixels first.
+    const z = UKI_KIOSK ? getKioskZoom() : 1;
+    const r0 = iconRef.current.getBoundingClientRect();
+    const rect = { top: r0.top / z, bottom: r0.bottom / z, left: r0.left / z, width: r0.width / z };
+    const viewW = window.innerWidth / z, viewH = window.innerHeight / z;
     const W = 400; // bubble width
     const ESTIMATED_H = 260; // bubble approx height
     const M = 14; // margin between icon and bubble
     const SAFE_TOP = 100; // header height safety margin
     const SAFE_BOTTOM = 60;
 
-    const spaceBelow = window.innerHeight - rect.bottom - SAFE_BOTTOM;
+    const spaceBelow = viewH - rect.bottom - SAFE_BOTTOM;
     const spaceAbove = rect.top - SAFE_TOP;
     const placeAbove = spaceBelow < ESTIMATED_H && spaceAbove > spaceBelow;
 
@@ -166,7 +173,7 @@ export function InfoTip({ text }) {
     }
     left = rect.left + rect.width / 2 - W / 2;
     // Clamp horizontally so the bubble stays on screen
-    left = Math.max(20, Math.min(left, window.innerWidth - W - 20));
+    left = Math.max(20, Math.min(left, viewW - W - 20));
 
     setPos({ top, left, placeAbove });
   }, [show]);
